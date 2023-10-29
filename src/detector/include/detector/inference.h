@@ -14,15 +14,8 @@
 
 #include <Eigen/Dense>
 #include <openvino/openvino.hpp>
-#include <opencv2/core.hpp>
-#include <glog/logging.h>
-#include <fmt/format.h>
 
 #include <detector/interface.h>
-#include <detector/parser.h>
-#ifdef DEBUG
-#include <detector/utils.h>
-#endif
 
 namespace armor_auto_aiming {
 
@@ -30,9 +23,11 @@ class Inference {
 public:
     Inference() =default;
 
+    explicit Inference(const std::string& model_path) { initModel(model_path); }
+
     void initModel(const std::string& model_path);
 
-    bool detect(const cv::Mat& src, std::vector<Armor>* armors);
+    bool inference(const cv::Mat& src, std::vector<InferenceResult>* inference_armors);
 
     static constexpr int INPUT_WIDTH = 416;
     static constexpr int INPUT_HEIGHT = 416;
@@ -46,8 +41,6 @@ private:
     const std::string m_MODEL_PATH = "../../model/opt-0527-001.xml";
     const std::string m_DRIVER = "CPU";
     const std::string m_CACHE_DIR = "../.cache";
-
-
 };
 
 } // armor_auto_aiming

@@ -10,12 +10,7 @@
 #ifndef TEST_GLOG_GOOGLELOGGER_H
 #define TEST_GLOG_GOOGLELOGGER_H
 
-#include <iostream>
-#include <iomanip>
-#include <regex>
-#include <chrono>
 #include <filesystem>
-#include <thread>
 
 #include <fmt/format.h>
 #include <fmt/color.h>
@@ -27,6 +22,8 @@ static bool k_IsInitialized = false;
 void initGoogleLogger(int argc, char* argv[]);
 
 void initGoogleLogger(const char* program);
+
+void shutdownGoogleLogger();
 
 /**
  * @brief 控制台日志

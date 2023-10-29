@@ -12,7 +12,10 @@
 
 int main(int argc, char* argv[]) {
     armor_auto_aiming::google_log::initGoogleLogger("armor_auto_aiming");
-    testing::InitGoogleTest(&argc, argv);
 
-    return RUN_ALL_TESTS();
+    testing::InitGoogleTest(&argc, argv);
+    auto code = RUN_ALL_TESTS();
+
+    armor_auto_aiming::google_log::shutdownGoogleLogger();
+    return code;
 }

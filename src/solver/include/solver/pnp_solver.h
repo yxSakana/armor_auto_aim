@@ -12,13 +12,19 @@
 
 #include <opencv2/opencv.hpp>
 
+#include <solver/coord_utils.h>
+#include <detector/interface.h>
+#include <solver/solver_interface.h>
+
 namespace armor_auto_aiming {
 class PnPSolver {
 public:
     PnPSolver(const std::array<double, 9>& intrinsic_matrix,
               const std::vector<double>& distortion_vector);
 
-    bool pnpSolver();
+    bool pnpSolver(const Armor& armor, cv::Mat& rvec, cv::Mat& tvec);
+
+    bool obtain3dCoordinates(const Armor& armor, armor_auto_aiming::solver::SpatialLocation& spatial_location);
 private:
     // Unit: mm
     static constexpr float SMALL_ARMOR_WIDTH = 135;

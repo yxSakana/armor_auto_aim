@@ -7,6 +7,12 @@
  * @date 2023-10-09 20:30
  */
 
+#include <iostream>
+#include <iomanip>
+#include <regex>
+#include <chrono>
+#include <thread>
+
 #include <google_logger/google_logger.h>
 
 namespace armor_auto_aiming::google_log {
@@ -22,6 +28,10 @@ void initGoogleLogger(const char* program) {
         k_GoogleLogger = new GoogleLogger(program);
         k_IsInitialized = true;
     }
+}
+
+void shutdownGoogleLogger() {
+    delete k_GoogleLogger;
 }
 
 void ConsoleLogSink::send(google::LogSeverity severity, const char *full_filename, const char *base_filename, int line,

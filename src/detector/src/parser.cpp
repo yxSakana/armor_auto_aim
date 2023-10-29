@@ -7,6 +7,10 @@
  * @date 2023-10-27 19:57
  */
 
+#include <thread>
+#include <algorithm>
+
+#include <detector/inference.h>
 #include <detector/parser.h>
 
 namespace armor_auto_aiming::inference_parser {
@@ -31,8 +35,8 @@ cv::Mat scaledResize(const cv::Mat& src, Eigen::Matrix<float, 3, 3>* transformat
 }
 
 void decodeOutputs(const ov::Tensor& tensor, const int& img_w, const int& img_h, const Eigen::Matrix<float, 3, 3>& transform_matrix,
-                   std::vector<Armor>* armors) {
-    std::vector<Armor> tmp_armors;
+                   std::vector<InferenceResult>* inference_armors) {
+    std::vector<InferenceResult> tmp_armors;
     std::vector<GridAndStride> grid_strides;
     std::vector<int> strides = { 8, 16, 32 };
     auto* inference_result_ptr = tensor.data<float>();
@@ -42,9 +46,9 @@ void decodeOutputs(const ov::Tensor& tensor, const int& img_w, const int& img_h,
     if (tmp_armors.size() >= k_InferenceResultPollMaxVal)
         tmp_armors.resize(k_InferenceResultPollMaxVal);
 
-    nonMaximumSuppression(*armors, tmp_armors, k_NmsThreshold);
+    nonMaximumSuppression(*inference_armors, tmp_armors, k_NmsThreshold);
     // 用多个装甲板的四个顶点的均值作为最终值
-    for (auto& armor: *armors) {
+    for (auto& armor: *inference_armors) {
         if (armor.points.size() >= 8) {
             auto number = armor.points.size() / 4;
             cv::Point2f averaged_apex[4];  // 均值化后的装甲板四个顶点
@@ -74,7 +78,7 @@ void generateGridsAndStride(const int& target_w, const int& target_h, const std:
 
 void generateYoloxProposals(const float* inference_result_ptr, const std::vector<GridAndStride>& grid_strides,
                             const Eigen::Matrix<float, 3, 3>& transform_matrix, const float& probability_confidence_threshold,
-                            std::vector<Armor>* armors) {
+                            std::vector<InferenceResult>* inference_armors) {
     const int num_anchors = static_cast<int>(grid_strides.size());
     // Travel all the anchors
     for (int anchor_idx = 0; anchor_idx < num_anchors; anchor_idx++) {
@@ -105,13 +109,13 @@ void generateYoloxProposals(const float* inference_result_ptr, const std::vector
         float box_probability = inference_result_ptr[basic_pos + 8];
         // 筛选并生成装甲板对象
         if (box_probability >= probability_confidence_threshold) {
-            Armor armor;
-            Eigen::Matrix<float, 3, 4> apex_norm;  // 顶点
+            InferenceResult armor;
+            Eigen::Matrix<float, 3, 4> tmp_apex;  // 顶点
             Eigen::Matrix<float, 3, 4> armor_apex_destination;  // 目标顶点
-            apex_norm << x_1, x_2, x_3, x_4,
+            tmp_apex << x_1, x_2, x_3, x_4,
                          y_1, y_2, y_3, y_4,
                          1,   1,   1,   1;
-            armor_apex_destination = transform_matrix * apex_norm;
+            armor_apex_destination = transform_matrix * tmp_apex;
             for (int i = 0; i < 4; i++) {
                 armor.armor_apex[i] = cv::Point2f(armor_apex_destination(0, i), armor_apex_destination(1, i));
                 armor.points.push_back(armor.armor_apex[i]);
@@ -122,29 +126,29 @@ void generateYoloxProposals(const float* inference_result_ptr, const std::vector
             armor.color = box_color;
             armor.probability = box_probability;
 
-            armors->push_back(armor);
+            inference_armors->push_back(armor);
         }
 
     } // point anchor loo
 }
 
-void nonMaximumSuppression(std::vector<Armor>& selected_armors, std::vector<Armor>& armors, const float& threshold) {
+void nonMaximumSuppression(std::vector<InferenceResult>& selected_armors, std::vector<InferenceResult>& inference_armors, const float& threshold) {
     /**
      * @brief 计算交并比(iou)
      */
-    auto getIou = [threshold](const Armor& a, const Armor& b)->float {
+    auto getIou = [threshold](const InferenceResult& a, const InferenceResult& b)->float {
         float inter_area = (a.rect & b.rect).area();
         float union_area = (a.rect | b.rect).area();
         return inter_area / union_area;
     };
 
-    quicksort(armors, 0, static_cast<int>(armors.size()) - 1);
-    while (!armors.empty()) {
-        Armor& selected_armor = armors[0];
+    quicksort(inference_armors, 0, static_cast<int>(inference_armors.size()) - 1);
+    while (!inference_armors.empty()) {
+        InferenceResult& selected_armor = inference_armors[0];
         selected_armors.push_back(selected_armor);
-        armors.erase(armors.begin());
+        inference_armors.erase(inference_armors.begin());
         // 移除重叠区域大的边界框(en: Remove overlapping bounding boxes with large overlapping areas)
-        auto new_end = std::remove_if(armors.begin(), armors.end(), [&selected_armor, threshold, getIou](Armor& item)->bool {
+        auto new_end = std::remove_if(inference_armors.begin(), inference_armors.end(), [&selected_armor, threshold, getIou](InferenceResult& item)->bool {
             float iou = getIou(selected_armor, item);
             if (iou > k_UseToMeanIouThreshold &&
                 selected_armor.classification == item.classification &&
@@ -155,39 +159,39 @@ void nonMaximumSuppression(std::vector<Armor>& selected_armors, std::vector<Armo
             }
             return iou > threshold;
         });
-        armors.erase(new_end, armors.end());
-//        for (int i = static_cast<int>(armors.size()) - 1; i >= 0; --i) {
-//            auto& item = armors[i];
+        inference_armors.erase(new_end, inference_armors.end());
+//        for (int i = static_cast<int>(inference_armors.size()) - 1; i >= 0; --i) {
+//            auto& item = inference_armors[i];
 //            if (selected_armor.classification == item.classification &&
 //                selected_armor.color == item.color &&
 //                abs(selected_armor.probability - item.probability) < k_MergeConfidenceError &&
 //                getIou(selected_armor, item) > threshold) {
-//                    armors.erase(armors.begin() + i);
+//                    inference_armors.erase(inference_armors.begin() + i);
 //            }
 //        }
     }
 }
 
-void quicksort(std::vector<Armor>& armors, const int& left, const int& right) {
-    if (armors.empty() || left >= right)
+void quicksort(std::vector<InferenceResult>& inference_armors, const int& left, const int& right) {
+    if (inference_armors.empty() || left >= right)
         return;
 
-    float probability = armors[(left + right) / 2].probability;
+    float probability = inference_armors[(left + right) / 2].probability;
     int i = left;
     int j = right;
     while (i <= j) {
-        while (armors[i].probability > probability)
+        while (inference_armors[i].probability > probability)
             i++;
-        while (armors[j].probability < probability)
+        while (inference_armors[j].probability < probability)
             j--;
         if (i <= j) {
-            std::swap(armors[i], armors[j]);
+            std::swap(inference_armors[i], inference_armors[j]);
             i++;
             j--;
         }
     }
-    std::thread left_thread(quicksort, std::ref(armors), left, j);
-    std::thread right_thread(quicksort, std::ref(armors), i, right);
+    std::thread left_thread(quicksort, std::ref(inference_armors), left, j);
+    std::thread right_thread(quicksort, std::ref(inference_armors), i, right);
     left_thread.join();
     right_thread.join();
 }

@@ -10,14 +10,9 @@
 #ifndef ARMOR_AUTO_AIMING_PARSER_H
 #define ARMOR_AUTO_AIMING_PARSER_H
 
-#include <thread>
-#include <algorithm>
-
 #include <Eigen/Dense>
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
-
-#include <detector/inference.h>
 
 namespace armor_auto_aiming::inference_parser {
 struct GridAndStride {
@@ -50,10 +45,10 @@ cv::Mat scaledResize(const cv::Mat& src, Eigen::Matrix<float, 3, 3>* transformat
  * @param img_w[in] 原始src的宽高
  * @param img_h[in]
  * @param transform_matrix[in] 变换矩阵
- * @param armors[out] 装甲板对象
+ * @param inference_armors[out] 装甲板对象
  */
 void decodeOutputs(const ov::Tensor& tensor, const int& img_w, const int& img_h, const Eigen::Matrix<float, 3, 3>& transform_matrix,
-                   std::vector<Armor>* armors);
+                   std::vector<InferenceResult>* inference_armors);
 
 /**
  * @brief 生成用来解析的网格和步长
@@ -73,18 +68,18 @@ void generateGridsAndStride(const int& target_w, const int& target_h, const std:
  * @param grid_strides[in]
  * @param transform_matrix[in]
  * @param probability_confidence_threshold[in] 推理输出的边框的概率的阈值
- * @param armors[out]
+ * @param inference_armors[out]
  */
 void generateYoloxProposals(const float* inference_result_ptr, const std::vector<GridAndStride>& grid_strides,
                             const Eigen::Matrix<float, 3, 3>& transform_matrix, const float& probability_confidence_threshold,
-                            std::vector<Armor>* armors);
+                            std::vector<InferenceResult>* inference_armors);
 
-void nonMaximumSuppression(std::vector<Armor>& selected_armors, std::vector<Armor>& armors, const float& threshold);
+void nonMaximumSuppression(std::vector<InferenceResult>& selected_armors, std::vector<InferenceResult>& inference_armors, const float& threshold);
 
 /**
  * @brief 快速排序-降序
  */
-void quicksort(std::vector<Armor>& armors, const int& left, const int& right);
+void quicksort(std::vector<InferenceResult>& inference_armors, const int& left, const int& right);
 
 float quadrilateralArea(cv::Point2f points[4]);
 }

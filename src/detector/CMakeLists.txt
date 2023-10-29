@@ -1,5 +1,5 @@
 file(GLOB_RECURSE sources CONFIGURE_DEPENDS src/*.cpp include/*.h)
-add_library(detector ${sources})
+add_library(detector STATIC ${sources})
 set_target_properties(detector PROPERTIES
         LINKER_LANGUAGE CXX
         )

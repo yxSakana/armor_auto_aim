@@ -17,6 +17,7 @@
 #include <HikDriver/HikDriver.h>
 #include <HikDriver/HikReadThread.h>
 #include <detector/inference.h>
+#include <detector/parser.h>
 #include <debug_toolkit/draw_package.h>
 
 namespace {
@@ -41,16 +42,16 @@ TEST(test_detector, inferenct_parser) {
         while (true) {
             hik_read_thread.getRgbMat().copyTo(frame);
 
-            std::vector<armor_auto_aiming::Armor> armors;
-            bool status = inference.detect(frame, &armors);
+            std::vector<armor_auto_aiming::InferenceResult> inference_armors;
+            bool status = inference.inference(frame, &inference_armors);
             if (status) {
-                for (int i = 0; i < armors.size(); ++i) {
+                for (int i = 0; i < inference_armors.size(); ++i) {
                     for (int j = 0; j < 4; j++)
-                        cv::line(frame, armors[0].armor_apex[j], armors[0].armor_apex[(j + 1) % 4], cv::Scalar(0, 0, 255), 3);
+                        cv::line(frame, inference_armors[0].armor_apex[j], inference_armors[0].armor_apex[(j + 1) % 4], cv::Scalar(0, 0, 255), 3);
                 }
 
-                LOG(INFO) << "Detected!" << "size: " << armors.size() << std::endl;
-                LOG(INFO) << "armors: " << armors[0];
+                LOG(INFO) << "Detected!" << "size: " << inference_armors.size() << std::endl;
+                LOG(INFO) << "inference_armors: " << inference_armors[0];
             }
 
             cv::imshow("frame", frame);
@@ -64,8 +65,8 @@ TEST(test_detector, inferenct_parser) {
 //            video_capture >> frame;
 //            if (frame.empty())
 //                break;
-//            std::vector<armor_auto_aiming::Armor> armors;
-//            bool status = inference.detect(frame, &armors);
+//            std::vector<armor_auto_aiming::InferenceResult> armors;
+//            bool status = inference.inference(frame, &armors);
 //            if (status) {
 //                for (int j = 0; j < 4; j++)
 //                    cv::line(frame, armors[0].points[j], armors[0].points[(j + 1) % 4], cv::Scalar(255, 255, 255), 2);
@@ -83,7 +84,7 @@ TEST(test_parser, quicksort) {
     std::mt19937 rng;  // 使用 Mersenne Twister 引擎，也可以选择其他引擎
     std::uniform_real_distribution<float> distribution(0.0f, 1.0f);  // 生成 1 到 100 之间的整数
 
-    std::vector<armor_auto_aiming::Armor> v(10);
+    std::vector<armor_auto_aiming::InferenceResult> v(10);
     for (int i = 0; i < 10; ++i) {
         v[i].probability = distribution(rng);
         LOG(INFO) << "概率: " << v[i].probability << ", ";
