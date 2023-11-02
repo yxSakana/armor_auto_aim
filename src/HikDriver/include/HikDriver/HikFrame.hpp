@@ -27,10 +27,12 @@ public:
     explicit HikFrame(/*const unsigned int& _data_size*/)
 //        : m_data_size(_data_size)
     {}
+
     HikFrame(const HikFrame& other)
         : /*m_data_size(other.m_data_size),*/
           m_timestamp(other.m_timestamp)
     {}
+
     HikFrame(HikFrame&& other) noexcept
         : /*m_data_size(other.m_data_size),*/
           m_rgb_frame(std::move(other.m_rgb_frame)),
@@ -39,6 +41,7 @@ public:
 //        other.m_data_size = 0;
         other.m_timestamp = 0;
     }
+
     ~HikFrame() =default;
 
     [[nodiscard]] inline cv::Mat getRgbFrame() const { return m_rgb_frame; }

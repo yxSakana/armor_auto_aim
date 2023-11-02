@@ -51,6 +51,9 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
         detector
         )
 if (IS_ENABLE_GTEST STREQUAL "ON")
+    target_include_directories(${PROJECT_NAME} PUBLIC
+            test/test_utils/include
+            )
     target_link_libraries(${PROJECT_NAME} PUBLIC GTest::gtest_main)
     include(GoogleTest)
     gtest_discover_tests(${PROJECT_NAME})

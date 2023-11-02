@@ -26,6 +26,9 @@ TEST(test_pnp_solver, pnp) {
     // TODO: gtest改进
     HikDriver hik_driver(0);
     HikReadThread hik_read_thread(&hik_driver);
+    // 帧率测试
+    cv::TickMeter tick_meter;
+    double fps{};
 
     std::array<double, 9> intrinsic_matrix {
          1664.5, -7.7583, 743.8596,
@@ -50,8 +53,9 @@ TEST(test_pnp_solver, pnp) {
         std::this_thread::sleep_for(std::chrono::seconds(2));
 
         while (true) {
+            tick_meter.reset();
+            tick_meter.start();
             hik_read_thread.getRgbMat().copyTo(frame);
-
             std::vector<armor_auto_aiming::InferenceResult> inference_armors;
             std::vector<armor_auto_aiming::Armor> armors;
             bool status = inference.inference(frame, &inference_armors);
@@ -63,12 +67,17 @@ TEST(test_pnp_solver, pnp) {
                     armors.emplace_back(inference_armors[i]);
                     armor_auto_aiming::solver::SpatialLocation spatial_location{};
                     bool code = pnp_solver.obtain3dCoordinates(armors[i], spatial_location);
-                    LOG_IF(INFO, code) << spatial_location;
-                }
+                    LOG_IF_EVERY_N(INFO, code, 10) << spatial_location;
 
-                LOG(INFO) << "Detected!" << "size: " << inference_armors.size() << std::endl;
-                LOG(INFO) << "inference_armors: " << inference_armors[0];
+                    armor_auto_aiming::debug_toolkit::drawYawPitch(frame, spatial_location.yaw, spatial_location.pitch);
+                }
+//                LOG(INFO) << "Detected!" << "size: " << inference_armors.size() << std::endl;
+//                LOG(INFO) << "inference_armors: " << inference_armors[0];
             }
+
+            tick_meter.stop();
+            fps = 1.0 / tick_meter.getTimeSec();
+            LOG_EVERY_N(INFO, 5) << "FPS: " << fps;
 
             cv::imshow("frame", frame);
             cv::waitKey(1);

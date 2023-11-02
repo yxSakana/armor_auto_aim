@@ -57,7 +57,6 @@ void drawRotateRectWithOrderWithText(cv::Mat &src, const cv::RotatedRect &r_rect
     cv::putText(src, std::to_string(int(r_rect.angle)), r_rect.center, cv::FONT_HERSHEY_SIMPLEX, 3, color, thickness);
     cv::putText(src, std::to_string(int(r_rect.size.width)), cv::Point(r_rect.center.x + 80, r_rect.center.y + 80), cv::FONT_HERSHEY_SIMPLEX, 3, color, thickness);
     cv::putText(src, std::to_string(int(r_rect.size.height)), cv::Point(r_rect.center.x + 80, r_rect.center.y + 160), cv::FONT_HERSHEY_SIMPLEX, 3, color, thickness);
-
 }
 
 void drawRotatedRects(cv::Mat &src, const std::vector<cv::RotatedRect>& r_rects, const cv::Scalar& color, int thickness)
@@ -78,4 +77,18 @@ void drawRotateRectsWithOrderWithText(cv::Mat &src, const std::vector<cv::Rotate
         drawRotateRectWithOrderWithText(src, r_rect, color, thickness);
 }
 
+void drawYawPitch(const cv::Mat& src, const float& yaw, const float& pitch) {
+    auto width = static_cast<float>(src.cols);
+    auto height = static_cast<float>(src.rows);
+    cv::Mat canvas = cv::Mat::zeros(cv::Size(src.cols, src.rows), src.type());
+    cv::Scalar point_color(0, 0, 255);
+    cv::Point2f offer(width / 2, height / 2);
+
+    float w_rate = yaw / 90.0f;
+    float h_rate = pitch / 90.0f;
+    cv::Point2f point(width * w_rate, height * h_rate);
+    point += offer;
+    cv::circle(canvas, point, 6, point_color, -1);
+    cv::imshow("drawYawPitch", canvas);
+}
 }

@@ -42,14 +42,20 @@ bool PnPSolver::pnpSolver(const Armor& armor, cv::Mat& rvec, cv::Mat& tvec) {
 bool PnPSolver::obtain3dCoordinates(const Armor& armor, armor_auto_aiming::solver::SpatialLocation& spatial_location) {
     cv::Mat rvec, tvec;
     if (pnpSolver(armor, rvec, tvec)) {
+        auto correctEulerAngles = [](Eigen::Vector3d& euler_angles) {
+            euler_angles(2) = euler_angles(2) > 0? euler_angles(2) - M_PI: euler_angles(2) + M_PI;
+            euler_angles(0) = euler_angles(0) > 0? euler_angles(0) - M_PI: euler_angles(0) + M_PI;
+            euler_angles(0) = euler_angles(0) * (180.0f / M_PI);
+            euler_angles(1) = -euler_angles(1) * (180.0f / M_PI);
+            euler_angles(2) = -euler_angles(2) * (180.0f / M_PI);
+        };  // 转化为角度，调整正负与范围
         Eigen::Vector3d euler_angles = rotationVectorToEulerAngles(rvec);
+        correctEulerAngles(euler_angles);
 
-//        spatial_location.pitch = euler_angles(2);
-//        spatial_location.yaw = euler_angles(1);
-        // FIXME: pnp解算出的欧拉角
-        spatial_location.pitch = -static_cast<float>(euler_angles(2)) * (180.0f / M_PI);
-        spatial_location.yaw = -static_cast<float>(euler_angles(1)) * (180.0f / M_PI);
-        spatial_location.roll = static_cast<float>(euler_angles(0)) * (180.0f / M_PI);
+        // FIXME: pnp解算出的欧拉角, pitch yaw 是不是反了
+        spatial_location.pitch = static_cast<float>(euler_angles(1));
+        spatial_location.yaw = static_cast<float>(euler_angles(2));
+        spatial_location.roll = static_cast<float>(euler_angles(0));
         spatial_location.x = static_cast<float>(tvec.at<double>(0, 0));
         spatial_location.y = static_cast<float>(tvec.at<double>(1, 0));
         spatial_location.z = static_cast<float>(tvec.at<double>(2, 0));

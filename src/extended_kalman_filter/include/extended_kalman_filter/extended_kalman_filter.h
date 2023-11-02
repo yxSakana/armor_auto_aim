@@ -17,11 +17,27 @@
 namespace armor_auto_aiming {
 class ExtendedKalmanFilter {
     using NonlinearFunction = std::function<Eigen::VectorXd(const Eigen::VectorXd&)>;
-    using CovarianceMatrixFunction = std::function<Eigen::MatrixXd(const Eigen::VectorXd&)>;
+    using UpdateFunction = std::function<Eigen::MatrixXd(const Eigen::VectorXd&)>;
+    using UpdateFunctionVoid = std::function<Eigen::MatrixXd()>;
 public:
-//    ExtendedKalmanFilter(const NonlinearFunction& _f, const);
+    ExtendedKalmanFilter(const Eigen::MatrixXd& P0,
+                         const NonlinearFunction& _f, const NonlinearFunction& _h,
+                         const UpdateFunction& jacobian_f, const UpdateFunction& jacobian_h,
+                         const UpdateFunctionVoid& update_q, const UpdateFunction& update_r);
+
+    Eigen::MatrixXd update();
+
+    Eigen::MatrixXd predict(const Eigen::VectorXd& z);
+
+    const Eigen::VectorXd& getX() const { return X_prior; }
+    [[nodiscard]] const Eigen::MatrixXd& getP() const { return P_posterior; };
+    [[nodiscard]] const Eigen::MatrixXd& getH() const { return H; }
 private:
+    int n;  // System dimensions(系统尺寸)
+
     NonlinearFunction f;
+    UpdateFunction jacobian_f;
+    UpdateFunction jacobian_h;
     Eigen::VectorXd X_prior;
     Eigen::VectorXd X_posterior;
 
@@ -29,14 +45,14 @@ private:
     Eigen::MatrixXd P_prior;
     Eigen::MatrixXd P_posterior;
     Eigen::MatrixXd Q;  // Q is W * Q * W^T
-    CovarianceMatrixFunction update_Q;
+    UpdateFunctionVoid update_Q;
 
     Eigen::MatrixXd K;
     Eigen::MatrixXd I;
-    int n;  // System dimensions(系统尺寸)
 
+    Eigen::MatrixXd H;
     Eigen::MatrixXd R;  // R is V * R * V^T
-    CovarianceMatrixFunction update_R;
+    UpdateFunction update_R;
     NonlinearFunction h;
 };
 }

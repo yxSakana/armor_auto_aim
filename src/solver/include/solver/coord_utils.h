@@ -1,6 +1,6 @@
 /**
  * @projectName test_extended_kalman_filter
- * @file utils.cpp
+ * @file test_utils.cpp
  * @brief 
  * 
  * @author yx 
@@ -33,10 +33,10 @@ inline bool isRotationMatrixValid(const Eigen::Matrix3d& R) { return std::abs(R.
 Eigen::Vector3d rotationMatrixToEulerAngles(const Eigen::Matrix3d& R);
 
 /**
- * @brief 旋转向量(cv::Mat) -> 欧拉角
+ * @brief 旋转向量(cv::Mat) -> 欧拉角()
  *
  * @param rvec
- * @return
+ * @return Unit: radian; roll, yaw, pitch
  */
 Eigen::Vector3d rotationVectorToEulerAngles(const cv::Mat& rvec);
 }

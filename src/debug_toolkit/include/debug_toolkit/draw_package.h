@@ -25,6 +25,7 @@ void pointSequence(cv::Point2f points[4], const cv::Point2f& center);
 //void draw
 
 /**
+ * @brief 将旋转矩阵在图像上绘制出来
  *
  * @param src
  * @param r_rect
@@ -34,6 +35,7 @@ void pointSequence(cv::Point2f points[4], const cv::Point2f& center);
 void drawRotatedRect(cv::Mat &src, const cv::RotatedRect &r_rect, const cv::Scalar& color=cv::Scalar(255,255, 255), int thickness=3);
 
 /**
+ * @brief 将旋转矩阵在图像上绘制出来(并且会绘制出点的顺序)
  *
  * @param src
  * @param r_rect
@@ -43,6 +45,7 @@ void drawRotatedRect(cv::Mat &src, const cv::RotatedRect &r_rect, const cv::Scal
 void drawRotateRectWithText(cv::Mat &src, const cv::RotatedRect &r_rect, const cv::Scalar& color=cv::Scalar(255,255, 255), int thickness=3);
 
 /**
+ * @brief 将旋转矩阵在图像上绘制出来(会矫正各个点并绘制出点的顺序)
  *
  * @param src
  * @param r_rect
@@ -52,7 +55,7 @@ void drawRotateRectWithText(cv::Mat &src, const cv::RotatedRect &r_rect, const c
 void drawRotateRectWithOrderWithText(cv::Mat &src, const cv::RotatedRect &r_rect, const cv::Scalar& color=cv::Scalar(255,255, 255), int thickness=3);
 
 /**
- *
+ * @brief 多个旋转矩阵在图像上绘制出来
  * @param src
  * @param r_rects
  * @param color
@@ -61,6 +64,7 @@ void drawRotateRectWithOrderWithText(cv::Mat &src, const cv::RotatedRect &r_rect
 void drawRotatedRects(cv::Mat &src, const std::vector<cv::RotatedRect>& r_rects, const cv::Scalar& color=cv::Scalar(255,255, 255), int thickness=3);
 
 /**
+ * @brief 将多个旋转矩阵在图像上绘制出来(并且会绘制出点的顺序)
  *
  * @param src
  * @param r_rects
@@ -70,6 +74,7 @@ void drawRotatedRects(cv::Mat &src, const std::vector<cv::RotatedRect>& r_rects,
 void drawRotateRectsWithText(cv::Mat &src, const std::vector<cv::RotatedRect>& r_rects, const cv::Scalar& color=cv::Scalar(255,255, 255), int thickness=3);
 
 /**
+ * @brief 将多个旋转矩阵在图像上绘制出来(会矫正各个点并绘制出点的顺序)
  *
  * @param src
  * @param r_rects
@@ -77,6 +82,8 @@ void drawRotateRectsWithText(cv::Mat &src, const std::vector<cv::RotatedRect>& r
  * @param thickness
  */
 void drawRotateRectsWithOrderWithText(cv::Mat &src, const std::vector<cv::RotatedRect>& r_rects, const cv::Scalar& color=cv::Scalar(255,255, 255), int thickness=3);
+
+void drawYawPitch(const cv::Mat& src, const float& yaw, const float& pitch);
 }
 
 #endif //ARMOR_AUTO_AIMING_DRAW_PACKAGE_H

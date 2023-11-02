@@ -56,7 +56,7 @@ void ConsoleLogSink::send(google::LogSeverity severity, const char *full_filenam
 //    std::cout << info;
     std::cout << "(" << base_filename << ":" << line << ")"
               << color[toascii(severity)] << "[" << level_info[toascii(severity)] << "]" << reset_color
-              //                                    << thread_id_color << "(thread: " << std::this_thread::get_id() << ")" << reset_color
+              //<< thread_id_color << "(thread: " << std::this_thread::get_id() << ")" << reset_color
               << time_color << "[" << y << "-"
               << std::setw(2) << std::setfill('0') << m << "-"
               << std::setw(2) << std::setfill('0') << d << " "
@@ -69,7 +69,8 @@ void ConsoleLogSink::send(google::LogSeverity severity, const char *full_filenam
 GoogleLogger::GoogleLogger(const char *program)
         : m_console_log_sink(new ConsoleLogSink)
 {
-    google::InitGoogleLogging(program, CustomPrefix);
+    google::InitGoogleLogging(program);
+    FLAGS_stderrthreshold = 5;  // 设置默认控制台记录器级别阈值, 消除默认控制台记录器
     google::EnableLogCleaner(3);
     // 日志输出目录
     std::string pwd = std::filesystem::current_path().string();
@@ -90,7 +91,8 @@ GoogleLogger::GoogleLogger(int argc, char** argv)
     : m_console_log_sink(new ConsoleLogSink)
 {
     google::ParseCommandLineFlags(&argc, &argv, true);
-    google::InitGoogleLogging(argv[0], CustomPrefix);
+    google::InitGoogleLogging(argv[0]);
+    FLAGS_stderrthreshold = 5;  // 设置默认控制台记录器级别阈值, 消除默认控制台记录器
     google::EnableLogCleaner(3);
     // 日志输出目录 TODO: 当没有 log、log/info 等目录时会报错
     std::string pwd = std::filesystem::current_path().string();
