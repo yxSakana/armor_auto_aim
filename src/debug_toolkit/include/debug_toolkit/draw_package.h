@@ -1,5 +1,5 @@
 /**
- * @projectName armor_auto_aiming
+ * @projectName armor_auto_aim
  * @file draw_package.cpp
  * @brief 
  * 
@@ -14,7 +14,9 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui.hpp>
 
-namespace armor_auto_aiming::debug_toolkit {
+#include <armor_tracker/tracker.h>
+
+namespace armor_auto_aim::debug_toolkit {
 /**
  *
  * @param points
@@ -83,7 +85,22 @@ void drawRotateRectsWithText(cv::Mat &src, const std::vector<cv::RotatedRect>& r
  */
 void drawRotateRectsWithOrderWithText(cv::Mat &src, const std::vector<cv::RotatedRect>& r_rects, const cv::Scalar& color=cv::Scalar(255,255, 255), int thickness=3);
 
+/**
+ *
+ * @param src
+ * @param yaw
+ * @param pitch
+ */
 void drawYawPitch(const cv::Mat& src, const float& yaw, const float& pitch);
+
+/**
+ * @brief 绘制一帧的调试信息
+ *
+ * @param src
+ * @param fps
+ * @param timestamp
+ */
+void drawFrameInfo(cv::Mat& src, const double& fps, const int64_t& timestamp, const Tracker& tracker);
 }
 
 #endif //ARMOR_AUTO_AIMING_DRAW_PACKAGE_H

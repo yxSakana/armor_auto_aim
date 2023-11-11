@@ -20,15 +20,16 @@ endif ()
 
 # sub library
 #add_subdirectory(src/macro_definition)
+add_subdirectory(src/plot_client_http)
 add_subdirectory(src/debug_toolkit)
 add_subdirectory(src/thread_pool)
 add_subdirectory(src/google_logger)
 add_subdirectory(src/spdlog_factory)
 add_subdirectory(src/HikDriver)
-add_subdirectory(src/serial)
-add_subdirectory(src/extended_kalman_filter)
+add_subdirectory(src/serial_port)
+add_subdirectory(src/armor_tracker)
 add_subdirectory(src/solver)
-add_subdirectory(src/detector)
+add_subdirectory(src/armor_detector)
 
 if (IS_ENABLE_GTEST STREQUAL "ON")
     find_package(GTest REQUIRED)
@@ -40,15 +41,16 @@ add_executable(${PROJECT_NAME} ${sources})
 
 target_link_libraries(${PROJECT_NAME} PUBLIC
 #        macro_definition
+        plot_client_http
         debug_toolkit
         thread_pool
         google_logger
         spdlog_factory
         hik_driver
-        serial
-        extended_kalman_filter
+        serial_sort
+        armor_detector
+        armor_tracker
         solver
-        detector
         )
 if (IS_ENABLE_GTEST STREQUAL "ON")
     target_include_directories(${PROJECT_NAME} PUBLIC

@@ -1,5 +1,5 @@
 /**
- * @projectName armor_auto_aiming
+ * @projectName armor_auto_aim
  * @file test_solver.cpp
  * @brief 
  * 
@@ -16,8 +16,8 @@
 #include <google_logger/google_logger.h>
 #include <HikDriver/HikDriver.h>
 #include <HikDriver/HikReadThread.h>
-#include <detector/inference.h>
-#include <detector/parser.h>
+#include <armor_detector/inference.h>
+#include <armor_detector/parser.h>
 #include <debug_toolkit/draw_package.h>
 #include <solver/pnp_solver.h>
 
@@ -36,9 +36,9 @@ TEST(test_pnp_solver, pnp) {
          0.0, 573.37, 1.0
     };
     std::vector<double> distortion_vector { -0.44044, 0.2949, 0, -0.0042, 0 };
-    armor_auto_aiming::PnPSolver pnp_solver(intrinsic_matrix, distortion_vector);
+    armor_auto_aim::PnPSolver pnp_solver(intrinsic_matrix, distortion_vector);
 
-    armor_auto_aiming::Inference inference;
+    armor_auto_aim::Inference inference;
     inference.initModel("../model/opt-0527-001.xml");
 
     cv::namedWindow("frame", cv::WINDOW_NORMAL);
@@ -56,8 +56,8 @@ TEST(test_pnp_solver, pnp) {
             tick_meter.reset();
             tick_meter.start();
             hik_read_thread.getRgbMat().copyTo(frame);
-            std::vector<armor_auto_aiming::InferenceResult> inference_armors;
-            std::vector<armor_auto_aiming::Armor> armors;
+            std::vector<armor_auto_aim::InferenceResult> inference_armors;
+            std::vector<armor_auto_aim::Armor> armors;
             bool status = inference.inference(frame, &inference_armors);
             if (status) {
                 for (int i = 0; i < inference_armors.size(); ++i) {
@@ -65,11 +65,11 @@ TEST(test_pnp_solver, pnp) {
                         cv::line(frame, inference_armors[0].armor_apex[j], inference_armors[0].armor_apex[(j + 1) % 4],
                                  cv::Scalar(0, 0, 255), 3);
                     armors.emplace_back(inference_armors[i]);
-                    armor_auto_aiming::solver::SpatialLocation spatial_location{};
+                    armor_auto_aim::solver::Pose spatial_location{};
                     bool code = pnp_solver.obtain3dCoordinates(armors[i], spatial_location);
                     LOG_IF_EVERY_N(INFO, code, 10) << spatial_location;
 
-                    armor_auto_aiming::debug_toolkit::drawYawPitch(frame, spatial_location.yaw, spatial_location.pitch);
+                    armor_auto_aim::debug_toolkit::drawYawPitch(frame, spatial_location.yaw, spatial_location.pitch);
                 }
 //                LOG(INFO) << "Detected!" << "size: " << inference_armors.size() << std::endl;
 //                LOG(INFO) << "inference_armors: " << inference_armors[0];

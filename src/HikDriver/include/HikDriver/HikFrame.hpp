@@ -30,7 +30,8 @@ public:
 
     HikFrame(const HikFrame& other)
         : /*m_data_size(other.m_data_size),*/
-          m_timestamp(other.m_timestamp)
+          m_timestamp(other.m_timestamp),
+          m_rgb_frame(other.m_rgb_frame.clone())
     {}
 
     HikFrame(HikFrame&& other) noexcept
@@ -39,10 +40,18 @@ public:
           m_timestamp(other.m_timestamp)
     {
 //        other.m_data_size = 0;
-        other.m_timestamp = 0;
+//        other.m_timestamp = 0;
     }
 
     ~HikFrame() =default;
+
+    HikFrame& operator=(const HikFrame& other) {
+        if (this != &other) {
+            m_timestamp = other.m_timestamp;
+            m_rgb_frame = other.m_rgb_frame.clone();
+        }
+        return *this;
+    }
 
     [[nodiscard]] inline cv::Mat getRgbFrame() const { return m_rgb_frame; }
 

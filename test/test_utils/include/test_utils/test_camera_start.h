@@ -1,5 +1,5 @@
 /**
- * @projectName armor_auto_aiming
+ * @projectName armor_auto_aim
  * @file test_camera_start.cpp
  * @brief 
  * 
@@ -19,8 +19,8 @@
 #include <google_logger/google_logger.h>
 #include <HikDriver/HikDriver.h>
 #include <HikDriver/HikReadThread.h>
-#include <detector/inference.h>
-#include <detector/parser.h>
+#include <armor_detector/inference.h>
+#include <armor_detector/parser.h>
 #include <debug_toolkit/draw_package.h>
 #include <solver/pnp_solver.h>
 
@@ -31,8 +31,9 @@ protected:
 
         hik_driver = std::make_unique<HikDriver>(0);
         hik_read_thread = std::make_unique<HikReadThread>(hik_driver.get());
-        pnp_solver = std::make_unique<armor_auto_aiming::PnPSolver>(m_intrinsic_matrix, m_distortion_vector);
-        inference = std::make_unique<armor_auto_aiming::Inference>();
+//        hik_read_thread = new HikReadThread(hik_driver.get());
+        pnp_solver = std::make_unique<armor_auto_aim::PnPSolver>(m_intrinsic_matrix, m_distortion_vector);
+        inference = std::make_unique<armor_auto_aim::Inference>();
         inference->initModel("../model/opt-0527-001.xml");
 
         if (hik_driver->isConnected()) {
@@ -49,10 +50,11 @@ protected:
 public:
     std::unique_ptr<HikDriver> hik_driver;
     std::unique_ptr<HikReadThread> hik_read_thread;
-    std::unique_ptr<armor_auto_aiming::PnPSolver> pnp_solver;
-    std::unique_ptr<armor_auto_aiming::Inference> inference;
-    std::vector<armor_auto_aiming::InferenceResult> inference_armors;
-    std::vector<armor_auto_aiming::Armor> armors;
+//    HikReadThread* hik_read_thread;
+    std::unique_ptr<armor_auto_aim::PnPSolver> pnp_solver;
+    std::unique_ptr<armor_auto_aim::Inference> inference;
+    std::vector<armor_auto_aim::InferenceResult> inference_armors;
+    std::vector<armor_auto_aim::Armor> armors;
 
     cv::TickMeter tick_meter;
     cv::Mat frame;

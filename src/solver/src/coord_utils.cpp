@@ -1,5 +1,5 @@
 /**
- * @projectName armor_auto_aiming
+ * @projectName armor_auto_aim
  * @file coord_utils.cpp
  * @brief 
  * 
@@ -9,7 +9,7 @@
 
 #include <solver/coord_utils.h>
 
-namespace armor_auto_aiming {
+namespace armor_auto_aim {
 Eigen::Vector3d rotationMatrixToEulerAngles(const Eigen::Matrix3d& R) {
     double val = std::sqrt(R(0, 0) * R(0, 0) + R(1, 0) * R(1, 0));
     bool is_singular = val < 1e-6;  // 判断奇异性

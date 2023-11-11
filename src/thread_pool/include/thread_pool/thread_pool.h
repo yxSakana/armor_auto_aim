@@ -20,7 +20,7 @@
 #include <condition_variable>
 #include <stdexcept>
 
-namespace armor_auto_aiming {
+namespace armor_auto_aim {
 class ThreadPool {
 public:
     explicit ThreadPool(size_t pool_size=1);

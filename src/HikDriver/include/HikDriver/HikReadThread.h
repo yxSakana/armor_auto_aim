@@ -45,7 +45,7 @@ public:
         m_buffer = new unsigned char[m_data_size];
     }
 
-    const HikFrame& getFrame() {
+    HikFrame getFrame() {
         QReadLocker r_locker(&m_frame_lock);
         return m_frame;
     }

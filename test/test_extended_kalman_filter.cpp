@@ -1,5 +1,5 @@
 /**
- * @projectName armor_auto_aiming
+ * @projectName armor_auto_aim
  * @file test_extended_kalmen_filter.cpp
  * @brief 
  * 
@@ -8,7 +8,9 @@
  */
 
 #include <test_utils/test_camera_start.h>
-#include <extended_kalman_filter/extended_kalman_filter.h>
+#include <armor_tracker/extended_kalman_filter.h>
+#include <armor_tracker/tracker.h>
+#include <plot_client_http/ekf_plot.h>
 
 namespace {
 class TestKf : public TestCamera {
@@ -25,19 +27,26 @@ protected:
              0, 1,  0,  0,  0, 0,  // vx
              0, 0,  1,  dt, 0, 0,  // y
              0, 0,  0,  1,  0, 0,  // vy
-             0, 0,  0,  0,  0, dt, // z
+             0, 0,  0,  0,  1, dt, // z
              0, 0,  0,  0,  0,  1; // vz
         //     x  vx  y  vy  z  yz
         H <<   1, 0,  0, 0,  0, 0, // x
                0, 0,  1, 0,  0, 0, // y
-               0, 0,  0, 0,  0, 1; // z
+               0, 0,  0, 0,  1, 0; // z
         auto f = [this](const Eigen::MatrixXd& x)->Eigen::MatrixXd {
-            return ekf->getP() * x;
+            return tracker->ekf->getF() * x;
         };
         auto h = [this](const Eigen::MatrixXd& x)->Eigen::MatrixXd {
-            return ekf->getH() * x;
+            return tracker->ekf->getH() * x;
         };
         auto j_f = [this](const Eigen::MatrixXd&)->Eigen::MatrixXd {
+            //   x  vx  y  vy   z   yz
+            F << 1, dt, 0,  0,  0,  0,  // x
+                 0, 1,  0,  0,  0,  0,  // vx
+                 0, 0,  1,  dt, 0,  0,  // y
+                 0, 0,  0,  1,  0,  0,  // vy
+                 0, 0,  0,  0,  1,  dt, // z
+                 0, 0,  0,  0,  0,  1; // vz
             return F;
         };
         auto j_h = [this](const Eigen::MatrixXd&)->Eigen::MatrixXd {
@@ -50,18 +59,24 @@ protected:
             return R;
         };
 
-        ekf = std::make_unique<armor_auto_aiming::ExtendedKalmanFilter>(p0, f, h, j_f, j_h, update_Q, update_R);
+        tracker = std::make_unique<armor_auto_aim::Tracker>();
+        tracker->ekf = new armor_auto_aim::ExtendedKalmanFilter(p0, f, h, j_f, j_h, update_Q, update_R);
+        armor_auto_aim::ekf_plot::lineSystemCreateWindowRequest(&plot_client_http);
     }
 public:
-    std::unique_ptr<armor_auto_aiming::ExtendedKalmanFilter> ekf;
+    armor_auto_aim::PlotClientHttp plot_client_http;
+    std::unique_ptr<armor_auto_aim::Tracker> tracker;
+    HikFrame hik_frame;
+
     double dt{};
+    int64_t last_t = std::chrono::system_clock::now().time_since_epoch().count();
+
     Eigen::Matrix<double, 6, 6> F;
     Eigen::Matrix<double, 3, 6> H;
     Eigen::DiagonalMatrix<double, 6> Q;
     Eigen::DiagonalMatrix<double, 3> R;
     Eigen::VectorXd X;
     Eigen::VectorXd Z;
-private:
 };
 
 class TestEkf : public TestCamera {
@@ -70,7 +85,6 @@ protected:
         TestCamera::SetUp();
     }
 public:
-    std::unique_ptr<armor_auto_aiming::ExtendedKalmanFilter> ekf;
 };
 
 TEST_F(TestKf, line_system) {
@@ -82,9 +96,12 @@ TEST_F(TestKf, line_system) {
             tick_meter.start();
             // Main
 //            hik_read_thread->getRgbMat().copyTo(frame);
-            auto& hik_frame = hik_read_thread->getFrame();
-            hik_frame.getRgbFrame().copyTo(frame);
-            LOG(INFO) << "time stamp: " << hik_frame.getTimestamp();
+//            int64_t timestamp = 0;
+            hik_frame = hik_read_thread->getFrame();
+            frame = hik_frame.getRgbFrame();
+            int64_t timestamp = hik_frame.getTimestamp();
+            inference_armors.clear();
+            armors.clear();
 
             bool status = inference->inference(frame, &inference_armors);
             if (status) {
@@ -93,22 +110,32 @@ TEST_F(TestKf, line_system) {
                         cv::line(frame, inference_armors[0].armor_apex[j], inference_armors[0].armor_apex[(j + 1) % 4],
                                  cv::Scalar(0, 0, 255), 3);
                     // Create armors
-                    armors.emplace_back(inference_armors[i]);
+                    armors.emplace_back(armor_auto_aim::InferenceResult(inference_armors[i]));
                     // Pnp
-                    armor_auto_aiming::solver::SpatialLocation spatial_location{};
-                    bool code = pnp_solver->obtain3dCoordinates(armors[i], spatial_location);
-                    LOG_IF_EVERY_N(INFO, code, 10) << spatial_location;
-                    // kf
-                    Z << spatial_location.x, spatial_location.y, spatial_location.z;
-                    ekf->update();
-                    ekf->predict(Z);
-                    armor_auto_aiming::debug_toolkit::drawYawPitch(frame, spatial_location.yaw, spatial_location.pitch);
+                    bool code = pnp_solver->obtain3dCoordinates(armors[i], armors[i].pose);
+                    // debug draw
+//                    armor_auto_aim::debug_toolkit::drawYawPitch(frame, armors[i].pose.yaw, armors[i].pose.pitch);
                 }
+            }
+            // dt
+            dt = static_cast<double>(timestamp - last_t);
+            last_t = timestamp;
+            // tracker
+            if (tracker->state() == armor_auto_aim::TrackerStateMachine::State::Lost) {
+                tracker->initTracker(armors);
+            } else {
+                tracker->updateTracker(armors);
             }
             // Fps info
             tick_meter.stop();
             fps = 1.0 / tick_meter.getTimeSec();
-            LOG_EVERY_N(INFO, 5) << "FPS: " << fps;
+            armor_auto_aim::debug_toolkit::drawFrameInfo(frame, fps, timestamp, *tracker);
+
+            armor_auto_aim::ekf_plot::lineSystemPuhBackDataRequest(&plot_client_http, *tracker);
+
+//            LOG_EVERY_N(INFO, 15) << "Target State: " << tracker->getTargetSate();
+//            LOG_EVERY_N(INFO, 15) << "Target Measurement: " << tracker->measurement;
+            //            tracker->ekf->showInfo();
             cv::imshow("frame", frame);
             cv::waitKey(1);
         }

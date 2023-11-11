@@ -1,5 +1,5 @@
 /**
- * @projectName armor_auto_aiming
+ * @projectName armor_auto_aim
  * @file pnp_solver.cpp
  * @brief 
  * 
@@ -9,7 +9,7 @@
 
 #include <solver/pnp_solver.h>
 
-namespace armor_auto_aiming {
+namespace armor_auto_aim {
 PnPSolver::PnPSolver(const std::array<double, 9>& intrinsic_matrix,
                      const std::vector<double>& distortion_vector)
                      : m_intrinsic_matrix(cv::Mat(3, 3, CV_64F, const_cast<double*>(intrinsic_matrix.data())).clone()),
@@ -39,7 +39,7 @@ bool PnPSolver::pnpSolver(const Armor& armor, cv::Mat& rvec, cv::Mat& tvec) {
                         rvec, tvec, false, cv::SOLVEPNP_IPPE);  // cv::SOLVEPNP_ITERATIVE ?
 }
 
-bool PnPSolver::obtain3dCoordinates(const Armor& armor, armor_auto_aiming::solver::SpatialLocation& spatial_location) {
+bool PnPSolver::obtain3dCoordinates(const Armor& armor, armor_auto_aim::solver::Pose& spatial_location) {
     cv::Mat rvec, tvec;
     if (pnpSolver(armor, rvec, tvec)) {
         auto correctEulerAngles = [](Eigen::Vector3d& euler_angles) {
@@ -65,4 +65,4 @@ bool PnPSolver::obtain3dCoordinates(const Armor& armor, armor_auto_aiming::solve
         return false;
     }
 }
-} // armor_auto_aiming
+} // armor_auto_aim

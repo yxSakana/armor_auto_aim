@@ -1,5 +1,5 @@
 /**
- * @projectName armor_auto_aiming
+ * @projectName armor_auto_aim
  * @file test_main.cpp
  * @brief 
  * 
@@ -11,11 +11,10 @@
 #include <google_logger/google_logger.h>
 
 int main(int argc, char* argv[]) {
-    armor_auto_aiming::google_log::initGoogleLogger("armor_auto_aiming");
+    armor_auto_aim::google_log::initGoogleLogger("armor_auto_aim");
 
     testing::InitGoogleTest(&argc, argv);
     auto code = RUN_ALL_TESTS();
 
-    armor_auto_aiming::google_log::shutdownGoogleLogger();
     return code;
 }

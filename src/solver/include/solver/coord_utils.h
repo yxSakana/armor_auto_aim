@@ -15,7 +15,7 @@
 #include <opencv2/opencv.hpp>
 #include <opencv2/core/eigen.hpp>
 
-namespace armor_auto_aiming {
+namespace armor_auto_aim {
 /**
  * @brief 检查旋转矩阵是否为奇异矩阵
  *  即: 行列式 == 1? 奇异: 非 (Tips: 浮点数计算误差)

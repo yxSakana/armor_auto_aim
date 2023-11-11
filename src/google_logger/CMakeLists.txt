@@ -1,6 +1,6 @@
 file(GLOB_RECURSE sources CONFIGURE_DEPENDS src/*.cpp include/*.h)
 add_library(google_logger STATIC ${sources})
-set_target_properties(thread_pool PROPERTIES
+set_target_properties(google_logger PROPERTIES
         LINKER_LANGUAGE CXX
         )
 target_include_directories(google_logger PUBLIC include)

@@ -1,5 +1,5 @@
 /**
- * @projectName armor_auto_aiming
+ * @projectName armor_auto_aim
  * @file draw_package.cpp
  * @brief 
  * 
@@ -9,7 +9,7 @@
 
 #include <debug_toolkit/draw_package.h>
 
-namespace armor_auto_aiming::debug_toolkit {
+namespace armor_auto_aim::debug_toolkit {
 void pointSequence(cv::Point2f points[4], const cv::Point2f& center)
 {
     std::sort(points, points + 4, [&center](const cv::Point2f& p1, const cv::Point2f& p2){
@@ -90,5 +90,23 @@ void drawYawPitch(const cv::Mat& src, const float& yaw, const float& pitch) {
     point += offer;
     cv::circle(canvas, point, 6, point_color, -1);
     cv::imshow("drawYawPitch", canvas);
+}
+
+void drawFrameInfo(cv::Mat& src, const double& fps, const int64_t& timestamp, const Tracker& tracker) {
+    cv::Scalar text_color(255, 255, 255);
+    double foot_scale = 0.65;
+    int thickness = 1;
+    int y = 30;
+
+    cv::putText(src, std::to_string(static_cast<int>(fps)), cv::Point(20, y), cv::FONT_HERSHEY_SIMPLEX, foot_scale, text_color, thickness);
+    cv::putText(src, std::to_string(timestamp), cv::Point(90, y), cv::FONT_HERSHEY_SIMPLEX, foot_scale, text_color, thickness);
+    cv::putText(src, tracker.stateString(), cv::Point(350, y), cv::FONT_HERSHEY_SIMPLEX, foot_scale, text_color, thickness);
+
+    if (tracker.state() == armor_auto_aim::TrackerStateMachine::State::Tracking ||
+        tracker.state() == armor_auto_aim::TrackerStateMachine::State::TempLost) {
+        cv::Point2d predict_point(tracker.getTargetSate()(0), tracker.getTargetSate()(2));
+        cv::Scalar predict_point_color(0, 0, 255);
+        cv::circle(src, predict_point, 6, predict_point_color, -1);
+    }
 }
 }

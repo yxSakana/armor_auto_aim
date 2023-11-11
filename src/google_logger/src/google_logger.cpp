@@ -15,23 +15,19 @@
 
 #include <google_logger/google_logger.h>
 
-namespace armor_auto_aiming::google_log {
+namespace armor_auto_aim::google_log {
 void initGoogleLogger(int argc, char* argv[]) {
     if (!k_IsInitialized) {
-        k_GoogleLogger = new GoogleLogger(argc, argv);
+        k_GoogleLogger = std::make_unique<GoogleLogger>(argc, argv);
         k_IsInitialized = true;
     }
 }
 
 void initGoogleLogger(const char* program) {
     if (!k_IsInitialized) {
-        k_GoogleLogger = new GoogleLogger(program);
+        k_GoogleLogger = std::make_unique<GoogleLogger>(program);
         k_IsInitialized = true;
     }
-}
-
-void shutdownGoogleLogger() {
-    delete k_GoogleLogger;
 }
 
 void ConsoleLogSink::send(google::LogSeverity severity, const char *full_filename, const char *base_filename, int line,
@@ -46,14 +42,9 @@ void ConsoleLogSink::send(google::LogSeverity severity, const char *full_filenam
     const std::string reset_color("\033[0m");
     const std::string thread_id_color("\033[4m");
     const std::string time_color("\033[90m");
-    const std::array<std::string, 4> color {"\033[94m", "\033[93m", "\033[91m", "\033[101m"};
+    const std::array<std::string, 4> color {"\033[92m", "\033[93m", "\033[91m", "\033[101m"};
     const std::array<std::string, 4> level_info {"INFO", "WARNING", "ERROR", "FATAL"};
 
-//    std::string info = fmt::format("({0}:{1})", base_filename, line);
-//    info += fmt::format(fmt::fg(fmt::color::steel_blue), "[{}]", level_info[toascii(severity)]);
-//    info += fmt::format("{}-{:02}-{:02} {:02}:{:02}:{:02} ", y, m, d, h, min, s);
-//    info += fmt::format(fmt::fg(fmt::color::steel_blue), "{}", message);
-//    std::cout << info;
     std::cout << "(" << base_filename << ":" << line << ")"
               << color[toascii(severity)] << "[" << level_info[toascii(severity)] << "]" << reset_color
               //<< thread_id_color << "(thread: " << std::this_thread::get_id() << ")" << reset_color
@@ -69,7 +60,7 @@ void ConsoleLogSink::send(google::LogSeverity severity, const char *full_filenam
 GoogleLogger::GoogleLogger(const char *program)
         : m_console_log_sink(new ConsoleLogSink)
 {
-    google::InitGoogleLogging(program);
+    google::InitGoogleLogging(program, CustomPrefix);
     FLAGS_stderrthreshold = 5;  // 设置默认控制台记录器级别阈值, 消除默认控制台记录器
     google::EnableLogCleaner(3);
     // 日志输出目录
@@ -91,7 +82,7 @@ GoogleLogger::GoogleLogger(int argc, char** argv)
     : m_console_log_sink(new ConsoleLogSink)
 {
     google::ParseCommandLineFlags(&argc, &argv, true);
-    google::InitGoogleLogging(argv[0]);
+    google::InitGoogleLogging(argv[0], CustomPrefix);
     FLAGS_stderrthreshold = 5;  // 设置默认控制台记录器级别阈值, 消除默认控制台记录器
     google::EnableLogCleaner(3);
     // 日志输出目录 TODO: 当没有 log、log/info 等目录时会报错
@@ -110,10 +101,10 @@ GoogleLogger::GoogleLogger(int argc, char** argv)
 }
 
 GoogleLogger::~GoogleLogger() {
-    filesRecursively(m_info_log_dir);
-    filesRecursively(m_warning_log_dir);
-    filesRecursively(m_error_log_dir);
-    LOG(WARNING) << "删除部分日志!";  // TODO: 日志删除机制更改
+//    filesRecursively(m_info_log_dir);
+//    filesRecursively(m_warning_log_dir);
+//    filesRecursively(m_error_log_dir);
+//    LOG(WARNING) << "删除部分日志!";  // TODO: 日志删除机制更改
     google::ShutdownGoogleLogging();
 }
 
@@ -126,7 +117,7 @@ GoogleLogger::Timestamp::Timestamp(const std::string &timestamp) {
     sec = std::stoi(timestamp.substr(13, 2));
 }
 
-bool GoogleLogger::Timestamp::operator<(const armor_auto_aiming::google_log::GoogleLogger::Timestamp &t) const {
+bool GoogleLogger::Timestamp::operator<(const armor_auto_aim::google_log::GoogleLogger::Timestamp &t) const {
     if (year < t.year) return true; else if (year > t.year) return false;
     if (mon < t.mon) return true; else if (mon > t.mon) return false;
     if (day < t.day) return true;  else if (day > t.day) return false;
@@ -144,10 +135,9 @@ void GoogleLogger::CustomPrefix(std::ostream &os, const google::LogMessageInfo &
     int min = log_info.time.min();
     int s = log_info.time.sec();
 
-    os << fmt::format("[{}][{:04d}-{:02d}-{:02d} {:02d}:{:02d}:{:02d}]({}:{})",
-                      log_info.severity,
-                      y, m, d, h, min, s,
-                      log_info.filename, log_info.line_number);
+    os << fmt::format("({}:{})[{}][{:04d}-{:02d}-{:02d} {:02d}:{:02d}:{:02d}]",
+                      log_info.filename, log_info.line_number, log_info.severity,
+                      y, m, d, h, min, s);
 }
 
 void GoogleLogger::filesRecursively(const std::filesystem::path &path) {
@@ -181,4 +171,4 @@ void GoogleLogger::checkDirectory(const std::string& path) {
     if (!std::filesystem::exists(path))
         std::filesystem::create_directories(path);
 }
-} // armor_auto_aiming
+} // armor_auto_aim

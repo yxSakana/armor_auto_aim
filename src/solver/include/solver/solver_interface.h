@@ -1,5 +1,5 @@
 /**
- * @projectName armor_auto_aiming
+ * @projectName armor_auto_aim
  * @file interface.cpp
  * @brief 
  * 
@@ -12,20 +12,20 @@
 
 #include <ostream>
 
-namespace armor_auto_aiming::solver {
-    struct SpatialLocation {
+namespace armor_auto_aim::solver {
+    struct Pose {
         float pitch;
         float yaw;
         float roll;
         float x, y, z;
 
-        SpatialLocation() =default;
+        Pose() =default;
 
-        SpatialLocation(float p, float yaw, float r, float x, float y, float z)
+        Pose(float p, float yaw, float r, float x, float y, float z)
             : pitch(p), yaw(yaw), roll(r), x(x), y(y), z(z)
         {}
 
-        friend std::ostream& operator<<(std::ostream& os, const SpatialLocation& location) {
+        friend std::ostream& operator<<(std::ostream& os, const Pose& location) {
             os << "pitch: " << location.pitch
                << "; yaw: " << location.yaw
                << "; roll: " << location.roll

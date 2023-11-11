@@ -16,14 +16,12 @@
 #include <fmt/color.h>
 #include <glog/logging.h>
 
-namespace armor_auto_aiming::google_log {
+namespace armor_auto_aim::google_log {
 static bool k_IsInitialized = false;
 
 void initGoogleLogger(int argc, char* argv[]);
 
 void initGoogleLogger(const char* program);
-
-void shutdownGoogleLogger();
 
 /**
  * @brief 控制台日志
@@ -113,18 +111,18 @@ private:
     static void checkDirectory(const std::string& path);
 };
 
-static GoogleLogger* k_GoogleLogger;
+static std::unique_ptr<GoogleLogger> k_GoogleLogger;
 } // yx
 
 template <>
-struct fmt::formatter<armor_auto_aiming::google_log::GoogleLogger> {
+struct fmt::formatter<armor_auto_aim::google_log::GoogleLogger> {
     template <typename ParseContext>
     constexpr auto parse(ParseContext& ctx) {
         return ctx.begin();
     }
 
     template <typename FormatContext>
-    auto format(const armor_auto_aiming::google_log::GoogleLogger& google_logger, FormatContext& ctx) {
+    auto format(const armor_auto_aim::google_log::GoogleLogger& google_logger, FormatContext& ctx) {
         return fmt::format_to(ctx.out(),
                               "[(yx::GoogleLogger) -> (dir)info: {}; waning: {}; error: {}]",
                               google_logger.info_log_dir(),

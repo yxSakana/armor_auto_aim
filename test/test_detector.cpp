@@ -1,5 +1,5 @@
 /**
- * @projectName armor_auto_aiming
+ * @projectName armor_auto_aim
  * @file test_detector.cpp
  * @brief 
  * 
@@ -16,8 +16,8 @@
 #include <google_logger/google_logger.h>
 #include <HikDriver/HikDriver.h>
 #include <HikDriver/HikReadThread.h>
-#include <detector/inference.h>
-#include <detector/parser.h>
+#include <armor_detector/inference.h>
+#include <armor_detector/parser.h>
 #include <debug_toolkit/draw_package.h>
 
 namespace {
@@ -25,7 +25,7 @@ TEST(test_detector, inferenct_parser) {
     HikDriver hik_driver(0);
     HikReadThread hik_read_thread(&hik_driver);
 
-    armor_auto_aiming::Inference inference;
+    armor_auto_aim::Inference inference;
     inference.initModel("../model/opt-0527-001.xml");
 
     cv::namedWindow("frame", cv::WINDOW_NORMAL);
@@ -42,7 +42,7 @@ TEST(test_detector, inferenct_parser) {
         while (true) {
             hik_read_thread.getRgbMat().copyTo(frame);
 
-            std::vector<armor_auto_aiming::InferenceResult> inference_armors;
+            std::vector<armor_auto_aim::InferenceResult> inference_armors;
             bool status = inference.inference(frame, &inference_armors);
             if (status) {
                 for (int i = 0; i < inference_armors.size(); ++i) {
@@ -65,7 +65,7 @@ TEST(test_detector, inferenct_parser) {
 //            video_capture >> frame;
 //            if (frame.empty())
 //                break;
-//            std::vector<armor_auto_aiming::InferenceResult> armors;
+//            std::vector<armor_auto_aim::InferenceResult> armors;
 //            bool status = inference.inference(frame, &armors);
 //            if (status) {
 //                for (int j = 0; j < 4; j++)
@@ -84,13 +84,13 @@ TEST(test_parser, quicksort) {
     std::mt19937 rng;  // 使用 Mersenne Twister 引擎，也可以选择其他引擎
     std::uniform_real_distribution<float> distribution(0.0f, 1.0f);  // 生成 1 到 100 之间的整数
 
-    std::vector<armor_auto_aiming::InferenceResult> v(10);
+    std::vector<armor_auto_aim::InferenceResult> v(10);
     for (int i = 0; i < 10; ++i) {
         v[i].probability = distribution(rng);
         LOG(INFO) << "概率: " << v[i].probability << ", ";
     }
     LOG(INFO) << "-------";
-    armor_auto_aiming::inference_parser::quicksort(v, 0, v.size() - 1);
+    armor_auto_aim::inference_parser::quicksort(v, 0, v.size() - 1);
 
     for (int i = 0; i < 10; ++i) {
         LOG(INFO) << "概率: " << v[i].probability << ", ";
@@ -104,6 +104,6 @@ TEST(test_parser, quadrilateralArea) {
         cv::Point2f(10.0f, 7.0f),
         cv::Point2f(3.0f, 7.0f),
      };
-    LOG(INFO) << "result: " << armor_auto_aiming::inference_parser::quadrilateralArea(p);
+    LOG(INFO) << "result: " << armor_auto_aim::inference_parser::quadrilateralArea(p);
 }
 }

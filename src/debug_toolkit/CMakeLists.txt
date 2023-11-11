@@ -7,5 +7,7 @@ target_include_directories(debug_toolkit PUBLIC include)
 
 find_package(OpenCV REQUIRED)
 target_link_libraries(debug_toolkit PUBLIC
+        armor_tracker
+
         ${OpenCV_LIBS}
         )
