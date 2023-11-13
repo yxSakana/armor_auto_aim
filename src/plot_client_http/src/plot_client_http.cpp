@@ -25,8 +25,7 @@ PlotClientHttp::PlotClientHttp(const std::string& host, const int& port) \
 void PlotClientHttp::createWindowRequest(const nlohmann::json& json_data) {
     httplib::Result result = m_client.Post("/create_window", json_data.dump(), "application/json");
     if (result && result->status == 200) {
-        DLOG(INFO) << fmt::format("Create window({}/{}) successfully!",
-                                  json_data["figure_type"], json_data["window_name"]);
+        DLOG(INFO) << fmt::format("Create window({}) successfully!", to_string(json_data["window_name"]));
     } else {
         DLOG(ERROR) << fmt::format("Failed to send data: {}", to_string(result.error()));
     }

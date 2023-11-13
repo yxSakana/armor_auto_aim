@@ -9,7 +9,7 @@
 #define KDROBOTCPPLIBS_QTCOMPATIBILITYLAYER_H
 
 #include <spdlog/spdlog.h>
-#include <spdlog/fmt/ostr.h>
+//#include <spdlog/fmt/ostr.h>
 #include <spdlog/fmt/bin_to_hex.h>
 #include <QtCore>
 #include <QtNetwork/QHostAddress>

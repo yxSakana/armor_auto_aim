@@ -1,0 +1,25 @@
+{
+  "window_name": "template_window",
+  "rows": 1,
+  "cols": 2,
+  "multiple_axes": {
+    "00": {
+      "type": "realtime_comparison",
+      "property": {
+        "axes_title": "realtime_comparison_template_axes_00",
+        "data_name": "realtime_comparison_template_data_00",
+        "data_unit": "realtime_comparison_template_data_unit_00"
+      }
+    },
+    "01": {
+      "type": "realtime_position",
+      "property": {
+        "axes_title": "realtime_comparison_template_axes_01",
+        "x_data_name": "realtime_position_template_data_01",
+        "x_data_unit": "realtime_position_template_data_unit_01",
+        "y_data_name": "realtime_position_template_data_01",
+        "y_data_unit": "realtime_position_template_data_unit_01"
+      }
+    }
+  }
+}

@@ -7,6 +7,8 @@
   @author yx 
   @date 2023-11-10 20:47
 """
+
+import random
 import time
 
 import matplotlib
@@ -37,8 +39,9 @@ def update(frame):
     # 在这里更新物体的三维坐标
     # 这里简单地使用 frame 参数作为时间步来模拟动态效果
     ax.clear()
-    new_x, new_y, new_z = x + frame * 0.1, y + frame * 0.1, z + frame * 0.1
+    new_x, new_y, new_z = random.uniform(-30, 30), random.uniform(-30, 30), random.uniform(-30, 30)
     print(new_x, new_y, new_z)
+    ax.scatter(0, 0, 0, c='r', marker='o')
     ax.scatter(new_x, new_y, new_z, c='r', marker='o')
     time.sleep(0.5)
     scatter.set_offsets([[new_x, new_y, new_z]])
@@ -49,4 +52,3 @@ animation = FuncAnimation(fig, update, frames=range(100), interval=100)
 
 # 显示图形
 plt.show()
-

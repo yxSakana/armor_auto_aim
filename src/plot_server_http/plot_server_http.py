@@ -10,7 +10,8 @@
 
 import sys
 import threading
-from typing import Dict, List
+from pprint import pprint
+from typing import Dict, List, Union
 
 from loguru import logger
 from PyQt5.Qt import QApplication
@@ -19,44 +20,39 @@ import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 
 from units.log_configure import init_logger_configure
-from plot.real_time_comparison_image import RealTimeComparisonImage
+from plot.realtime_comparison import RealtimeComparisonAxesProperty, RealtimeComparisonAxes
+from plot.realtime_position import RealtimePositionAxesProperty, RealtimePositionAxes
 from ui.plot_ui import PlotUi
 
 app = Flask(__name__)
 k_FigurePool: Dict = {
-    "real_time_comparison": {}
 }
 
 
 @app.route("/create_window", methods=["POST"])
 def create_window():
-    if request.is_json:
-        data = request.get_json()
-        figure_type = data["figure_type"]
-        window_name = data["window_name"]
-        if k_FigurePool.get(figure_type) is None:
-            return f"Failed: figure_type {figure_type}", 201
+    if not request.is_json:
+        return "No Json Data", 1
 
-        if figure_type == "real_time_comparison":
-            if k_FigurePool[figure_type].get(window_name) is None:
-                figure = plt.figure(figsize=(16, 10))
-                grid_spec = gridspec.GridSpec(data["rows"], data["cols"])
-                k_FigurePool[figure_type][window_name] = {}
-                k_FigurePool[figure_type][window_name]["figure"] = figure
-                k_FigurePool[figure_type][window_name]["grid_spec"] = grid_spec
-                k_FigurePool[figure_type][window_name]["master"]: List = []
+    data: Dict = request.get_json()
+    window_name = data.pop("window_name")
+    if window_name in k_FigurePool.keys():
+        return "Existed!", 200,
 
-                index = 0
-                for row in range(int(data["rows"])):
-                    for col in range(int(data["cols"])):
-                        k_FigurePool[figure_type][window_name]["master"].append(
-                            RealTimeComparisonImage(figure, grid_spec, row, col,
-                                                    data["title"][index], data["val_name"][index],
-                                                    data["val_unit"][index], data["val_label"][index])
-                        )
-                        index += 1
-        logger.info(f"create window successful! {figure_type}:{window_name}")
-    return "", 200
+    k_FigurePool[window_name] = data.copy()
+    rows = int(k_FigurePool[window_name]["rows"])
+    cols = int(k_FigurePool[window_name]["cols"])
+    figure: plt.Figure = k_FigurePool[window_name].get("figure", plt.Figure())
+    grid_spec: plt.GridSpec = k_FigurePool[window_name].get("grid_spec", gridspec.GridSpec(rows, cols))
+    k_FigurePool[window_name]["figure"] = figure
+    k_FigurePool[window_name]["grid_spec"] = grid_spec
+    for row in range(rows):
+        for col in range(cols):
+            current = k_FigurePool[window_name]["multiple_axes"][f"{row}{col}"]
+            current["axes"] = create_axes(figure, grid_spec, row, col, current)
+
+    pprint(k_FigurePool)
+    return f"Create window success: {window_name}", 200
 
 
 @app.route("/add_data", methods=["POST"])
@@ -65,23 +61,33 @@ def add_data():
         return f"Failed: data is not json", 202
 
     data = request.get_json()
-    figure_type = data["figure_type"]
     window_name = data["window_name"]
-    if k_FigurePool.get(figure_type) is None:
-        return f"Failed: figure_type {figure_type}", 201
-    if k_FigurePool[figure_type].get(window_name) is None:
-        return f"Failed: window_name is None: {window_name}", 202
+    row = data["row"]
+    col = data["col"]
+    new_data = data["data"]
 
-    for index, master in enumerate(k_FigurePool[figure_type][window_name]["master"]):
-        master.push_back(data["data"][index])
-    plt.savefig("figure.jpg")
-    plot_ui.set_plot_image("figure.jpg")
-    return "OK", 200
+    k_FigurePool[window_name]["multiple_axes"][f"{row}{col}"]["axes"].update_data(new_data)
+    plt.savefig("./figure.jpg")
+    plot_ui.set_plot_image("./figure.jpg")
+    return f"Update data success: {window_name}-{row}:{col}", 200
 
 
 @app.route("/test", methods=["GET"])
 def test():
     return "Hello, World!", 200
+
+
+def create_axes(_figure: plt.Figure, _grid_spec: plt.GridSpec, _row: int, _col: int,
+                _axes_property: Dict) -> Union[RealtimeComparisonAxes]:
+    if _axes_property["type"] == "realtime_comparison":
+        axes_title = _axes_property["property"]["axes_title"]
+        data_name = _axes_property["property"]["data_name"]
+        data_unit = _axes_property["property"]["data_unit"]
+        axes = RealtimeComparisonAxes.create_axes(_figure, _grid_spec, _row, _col)
+        axes_property = RealtimeComparisonAxesProperty(axes_title, data_name, data_unit)
+        return RealtimeComparisonAxes(axes, axes_property)
+    else:
+        logger.error(f"Unknown type{_axes_property['type']}")
 
 
 def run():
@@ -93,8 +99,8 @@ if __name__ == "__main__":
     plt.subplots_adjust(hspace=1)
     q_app = QApplication(sys.argv)
 
-    plot_ui = PlotUi()
     threading.Thread(target=run).start()
+    plot_ui = PlotUi()
     plot_ui.show()
 
     q_app.exec_()
