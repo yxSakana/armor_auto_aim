@@ -94,7 +94,7 @@ def test():
 
 
 def run():
-    plot_ui_factory.get_ui_sign.emit("test_new")
+    # plot_ui_factory.get_ui_sign.emit("test_new")
     app.run(host="127.0.0.1", port=12222)
     # plot_ui_factory.ui_factory["test_new"].show()
     # plot_ui.show()
@@ -106,9 +106,9 @@ if __name__ == "__main__":
     q_app = QApplication(sys.argv)
 
     # plot_ui = PlotUi()
-    plot_ui_factory = PlotUiFactory()
+    # plot_ui_factory = PlotUiFactory()
     threading.Thread(target=run).start()
-    # plot_ui = PlotUi()
-    # plot_ui.show()
+    plot_ui = PlotUi()
+    plot_ui.show()
 
     q_app.exec_()
