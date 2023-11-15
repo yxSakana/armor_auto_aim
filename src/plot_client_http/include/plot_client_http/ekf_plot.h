@@ -16,7 +16,7 @@
 namespace armor_auto_aim::ekf_plot {
 void lineSystemCreateWindowRequest(PlotClientHttp* plot_client_http);
 
-void lineSystemPuhBackDataRequest(PlotClientHttp* plot_client_http, const Tracker& tracker);
+void lineSystemUpdateDataRequest(PlotClientHttp* plot_client_http, const Tracker& tracker);
 } // armor_auto_aim
 
 #endif //ARMOR_AUTO_AIMING_EKF_PLOT_H

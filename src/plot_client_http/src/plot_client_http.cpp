@@ -31,7 +31,7 @@ void PlotClientHttp::createWindowRequest(const nlohmann::json& json_data) {
     }
 }
 
-void PlotClientHttp::puhBackDataRequest(const nlohmann::json& json_data) {
+void PlotClientHttp::updateDateRequest(const nlohmann::json& json_data) {
     httplib::Result result = m_client.Post("/add_data", json_data.dump(), "application/json");
     if (result && result->status == 200) {
         DLOG(INFO) << "Send data successfully!";

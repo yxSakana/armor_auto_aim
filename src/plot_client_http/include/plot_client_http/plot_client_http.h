@@ -20,7 +20,7 @@ public:
 
     void createWindowRequest(const nlohmann::json& json_data);
 
-    void puhBackDataRequest(const nlohmann::json& json_data);
+    void updateDateRequest(const nlohmann::json& json_data);
 private:
     httplib::Client m_client;
 };

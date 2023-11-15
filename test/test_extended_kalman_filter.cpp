@@ -11,6 +11,7 @@
 #include <armor_tracker/extended_kalman_filter.h>
 #include <armor_tracker/tracker.h>
 #include <plot_client_http/ekf_plot.h>
+#include <thread_pool/thread_pool.h>
 
 namespace {
 class TestKf : public TestCamera {
@@ -67,6 +68,7 @@ public:
     armor_auto_aim::PlotClientHttp plot_client_http;
     std::unique_ptr<armor_auto_aim::Tracker> tracker;
     HikFrame hik_frame;
+    armor_auto_aim::ThreadPool thread_pool;
 
     double dt{};
     int64_t last_t = std::chrono::system_clock::now().time_since_epoch().count();
@@ -129,9 +131,10 @@ TEST_F(TestKf, line_system) {
             // Fps info
             tick_meter.stop();
             fps = 1.0 / tick_meter.getTimeSec();
-            armor_auto_aim::debug_toolkit::drawFrameInfo(frame, fps, timestamp, *tracker);
+            armor_auto_aim::debug_toolkit::drawFrameInfo(frame, armors, *tracker, fps, timestamp);
 
-            armor_auto_aim::ekf_plot::lineSystemPuhBackDataRequest(&plot_client_http, *tracker);
+            thread_pool.enqueue(armor_auto_aim::ekf_plot::lineSystemUpdateDataRequest, &plot_client_http, *tracker);
+//            armor_auto_aim::ekf_plot::lineSystemUpdateDataRequest(&plot_client_http, *tracker);
 
 //            LOG_EVERY_N(INFO, 15) << "Target State: " << tracker->getTargetSate();
 //            LOG_EVERY_N(INFO, 15) << "Target Measurement: " << tracker->measurement;

@@ -4,7 +4,7 @@
  * @date 2021年1月13日
  */
 
-#include <serial_sort/CRC.h>
+#include <serial_port/CRC.h>
 
 namespace armor_auto_aim {
     static const uint8_t CRC8_INIT = 0xff;

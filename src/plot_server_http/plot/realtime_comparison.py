@@ -33,7 +33,7 @@ class RealtimeComparisonAxes(RealtimeAxesInterface):
         self.t_data: List = []
         self.measurement_data: List = []
         self.prediction_data: List = []
-        self.ShowMaxTimeThreshold: int = 30
+        self.ShowMaxTimeThreshold: int = 10
         self.measurement_data_setter: plt.Line2D = self.axes.plot(
             self.t_data, self.measurement_data, color="green", label="measurement")[0]
         self.prediction_data_setter: plt.Line2D = self.axes.plot(
@@ -63,10 +63,13 @@ class RealtimeComparisonAxes(RealtimeAxesInterface):
             if len(item) > self.ShowMaxTimeThreshold:
                 item.pop(0)
 
-        self.measurement_data_setter: plt.Line2D = self.axes.plot(
-            self.t_data, self.measurement_data, color="green", label="measurement")[0]
-        self.prediction_data_setter: plt.Line2D = self.axes.plot(
-            self.t_data, self.prediction_data, color="orange", label="prediction", linestyle="--")[0]
+        self.measurement_data_setter.set_data(self.t_data, self.measurement_data)
+        self.prediction_data_setter.set_data(self.t_data, self.prediction_data)
+        self.prediction_data_setter.figure.canvas.draw()
+        # self.measurement_data_setter: plt.Line2D = self.axes.plot(
+        #     self.t_data, self.measurement_data, color="green", label="measurement")[0]
+        # self.prediction_data_setter: plt.Line2D = self.axes.plot(
+        #     self.t_data, self.prediction_data, color="orange", label="prediction", linestyle="--")[0]
         if len(self.t_data) != 1:
             self.axes.set_xlim(left=self.t_data[0], right=self.t_data[-1])
 
@@ -79,17 +82,29 @@ if __name__ == "__main__":
     import matplotlib
     from matplotlib.animation import FuncAnimation
 
+    from plot.realtime_factory import RealtimeFactory
+
     matplotlib.use("TKAgg")
 
+    axes_property = {
+        'property': {
+            'axes_title': 'track armor x',
+            'data_name': 'xa',
+            'data_unit': 'm'
+        },
+        'type': 'realtime_comparison'
+    }
     figure: plt.Figure = plt.figure()
-    grid_spec: gridspec.GridSpec = gridspec.GridSpec(1, 1)
-    axes_property = RealtimeComparisonAxesProperty("axes_title")
-    realtime_position_axes = RealtimeComparisonAxes(RealtimeComparisonAxes.create_axes(figure, grid_spec, 0, 0), axes_property)
+    grid_spec: gridspec.GridSpec = gridspec.GridSpec(1, 3)
+    axes1 = RealtimeFactory.create_axes(figure, grid_spec, 0, 0, axes_property)
+    axes2 = RealtimeFactory.create_axes(figure, grid_spec, 0, 1, axes_property)
+    axes3 = RealtimeFactory.create_axes(figure, grid_spec, 0, 2, axes_property)
 
 
     def func(i):
-        data = random.uniform(-30, 30), random.uniform(-30, 30)
-        realtime_position_axes.update_data(data)
+        axes1.update_data((random.uniform(-30, 30), random.uniform(-30, 30)))
+        axes2.update_data((random.uniform(-30, 30), random.uniform(-30, 30)))
+        axes3.update_data((random.uniform(-30, 30), random.uniform(-30, 30)))
 
         time.sleep(0.2)
 

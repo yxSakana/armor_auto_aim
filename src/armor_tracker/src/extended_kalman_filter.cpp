@@ -21,7 +21,7 @@ ExtendedKalmanFilter::ExtendedKalmanFilter(
           f(_f), h(_h),
           jacobian_f(jacobian_f), jacobian_h(jacobian_h),
           update_Q(update_q), update_R(update_r) {
-    LOG(INFO) << P_posterior;
+//    LOG(INFO) << P_posterior;
 }
 
 Eigen::MatrixXd ExtendedKalmanFilter::update() {

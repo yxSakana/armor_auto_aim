@@ -100,7 +100,8 @@ void drawYawPitch(const cv::Mat& src, const float& yaw, const float& pitch);
  * @param fps
  * @param timestamp
  */
-void drawFrameInfo(cv::Mat& src, const double& fps, const int64_t& timestamp, const Tracker& tracker);
+void drawFrameInfo(cv::Mat& src, const std::vector<Armor>& armors, const Tracker& tracker,
+                   const double& fps, const int64_t& timestamp);
 }
 
 #endif //ARMOR_AUTO_AIMING_DRAW_PACKAGE_H

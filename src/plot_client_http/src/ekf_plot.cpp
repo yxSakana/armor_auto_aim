@@ -48,7 +48,7 @@ void lineSystemCreateWindowRequest(PlotClientHttp* plot_client_http) {
     plot_client_http->createWindowRequest(create_window_data);
 }
 
-void lineSystemPuhBackDataRequest(PlotClientHttp* plot_client_http, const Tracker& tracker) {
+void lineSystemUpdateDataRequest(PlotClientHttp* plot_client_http, const Tracker& tracker) {
     if (tracker.state() == armor_auto_aim::TrackerStateMachine::State::Tracking ||
         tracker.state() == armor_auto_aim::TrackerStateMachine::State::TempLost) {
         Eigen::VectorXd measurement = tracker.measurement;
@@ -62,11 +62,9 @@ void lineSystemPuhBackDataRequest(PlotClientHttp* plot_client_http, const Tracke
         };
         for (int i = 0; i < measurement.size(); i++) {
             json_data["col"] = std::to_string(i);
-            json_data["data"].push_back(nlohmann::json::array({measurement(i), target_state_position(i)}));
+            json_data["data"] = nlohmann::json::array({measurement(i), target_state_position(i)});
+            plot_client_http->updateDateRequest(json_data);
         }
-//        LOG(INFO) << "Target State: " << target_state;
-//        LOG(INFO) << fmt::format("measurement size: {}, json data: {}", measurement.size(), json_data.dump());
-        plot_client_http->puhBackDataRequest(json_data);
     }
 }
 } // armor_auto_aim
