@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 from mpl_toolkits import axisartist
 
-from plot.realtime_interface import RealtimeAxesInterface
+from custom_axes.realtime_interface import RealtimeAxesInterface
 
 
 class RealtimeComparisonAxesProperty(object):
@@ -66,9 +66,9 @@ class RealtimeComparisonAxes(RealtimeAxesInterface):
         self.measurement_data_setter.set_data(self.t_data, self.measurement_data)
         self.prediction_data_setter.set_data(self.t_data, self.prediction_data)
         self.prediction_data_setter.figure.canvas.draw()
-        # self.measurement_data_setter: plt.Line2D = self.axes.plot(
+        # self.measurement_data_setter: plt.Line2D = self.axes.custom_axes(
         #     self.t_data, self.measurement_data, color="green", label="measurement")[0]
-        # self.prediction_data_setter: plt.Line2D = self.axes.plot(
+        # self.prediction_data_setter: plt.Line2D = self.axes.custom_axes(
         #     self.t_data, self.prediction_data, color="orange", label="prediction", linestyle="--")[0]
         if len(self.t_data) != 1:
             self.axes.set_xlim(left=self.t_data[0], right=self.t_data[-1])
@@ -82,7 +82,7 @@ if __name__ == "__main__":
     import matplotlib
     from matplotlib.animation import FuncAnimation
 
-    from plot.realtime_factory import RealtimeFactory
+    from custom_axes.realtime_factory import RealtimeFactory
 
     matplotlib.use("TKAgg")
 

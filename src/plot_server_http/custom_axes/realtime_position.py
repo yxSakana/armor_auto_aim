@@ -10,7 +10,7 @@
 
 import random
 from typing import Tuple, List
-from plot.realtime_interface import RealtimeAxesInterface
+from custom_axes.realtime_interface import RealtimeAxesInterface
 
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
