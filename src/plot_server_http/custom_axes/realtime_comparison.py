@@ -9,6 +9,7 @@
 """
 
 import random
+import sys
 import time
 from typing import Tuple, List
 
@@ -52,8 +53,6 @@ class RealtimeComparisonAxes(RealtimeAxesInterface):
         self.axes.legend()
 
     def update_data(self, data: Tuple[float, float]):
-        self.measurement_data_setter.remove()
-        self.prediction_data_setter.remove()
         self.measurement_data.append(data[0])
         self.prediction_data.append(data[1])
         t = self.t_data[-1] + 1 if self.t_data else 0
@@ -61,17 +60,13 @@ class RealtimeComparisonAxes(RealtimeAxesInterface):
 
         for item in [self.t_data, self.measurement_data, self.prediction_data]:
             if len(item) > self.ShowMaxTimeThreshold:
-                item.pop(0)
+                item = item[len(item) - self.ShowMaxTimeThreshold:]
 
         self.measurement_data_setter.set_data(self.t_data, self.measurement_data)
         self.prediction_data_setter.set_data(self.t_data, self.prediction_data)
-        self.prediction_data_setter.figure.canvas.draw()
-        # self.measurement_data_setter: plt.Line2D = self.axes.custom_axes(
-        #     self.t_data, self.measurement_data, color="green", label="measurement")[0]
-        # self.prediction_data_setter: plt.Line2D = self.axes.custom_axes(
-        #     self.t_data, self.prediction_data, color="orange", label="prediction", linestyle="--")[0]
-        if len(self.t_data) != 1:
-            self.axes.set_xlim(left=self.t_data[0], right=self.t_data[-1])
+        # if len(self.t_data) != 1:
+        #     self.axes.set_xlim(left=self.t_data[0], right=self.t_data[-1])
+        # self.axes.set_ylim(bottom=-4, top=4)
 
     @staticmethod
     def create_axes(_figure: plt.Figure, _grid_spec: gridspec.GridSpec, _row: int, _col: int):
@@ -106,7 +101,7 @@ if __name__ == "__main__":
         axes2.update_data((random.uniform(-30, 30), random.uniform(-30, 30)))
         axes3.update_data((random.uniform(-30, 30), random.uniform(-30, 30)))
 
-        time.sleep(0.2)
+        # time.sleep(0.2)
 
 
     a = FuncAnimation(figure, func, interval=100, cache_frame_data=False)

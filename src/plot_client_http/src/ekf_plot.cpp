@@ -37,8 +37,8 @@ void lineSystemCreateWindowRequest(PlotClientHttp* plot_client_http) {
                 {"02", {
                      { "type", "realtime_comparison" },
                      { "property", {
-                       { "axes_title", "track armor y" },
-                       { "data_name", "ya" },
+                       { "axes_title", "track armor z" },
+                       { "data_name", "za" },
                        { "data_unit", "m" }
                    }},
                 }},
