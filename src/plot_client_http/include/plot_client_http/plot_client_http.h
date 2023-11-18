@@ -21,8 +21,11 @@ public:
     void createWindowRequest(const nlohmann::json& json_data);
 
     void updateDateRequest(const nlohmann::json& json_data);
+
+    [[nodiscard]] inline bool isConnected() const { return m_is_connected; };
 private:
     httplib::Client m_client;
+    bool m_is_connected = false;
 };
 }
 

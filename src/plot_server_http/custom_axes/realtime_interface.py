@@ -14,6 +14,10 @@ import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 
 
+class RealtimeAxesProperty(ABC):
+    pass
+
+
 class RealtimeAxesInterface(ABC):
     def __init__(self, _axes: Any, axes_property: Any):
         self.axes = _axes

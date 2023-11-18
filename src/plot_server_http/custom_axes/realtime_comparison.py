@@ -17,10 +17,10 @@ import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 from mpl_toolkits import axisartist
 
-from custom_axes.realtime_interface import RealtimeAxesInterface
+from custom_axes.realtime_interface import RealtimeAxesInterface, RealtimeAxesProperty
 
 
-class RealtimeComparisonAxesProperty(object):
+class RealtimeComparisonAxesProperty(RealtimeAxesProperty):
     def __init__(self, axes_title: str, data_name: str = "y", data_unit: str = "m"):
         self.axes_title = axes_title
         self.data_name = data_name
@@ -34,7 +34,11 @@ class RealtimeComparisonAxes(RealtimeAxesInterface):
         self.t_data: List = []
         self.measurement_data: List = []
         self.prediction_data: List = []
-        self.ShowMaxTimeThreshold: int = 10
+
+        self.ShowMaxTimeThreshold: int = 40
+        self.ylim_min = 10000
+        self.ylim_max = -10000
+
         self.measurement_data_setter: plt.Line2D = self.axes.plot(
             self.t_data, self.measurement_data, color="green", label="measurement")[0]
         self.prediction_data_setter: plt.Line2D = self.axes.plot(
@@ -53,20 +57,29 @@ class RealtimeComparisonAxes(RealtimeAxesInterface):
         self.axes.legend()
 
     def update_data(self, data: Tuple[float, float]):
+        # append data
         self.measurement_data.append(data[0])
         self.prediction_data.append(data[1])
         t = self.t_data[-1] + 1 if self.t_data else 0
         self.t_data.append(t)
-
-        for item in [self.t_data, self.measurement_data, self.prediction_data]:
-            if len(item) > self.ShowMaxTimeThreshold:
-                item = item[len(item) - self.ShowMaxTimeThreshold:]
-
+        # resize array size
+        self.t_data = self.t_data[len(self.t_data) - self.ShowMaxTimeThreshold:]
+        self.measurement_data = self.measurement_data[len(self.measurement_data) - self.ShowMaxTimeThreshold:]
+        self.prediction_data = self.prediction_data[len(self.prediction_data) - self.ShowMaxTimeThreshold:]
+        # setter set data
         self.measurement_data_setter.set_data(self.t_data, self.measurement_data)
         self.prediction_data_setter.set_data(self.t_data, self.prediction_data)
-        # if len(self.t_data) != 1:
-        #     self.axes.set_xlim(left=self.t_data[0], right=self.t_data[-1])
-        # self.axes.set_ylim(bottom=-4, top=4)
+        # set lim
+        self.ylim_min = min((data[0], data[1], self.ylim_min))
+        self.ylim_max = max((data[0], data[1], self.ylim_max))
+        if len(self.t_data) != 1:
+            self.axes.set_xlim(left=self.t_data[0], right=self.t_data[-1])
+        self.axes.set_ylim(bottom=self.ylim_min, top=self.ylim_max)
+        # draw
+        # start_time = time.time()
+        # self.measurement_data_setter.figure.canvas.draw()
+        # end_time = time.time()
+        # print(f"time: {end_time - start_time}")
 
     @staticmethod
     def create_axes(_figure: plt.Figure, _grid_spec: gridspec.GridSpec, _row: int, _col: int):

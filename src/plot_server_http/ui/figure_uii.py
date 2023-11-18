@@ -30,8 +30,9 @@ from custom_axes.realtime_factory import RealtimeFactory
 
 
 class FigureCanvasUi(QtWidgets.QMainWindow):
-    def __init__(self, figure_canvas: FigureCanvas, parent: QObject = None):
+    def __init__(self, figure_canvas: FigureCanvas, _title: str = "View", parent: QObject = None):
         super().__init__(parent)
+        self.setWindowTitle(_title)
         self._main_widget = QtWidgets.QWidget()
         self.setCentralWidget(self._main_widget)
         layout = QtWidgets.QVBoxLayout(self._main_widget)
@@ -65,10 +66,14 @@ class FigureCanvasUiFactory(QObject):
                 current = multiple_axes[f"{row}{col}"]
                 current["axes"] = RealtimeFactory.create_axes(figure_canvas, grid_spec, row, col, current)
         with FigureCanvasUiFactory.__factory_lock:
-            ui = FigureCanvasUi(figure_canvas)
+            ui = FigureCanvasUi(figure_canvas, object_name)
             FigureCanvasUiFactory.__ui_factory[object_name] = ui
             # ui.show()
 
+        timer = figure_canvas.new_timer(80)
+        timer.add_callback(figure_canvas.draw)
+        timer.start()
+        figure_pool[object_name]["timer"] = timer
         figure_pool[object_name]["figure_canvas"] = figure_canvas
         figure_pool[object_name]["grid_spec"] = grid_spec
 

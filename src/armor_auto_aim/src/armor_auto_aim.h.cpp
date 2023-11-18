@@ -17,6 +17,7 @@ ArmorAutoAim::ArmorAutoAim()
        {
     initHikCamera();
     initEkf();
+    sendCreateViewRequest();
 }
 
 void ArmorAutoAim::armorAutoAim() {
@@ -25,19 +26,19 @@ void ArmorAutoAim::armorAutoAim() {
     float fps = 0.0f;
     int64_t timestamp = 0;
     int64_t last_t = std::chrono::system_clock::now().time_since_epoch().count();
+    // show debug img
+    auto showDebugImg = [this, &tick_meter, &fps, &timestamp]()->void {
+        tick_meter.stop();
+        fps = 1.0f / static_cast<float>(tick_meter.getTimeSec());
+        debug_toolkit::drawFrameInfo(m_frame, m_armors, m_tracker, fps, timestamp, dt);
+        cv::imshow("frame", m_frame);
+        cv::waitKey(1);
+    };
 
     while (true) {
         // start fps clock
         tick_meter.reset();
         tick_meter.start();
-        // show debug img
-        auto showDebugImg = [this, &tick_meter, &fps, timestamp]()->void {
-            tick_meter.stop();
-            fps = 1.0f / static_cast<float>(tick_meter.getTimeSec());
-            debug_toolkit::drawFrameInfo(m_frame, m_armors, m_tracker, fps, timestamp);
-            cv::imshow("frame", m_frame);
-            cv::waitKey(1);
-        };
         // -- main --
         m_hik_frame = m_hik_read_thread->getFrame();
         m_frame = m_hik_frame.getRgbFrame();
@@ -67,6 +68,10 @@ void ArmorAutoAim::armorAutoAim() {
             emit m_serial_port.CrossThreadTransmitSignal(m_SendAutoAimFuncCode, m_SendId, data);
         }
         // -- debug --
+        // view
+        m_thread_pool.enqueue(armor_auto_aim::ekf_plot::lineSystemUpdateDataRequest, &m_plot_client_http, m_tracker);
+        m_thread_pool.enqueue(armor_auto_aim::pnp_view::pnpViewUpdateDataRequest, &m_plot_client_http, m_tracker);
+        // append information to frame
         showDebugImg();
     }
 }
@@ -82,6 +87,11 @@ void ArmorAutoAim::initHikCamera() {
     } else {
         LOG(FATAL) << "Hik can't connected!";
     }
+}
+
+void ArmorAutoAim::sendCreateViewRequest() {
+    ekf_plot::lineSystemCreateWindowRequest(&m_plot_client_http);
+    pnp_view::pnpViewCreateWindowRequest(&m_plot_client_http);
 }
 
 void ArmorAutoAim::initEkf() {
@@ -128,6 +138,6 @@ void ArmorAutoAim::initEkf() {
         return R;
     };
 
-    m_tracker.ekf = new armor_auto_aim::ExtendedKalmanFilter(p0, f, h, j_f, j_h, update_Q, update_R);
+    m_tracker.ekf = new ExtendedKalmanFilter(p0, f, h, j_f, j_h, update_Q, update_R);
 }
 }

@@ -10,25 +10,19 @@
 
 import sys
 import threading
+import concurrent.futures
 import time
 from pprint import pprint
-from typing import Dict, List, Union
+from typing import Dict
 
 import matplotlib
 from loguru import logger
-from PyQt5.Qt import QApplication
 from flask import Flask, request
-import matplotlib.pyplot as plt
-import matplotlib.gridspec as gridspec
 from matplotlib.backends.qt_compat import QtWidgets
 from matplotlib.backends.backend_qtagg import FigureCanvas
 
 from units.log_configure import init_logger_configure
-from custom_axes.realtime_comparison import RealtimeComparisonAxesProperty, RealtimeComparisonAxes
-from custom_axes.realtime_position import RealtimePositionAxesProperty, RealtimePositionAxes
-from custom_axes.realtime_factory import RealtimeFactory
-from ui.figure_uii import FigureCanvasUiFactory, FigureCanvasUi
-from ui.figure_uii import FigureCanvasUi
+from ui.figure_uii import FigureCanvasUiFactory
 
 app = Flask(__name__)
 k_FigurePool: Dict = {}
@@ -52,29 +46,28 @@ def create_window():
     return f"Create window success: {window_name}", 200
 
 
-@app.route("/add_data", methods=["POST"])
-def add_data():
+@app.route("/update_data", methods=["POST"])
+def update_data():
     global k_FigurePool
 
     if not request.is_json:
         return f"Failed: data is not json", 202
-
     data = request.get_json()
     window_name = data["window_name"]
     row = data["row"]
     col = data["col"]
     new_data = data["data"]
 
-    logger.info(f"new_data: {row}:{col} -- {new_data}")
+    # def update_data_func():
+    #     k_FigurePool[window_name]["multiple_axes"][f"{row}{col}"]["axes"].update_data(new_data)
+    # with concurrent.futures.ThreadPoolExecutor() as executor:
+    #     executor.submit(update_data_func)
     k_FigurePool[window_name]["multiple_axes"][f"{row}{col}"]["axes"].update_data(new_data)
-    figure_canvas_ui_factory.update_ui_sign.emit(k_FigurePool[window_name]["figure_canvas"])
-    # k_FigurePool[window_name]["figure_canvas"].draw()
-
     return f"Update data success: {window_name}-{row}:{col}", 200
 
 
-@app.route("/test", methods=["GET"])
-def test():
+@app.route("/index", methods=["GET"])
+def index():
     return "Hello, World!", 200
 
 

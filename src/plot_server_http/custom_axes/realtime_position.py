@@ -7,16 +7,15 @@
   @data 2023-11-12 17:12:57
 """
 
-
 import random
 from typing import Tuple, List
-from custom_axes.realtime_interface import RealtimeAxesInterface
+from custom_axes.realtime_interface import RealtimeAxesInterface, RealtimeAxesProperty
 
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 
 
-class RealtimePositionAxesProperty(object):
+class RealtimePositionAxesProperty(RealtimeAxesProperty):
     def __init__(self, axes_title: str,
                  x_val_name: str = "x", x_val_unit: str = "m",
                  y_val_name: str = "y", y_val_unit: str = "m"):
@@ -50,9 +49,13 @@ class RealtimePositionAxes(RealtimeAxesInterface):
         self.axes.set_ylabel(f"{self.axes_property.y_val_name}/{self.axes_property.y_val_unit}")
         self.axes.set_title(self.axes_property.axes_title)
 
+        self.axes.set_xlim(left=-180, right=180)
+        self.axes.set_ylim(bottom=-180, top=180)
+
     def update_data(self, data: Tuple[float, float]):
-        self.point_setter.remove()
-        self.point_setter = self.axes.scatter(data[0], data[1], color="green")
+        self.point_setter.set_offsets(data)
+        # self.point_setter.figure.canvas.draw()
+        # self.point_setter = self.axes.scatter(data[0], data[1], color="green")
 
 
 if __name__ == "__main__":

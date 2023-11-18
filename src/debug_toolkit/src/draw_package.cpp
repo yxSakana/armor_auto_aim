@@ -93,16 +93,18 @@ void drawYawPitch(const cv::Mat& src, const float& yaw, const float& pitch) {
 }
 
 void drawFrameInfo(cv::Mat& src, const std::vector<Armor>& armors, const Tracker& tracker,
-                   const double& fps, const int64_t& timestamp) {
+                   const double& fps, const int64_t& timestamp, const float& dt) {
+    cv::HersheyFonts face = cv::FONT_HERSHEY_SIMPLEX;
     cv::Scalar text_color(255, 255, 255);
     double foot_scale = 0.75;
     int thickness = 2;
     int y = 30;
     // fps && timestamp  && state of tracker
-    cv::putText(src, std::to_string(static_cast<int>(fps)), cv::Point(20, y), cv::FONT_HERSHEY_SIMPLEX, foot_scale, text_color, thickness);
-    cv::putText(src, std::to_string(timestamp), cv::Point(90, y), cv::FONT_HERSHEY_SIMPLEX, foot_scale, text_color, thickness);
-    cv::putText(src, tracker.stateString(), cv::Point(350, y), cv::FONT_HERSHEY_SIMPLEX, foot_scale, text_color, thickness);
-    cv::putText(src, std::to_string(armors.size()), cv::Point(550, y), cv::FONT_HERSHEY_SIMPLEX, foot_scale, text_color, thickness);
+    cv::putText(src, "fps: " + std::to_string(static_cast<int>(fps)), cv::Point(20, y), face, foot_scale, text_color, thickness);
+    cv::putText(src, std::to_string(timestamp), cv::Point(150, y), face, foot_scale, text_color, thickness);
+    cv::putText(src, tracker.stateString(), cv::Point(400, y), face, foot_scale, text_color, thickness);
+    cv::putText(src, "armors: " + std::to_string(armors.size()), cv::Point(550, y), face, foot_scale, text_color, thickness);
+    cv::putText(src, "dt: " + std::to_string(dt), cv::Point(700, y), face, foot_scale, text_color, thickness);
     // armor
     for (const auto& armor: armors) {
         for (int i = 0; i < 4; ++i) {

@@ -17,6 +17,8 @@
 #include <armor_tracker/tracker.h>
 #include <serial_port/communicate_protocol.h>
 #include <serial_port/VCOMCOMM.h>
+#include <plot_client_http/ekf_plot.h>
+#include <plot_client_http/pnp_view.h>
 
 namespace armor_auto_aim {
 class ArmorAutoAim {
@@ -34,6 +36,7 @@ private:
     Detector m_detector;
     Tracker m_tracker;
     VCOMCOMM m_serial_port;
+    PlotClientHttp m_plot_client_http;
 
     HikFrame m_hik_frame;
     cv::Mat m_frame;
@@ -41,6 +44,8 @@ private:
     float dt = 0.0f;
 
     void initHikCamera();
+
+    void sendCreateViewRequest();
 
     void initEkf();
     Eigen::Matrix<double, 6, 6> F;

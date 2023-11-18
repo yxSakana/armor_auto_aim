@@ -105,7 +105,7 @@ void VCOMCOMM::Transmit(uint8_t fun_code, uint16_t id, const QByteArray& data) {
     if (port_err == ReadError || port_err == WriteError)
         port_err = NoError;
     if (!(this->isOpen() && port_err == NoError) && !this->auto_connect()) {
-        LOG(ERROR) << "Transmit Error, Port is closed or error";
+        LOG_EVERY_N(ERROR, 10) << "Transmit Error, Port is closed or error";
         return;
     }
     if (data.size() > 64 - 8) {

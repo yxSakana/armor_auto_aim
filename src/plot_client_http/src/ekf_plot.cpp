@@ -44,7 +44,7 @@ void lineSystemCreateWindowRequest(PlotClientHttp* plot_client_http) {
                 }},
             } }
     };
-    LOG(INFO) << create_window_data;
+//    DLOG(INFO) << create_window_data;
     plot_client_http->createWindowRequest(create_window_data);
 }
 
