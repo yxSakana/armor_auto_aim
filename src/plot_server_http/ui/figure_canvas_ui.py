@@ -38,7 +38,7 @@ class FigureCanvasUi(QtWidgets.QMainWindow):
 
         self.figure_canvas_axes: List = []
 
-    def add_figure_canvas(self, _type: str, _property: Any):  # TODO: 改成信号触发
+    def add_figure_canvas(self, _type: str, _property: Any):
         if _type in FigureCanvasUi.__type:
             figure_canvas = FigureCanvas(Figure(figsize=(5, 3)))
             self.layout.addWidget(figure_canvas)

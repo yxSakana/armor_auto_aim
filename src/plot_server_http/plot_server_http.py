@@ -11,17 +11,14 @@
 import sys
 import threading
 import concurrent.futures
-import time
-from pprint import pprint
 from typing import Dict
 
 import matplotlib
 from loguru import logger
 from flask import Flask, request
 from matplotlib.backends.qt_compat import QtWidgets
-from matplotlib.backends.backend_qtagg import FigureCanvas
 
-from units.log_configure import init_logger_configure
+import configure_logger
 from ui.figure_uii import FigureCanvasUiFactory
 
 app = Flask(__name__)
@@ -42,7 +39,6 @@ def create_window():
 
     k_FigurePool[window_name] = data.copy()
     figure_canvas_ui_factory.create_ui_sign.emit(window_name, k_FigurePool)
-    pprint(k_FigurePool)
     return f"Create window success: {window_name}", 200
 
 
@@ -76,7 +72,19 @@ def run():
 
 
 if __name__ == "__main__":
-    init_logger_configure()
+    app.config["LOGURU_CONFIG"] = {
+        "handlers": [
+            {
+                "sink": "logs/app.log",
+                "level": "INFO",
+                "rotation": "1 week"
+            },
+        ]
+    }
+    logger.info("-> [INFO] <- ^_^")
+    # logger.configure(**app.config["LOGURU_CONFIG"])
+    app.logger.disabled = True
+
     matplotlib.use('Qt5Agg')
     q_app = QtWidgets.QApplication(sys.argv)
 

@@ -7,6 +7,6 @@
   @data 2023-11-15 21:50:23
 """
 
-from units.log_configure import init_logger_configure
+from configure_logger.log_configure import init_logger_configure
 
 init_logger_configure()

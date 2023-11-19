@@ -23,7 +23,6 @@
 
 namespace {
 TEST(test_pnp_solver, pnp) {
-    // TODO: gtest改进
     HikDriver hik_driver(0);
     HikReadThread hik_read_thread(&hik_driver);
     // 帧率测试

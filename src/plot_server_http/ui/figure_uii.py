@@ -7,24 +7,19 @@
   @author yx 
   @date 2023-11-09 18:58
 """
-import pprint
+
 import threading
 from typing import Dict
 
 from loguru import logger
-import matplotlib
-matplotlib.use('Qt5Agg')  # 或者 'Qt4Agg'，取决于你的Qt版本
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qtagg import FigureCanvas
 from matplotlib.backends.backend_qtagg import \
     NavigationToolbar2QT as NavigationToolbar
 from matplotlib.backends.qt_compat import QtWidgets
-from matplotlib.figure import Figure
 from matplotlib.gridspec import GridSpec
-from PyQt5 import Qt
 from PyQt5.Qt import pyqtSignal
-from PyQt5.Qt import QObject, QWidget, QLabel
-from PyQt5.Qt import QImage, QPixmap
+from PyQt5.Qt import QObject
 
 from custom_axes.realtime_factory import RealtimeFactory
 
@@ -55,7 +50,6 @@ class FigureCanvasUiFactory(QObject):
 
     @staticmethod
     def create_ui(object_name: str, figure_pool: Dict):
-        pprint.pprint(figure_pool)
         rows = int(figure_pool[object_name]["rows"])
         cols = int(figure_pool[object_name]["cols"])
         multiple_axes = figure_pool[object_name]["multiple_axes"]

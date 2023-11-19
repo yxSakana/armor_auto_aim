@@ -12,40 +12,26 @@
 
 namespace armor_auto_aim::pnp_view {
 void pnpViewCreateWindowRequest(PlotClientHttp* plot_client_http) {
-        nlohmann::json create_window_data = {
-            { "window_name", "PnP View" },
-            { "rows", 1 },
-            { "cols", 1 },
-            { "multiple_axes", {
-                {"00", {
-                    { "type", "realtime_position" },
-                    { "property", {
-                        { "axes_title", "track armor x" },
-                        { "x_val_name", "yaw" },
-                        { "x_val_unit", "°" },
-                        { "y_val_name", "pitch" },
-                        { "y_val_unit", "°" },
-                    }}
-                }}/*,
-                {"01", {
-                     { "type", "realtime_comparison" },
-                     { "property", {
-                       { "axes_title", "track armor y" },
-                       { "data_name", "ya" },
-                       { "data_unit", "m" }
-                   }},
-                }},
-                {"02", {
-                     { "type", "realtime_comparison" },
-                     { "property", {
-                       { "axes_title", "track armor z" },
-                       { "data_name", "za" },
-                       { "data_unit", "m" }
-                   }},
-                }},*/
-            } }
+    nlohmann::json create_window_data = {
+        { "window_name", "PnP View" },
+        { "rows", 1 },
+        { "cols", 1 },
+        { "multiple_axes", {
+            {"00", {
+                { "type", "realtime_position" },
+                { "property", {
+                    { "axes_title", "track armor x" },
+                    { "x_val_name", "yaw" },
+                    { "x_val_unit", "°" },
+                    { "y_val_name", "pitch" },
+                    { "y_val_unit", "°" },
+                    { "x_lim", nlohmann::json::array({-180, 180}) },
+                    { "y_lim", nlohmann::json::array({-180, 180}) }
+                }}
+            }}
+        } }
     };
-//    DLOG(INFO) << create_window_data;
+    DLOG(INFO) << create_window_data;
     plot_client_http->createWindowRequest(create_window_data);
 }
 

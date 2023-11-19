@@ -40,8 +40,11 @@ class RealtimeFactory(object):
             x_val_unit = _axes_property["property"]["x_val_unit"]
             y_val_name = _axes_property["property"]["y_val_name"]
             y_val_unit = _axes_property["property"]["y_val_unit"]
+            x_lim = _axes_property["property"]["x_lim"]
+            y_lim = _axes_property["property"]["y_lim"]
             axes_ = _figure_canvas.figure.add_subplot(_grid_spec[_row, _col], axes_class=axisartist.Axes)
-            axes_property_ = RealtimePositionAxesProperty(axes_title, x_val_name, x_val_unit,
+            axes_property_ = RealtimePositionAxesProperty(axes_title, x_lim, y_lim,
+                                                          x_val_name, x_val_unit,
                                                           y_val_name, y_val_unit)
             return RealtimePositionAxes(axes_, axes_property_)
 

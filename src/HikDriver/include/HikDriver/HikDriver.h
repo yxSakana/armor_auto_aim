@@ -62,7 +62,7 @@ public:
     }
 
     ~HikDriver() {
-        MV_CC_StopGrabbing(m_handle);  // TODO: ??
+        MV_CC_StopGrabbing(m_handle);
         MV_CC_CloseDevice(m_handle);
         MV_CC_DestroyHandle(m_handle);
     }

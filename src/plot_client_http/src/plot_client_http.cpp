@@ -39,7 +39,7 @@ void PlotClientHttp::updateDateRequest(const nlohmann::json& json_data) {
     if (m_is_connected) {
         httplib::Result result = m_client.Post("/update_data", json_data.dump(), "application/json");
         if (result && result->status == 200) {
-            DLOG_EVERY_N(INFO, 100) << "Send data successfully!";
+//            DLOG_EVERY_N(INFO, 100) << "Send data successfully!";
         } else {
             DLOG(ERROR) << fmt::format("Failed to send data: {}", to_string(result.error()));
         }

@@ -8,7 +8,7 @@
 """
 
 import random
-from typing import Tuple, List
+from typing import Tuple
 from custom_axes.realtime_interface import RealtimeAxesInterface, RealtimeAxesProperty
 
 import matplotlib.pyplot as plt
@@ -16,7 +16,7 @@ import matplotlib.gridspec as gridspec
 
 
 class RealtimePositionAxesProperty(RealtimeAxesProperty):
-    def __init__(self, axes_title: str,
+    def __init__(self, axes_title: str, x_lim: Tuple[float, float], y_lim: Tuple[float, float],
                  x_val_name: str = "x", x_val_unit: str = "m",
                  y_val_name: str = "y", y_val_unit: str = "m"):
         self.axes_title = axes_title
@@ -24,6 +24,8 @@ class RealtimePositionAxesProperty(RealtimeAxesProperty):
         self.x_val_unit: str = x_val_unit
         self.y_val_name: str = y_val_name
         self.y_val_unit: str = y_val_unit
+        self.x_lim: Tuple[float, float] = x_lim
+        self.y_lim: Tuple[float, float] = y_lim
 
 
 class RealtimePositionAxes(RealtimeAxesInterface):
@@ -49,8 +51,8 @@ class RealtimePositionAxes(RealtimeAxesInterface):
         self.axes.set_ylabel(f"{self.axes_property.y_val_name}/{self.axes_property.y_val_unit}")
         self.axes.set_title(self.axes_property.axes_title)
 
-        self.axes.set_xlim(left=-180, right=180)
-        self.axes.set_ylim(bottom=-180, top=180)
+        self.axes.set_xlim(left=self.axes_property.x_lim[0], right=self.axes_property.x_lim[1])
+        self.axes.set_ylim(bottom=self.axes_property.y_lim[0], top=self.axes_property.y_lim[1])
 
     def update_data(self, data: Tuple[float, float]):
         self.point_setter.set_offsets(data)

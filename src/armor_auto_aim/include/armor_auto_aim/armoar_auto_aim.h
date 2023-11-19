@@ -13,6 +13,7 @@
 #include <HikDriver/HikDriver.h>
 #include <HikDriver/HikFrame.hpp>
 #include <HikDriver/HikReadThread.h>
+//#include <HikDriver/HikDebugUi.h>
 #include <armor_detector/detector.h>
 #include <armor_tracker/tracker.h>
 #include <serial_port/communicate_protocol.h>
@@ -33,6 +34,7 @@ private:
     ThreadPool m_thread_pool;
     std::unique_ptr<HikDriver> m_hik_driver;
     std::unique_ptr<HikReadThread> m_hik_read_thread;
+//    std::unique_ptr<
     Detector m_detector;
     Tracker m_tracker;
     VCOMCOMM m_serial_port;

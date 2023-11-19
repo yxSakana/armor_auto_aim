@@ -9,8 +9,6 @@
 """
 
 import random
-import sys
-import time
 from typing import Tuple, List
 
 import matplotlib.pyplot as plt
