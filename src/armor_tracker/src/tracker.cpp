@@ -51,7 +51,7 @@ void Tracker::initTracker(const Armors& armors) {
     if (armors.empty() || ekf == nullptr)
         return;
 
-    // 选择要跟踪的装甲板(选择z最小的)(en: Select tracked armor)
+    // 选择要跟踪的装甲板(优先选择距离最近的)(en: Select tracked armor)
     double min_distance = DBL_MAX;
     tracked_armor = armors[0];
     for (const auto& armor: armors) {

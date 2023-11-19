@@ -14,43 +14,57 @@
 namespace armor_auto_aim::ekf_plot {
 void lineSystemCreateWindowRequest(PlotClientHttp* plot_client_http) {
     nlohmann::json create_window_data = {
-            { "figure_type", "real_time_comparison" },
             { "window_name", "EKF - Line System" },
             { "rows", 1 },
             { "cols", 3 },
-            { "title", {
-               "x_c", "y_c", "z_a",
-            }},
-            { "val_name", {
-                "x_c", "y_c", "z_a",
-            }},
-            { "val_unit", {
-               "m",  "m",  "m",
-            }}
+            { "multiple_axes", {
+                {"00", {
+                    { "type", "realtime_comparison" },
+                    { "property", {
+                        { "axes_title", "track armor x" },
+                        { "data_name", "xa" },
+                        { "data_unit", "m" }
+                    }},
+                }},
+                {"01", {
+                     { "type", "realtime_comparison" },
+                     { "property", {
+                       { "axes_title", "track armor y" },
+                       { "data_name", "ya" },
+                       { "data_unit", "m" }
+                   }},
+                }},
+                {"02", {
+                     { "type", "realtime_comparison" },
+                     { "property", {
+                       { "axes_title", "track armor z" },
+                       { "data_name", "za" },
+                       { "data_unit", "m" }
+                   }},
+                }},
+            } }
     };
-    nlohmann::json val_label = nlohmann::json::array();
-    for (int i = 0; i < 6; i++)
-        val_label.push_back(nlohmann::json::array({"measurement", "prediction"}));
-    create_window_data["val_label"] = val_label;
-
+//    DLOG(INFO) << create_window_data;
     plot_client_http->createWindowRequest(create_window_data);
 }
 
-void lineSystemPuhBackDataRequest(PlotClientHttp* plot_client_http, const Tracker& tracker) {
+void lineSystemUpdateDataRequest(PlotClientHttp* plot_client_http, const Tracker& tracker) {
     if (tracker.state() == armor_auto_aim::TrackerStateMachine::State::Tracking ||
         tracker.state() == armor_auto_aim::TrackerStateMachine::State::TempLost) {
-        nlohmann::json json_data = {
-                {"figure_type", "real_time_comparison"},
-                {"window_name", "EKF - Line System"}
-        };
         Eigen::VectorXd measurement = tracker.measurement;
         const Eigen::VectorXd& target_state = tracker.getTargetSate();
-        Eigen::Vector3d target_state_tmp(target_state(0), target_state(2), target_state(4));
-        LOG(INFO) << "Target State: " << target_state;
-        for (int i = 0; i < measurement.size(); i++)
-            json_data["data"].push_back(nlohmann::json::array({measurement(i), target_state_tmp(i)}));
-        LOG(INFO) << fmt::format("measurement size: {}, json data: {}", measurement.size(), json_data.dump());
-        plot_client_http->puhBackDataRequest(json_data);
+        Eigen::Vector3d target_state_position(target_state(0), target_state(2), target_state(4));
+
+        nlohmann::json json_data = {
+                { "window_name", "EKF - Line System" },
+                { "row", 0 }
+
+        };
+        for (int i = 0; i < measurement.size(); i++) {
+            json_data["col"] = std::to_string(i);
+            json_data["data"] = nlohmann::json::array({measurement(i), target_state_position(i)});
+            plot_client_http->updateDateRequest(json_data);
+        }
     }
 }
 } // armor_auto_aim

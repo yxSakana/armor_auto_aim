@@ -5,7 +5,7 @@
  * @brief 虚拟串口通信协议的PC端
  */
 
-#include <serial_sort/VCOMCOMM.h>
+#include <serial_port/VCOMCOMM.h>
 
 #include <QSerialPortInfo>
 
@@ -99,13 +99,13 @@ void VCOMCOMM::Transmit(uint8_t fun_code, uint16_t id, const QByteArray& data) {
         return;
     }
 
-    DLOG(INFO) << fmt::format("TX: fun=0x{:02X}, id=0x{:04X}", fun_code, id);
+//    DLOG(INFO) << fmt::format("Send info: fun=0x{:02X}, id=0x{:04X}", fun_code, id);
     /* 忽略读写错误 */
     SerialPortError port_err = this->error();
     if (port_err == ReadError || port_err == WriteError)
         port_err = NoError;
     if (!(this->isOpen() && port_err == NoError) && !this->auto_connect()) {
-        LOG(ERROR) << "Transmit Error, Port is closed or error";
+        LOG_EVERY_N(ERROR, 10) << "Transmit Error, Port is closed or error";
         return;
     }
     if (data.size() > 64 - 8) {

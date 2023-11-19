@@ -11,6 +11,8 @@
 #include <armor_tracker/extended_kalman_filter.h>
 #include <armor_tracker/tracker.h>
 #include <plot_client_http/ekf_plot.h>
+#include <plot_client_http/pnp_view.h>
+#include <thread_pool/thread_pool.h>
 
 namespace {
 class TestKf : public TestCamera {
@@ -28,7 +30,7 @@ protected:
              0, 0,  1,  dt, 0, 0,  // y
              0, 0,  0,  1,  0, 0,  // vy
              0, 0,  0,  0,  1, dt, // z
-             0, 0,  0,  0,  0,  1; // vz
+             0, 0,  0,  0,  1,  1; // vz
         //     x  vx  y  vy  z  yz
         H <<   1, 0,  0, 0,  0, 0, // x
                0, 0,  1, 0,  0, 0, // y
@@ -62,11 +64,13 @@ protected:
         tracker = std::make_unique<armor_auto_aim::Tracker>();
         tracker->ekf = new armor_auto_aim::ExtendedKalmanFilter(p0, f, h, j_f, j_h, update_Q, update_R);
         armor_auto_aim::ekf_plot::lineSystemCreateWindowRequest(&plot_client_http);
+        armor_auto_aim::pnp_view::pnpViewCreateWindowRequest(&plot_client_http);
     }
 public:
     armor_auto_aim::PlotClientHttp plot_client_http;
     std::unique_ptr<armor_auto_aim::Tracker> tracker;
     HikFrame hik_frame;
+    armor_auto_aim::ThreadPool thread_pool;
 
     double dt{};
     int64_t last_t = std::chrono::system_clock::now().time_since_epoch().count();
@@ -90,6 +94,7 @@ public:
 TEST_F(TestKf, line_system) {
     if (hik_driver->isConnected()) {
         bool is_first = true;
+        int plot_count = 0;
 
         while (true) {
             tick_meter.reset();
@@ -126,16 +131,18 @@ TEST_F(TestKf, line_system) {
             } else {
                 tracker->updateTracker(armors);
             }
+            // kf draw
+//            plot_count++;
+//            if (plot_count > 100) {
+            thread_pool.enqueue(armor_auto_aim::ekf_plot::lineSystemUpdateDataRequest, &plot_client_http, *tracker);
+            thread_pool.enqueue(armor_auto_aim::pnp_view::pnpViewUpdateDataRequest, &plot_client_http, *tracker);
+//                plot_count = 0;
+//            }
+//            armor_auto_aim::ekf_plot::lineSystemUpdateDataRequest(&plot_client_http, *tracker);
             // Fps info
             tick_meter.stop();
             fps = 1.0 / tick_meter.getTimeSec();
-            armor_auto_aim::debug_toolkit::drawFrameInfo(frame, fps, timestamp, *tracker);
-
-            armor_auto_aim::ekf_plot::lineSystemPuhBackDataRequest(&plot_client_http, *tracker);
-
-//            LOG_EVERY_N(INFO, 15) << "Target State: " << tracker->getTargetSate();
-//            LOG_EVERY_N(INFO, 15) << "Target Measurement: " << tracker->measurement;
-            //            tracker->ekf->showInfo();
+            armor_auto_aim::debug_toolkit::drawFrameInfo(frame, armors, *tracker, fps, timestamp, dt);
             cv::imshow("frame", frame);
             cv::waitKey(1);
         }

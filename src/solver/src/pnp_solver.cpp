@@ -22,15 +22,15 @@ PnPSolver::PnPSolver(const std::array<double, 9>& intrinsic_matrix,
     constexpr double large_half_y = LARGE_ARMOR_HEIGHT / 2.0 / 1000.0;
 
     // 3d Points(lt lb rb rt)
-    m_small_armor_point3d.push_back(cv::Point3f(small_half_x, -small_half_y, 0));
     m_small_armor_point3d.push_back(cv::Point3f(small_half_x, small_half_y, 0));
-    m_small_armor_point3d.push_back(cv::Point3f(-small_half_x, small_half_y, 0));
+    m_small_armor_point3d.push_back(cv::Point3f(small_half_x, -small_half_y, 0));
     m_small_armor_point3d.push_back(cv::Point3f(-small_half_x, -small_half_y, 0));
+    m_small_armor_point3d.push_back(cv::Point3f(-small_half_x, small_half_y, 0));
 
-    m_large_armor_point3d.push_back(cv::Point3f(large_half_x, -large_half_y, 0));
     m_large_armor_point3d.push_back(cv::Point3f(large_half_x, large_half_y, 0));
-    m_large_armor_point3d.push_back(cv::Point3f(-large_half_x, large_half_y, 0));
+    m_large_armor_point3d.push_back(cv::Point3f(large_half_x, -large_half_y, 0));
     m_large_armor_point3d.push_back(cv::Point3f(-large_half_x, -large_half_y, 0));
+    m_large_armor_point3d.push_back(cv::Point3f(-large_half_x, large_half_y, 0));
 }
 
 bool PnPSolver::pnpSolver(const Armor& armor, cv::Mat& rvec, cv::Mat& tvec) {
@@ -39,26 +39,38 @@ bool PnPSolver::pnpSolver(const Armor& armor, cv::Mat& rvec, cv::Mat& tvec) {
                         rvec, tvec, false, cv::SOLVEPNP_IPPE);  // cv::SOLVEPNP_ITERATIVE ?
 }
 
-bool PnPSolver::obtain3dCoordinates(const Armor& armor, armor_auto_aim::solver::Pose& spatial_location) {
+bool PnPSolver::obtain3dCoordinates(const Armor& armor, armor_auto_aim::solver::Pose& pose) {
     cv::Mat rvec, tvec;
     if (pnpSolver(armor, rvec, tvec)) {
         auto correctEulerAngles = [](Eigen::Vector3d& euler_angles) {
-            euler_angles(2) = euler_angles(2) > 0? euler_angles(2) - M_PI: euler_angles(2) + M_PI;
-            euler_angles(0) = euler_angles(0) > 0? euler_angles(0) - M_PI: euler_angles(0) + M_PI;
+//            euler_angles(2) = euler_angles(2) > 0? euler_angles(2) - M_PI: euler_angles(2) + M_PI;
+//            euler_angles(1) = euler_angles(1) > 0? euler_angles(1) - M_PI: euler_angles(1) + M_PI;
+//            euler_angles(0) = euler_angles(0) > 0? euler_angles(0) - M_PI: euler_angles(0) + M_PI;
+            if (euler_angles(2) > M_PI_2) {
+                euler_angles(2) = M_PI - euler_angles(2);
+            } else if (euler_angles(2) < -M_PI_2) {
+                euler_angles(2) = -M_PI - euler_angles(2);
+            }
+            if (euler_angles(1) > M_PI_2) {
+                euler_angles(1) = M_PI - euler_angles(1);
+            } else if (euler_angles(1) < -M_PI_2) {
+                euler_angles(1) = -M_PI - euler_angles(1);
+            }
+
             euler_angles(0) = euler_angles(0) * (180.0f / M_PI);
-            euler_angles(1) = -euler_angles(1) * (180.0f / M_PI);
-            euler_angles(2) = -euler_angles(2) * (180.0f / M_PI);
+            euler_angles(1) = euler_angles(1) * (180.0f / M_PI);  // pitch
+            euler_angles(2) = euler_angles(2) * (180.0f / M_PI);  // yaw
         };  // 转化为角度，调整正负与范围
         Eigen::Vector3d euler_angles = rotationVectorToEulerAngles(rvec);
-        correctEulerAngles(euler_angles);
 
-        // FIXME: pnp解算出的欧拉角, pitch yaw 是不是反了
-        spatial_location.pitch = static_cast<float>(euler_angles(1));
-        spatial_location.yaw = static_cast<float>(euler_angles(2));
-        spatial_location.roll = static_cast<float>(euler_angles(0));
-        spatial_location.x = static_cast<float>(tvec.at<double>(0, 0));
-        spatial_location.y = static_cast<float>(tvec.at<double>(1, 0));
-        spatial_location.z = static_cast<float>(tvec.at<double>(2, 0));
+        // FIXME: pnp解算出的欧拉角, pitch yaw 是不是反了; x y 符号是否正确, 为什么符号相反?
+        correctEulerAngles(euler_angles);
+        pose.pitch = static_cast<float>(euler_angles(1));
+        pose.yaw = static_cast<float>(euler_angles(2));
+        pose.roll = static_cast<float>(euler_angles(0));
+        pose.x = -static_cast<float>(tvec.at<double>(0, 0));
+        pose.y = -static_cast<float>(tvec.at<double>(1, 0));
+        pose.z = static_cast<float>(tvec.at<double>(2, 0));
 
         return true;
     } else {

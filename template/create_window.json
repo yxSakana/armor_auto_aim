@@ -1,0 +1,26 @@
+{
+  "window_name": "template_window",
+  "rows": 1,
+  "cols": 2,
+  "multiple_axes": {
+    "00": {
+      "type": "realtime_comparison",
+      "property": {
+        "axes_title": "axes_title",
+        "data_name": "xa",
+        "data_unit": "m"
+      }
+    },
+    "01": {
+      "type": "realtime_position",
+      "property": {
+        "axes_title": "axes_title",
+        "x_val_name": "yaw",
+        "y_val_name": "pitch" ,
+        "y_val_unit": "°" ,
+        "x_lim": [-180, 180],
+        "y_lim": [-180, 180]
+      }
+    }
+  }
+}

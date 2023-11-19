@@ -1,12 +1,12 @@
 cmake_minimum_required(VERSION 3.25)
-project(armor_auto_aiming LANGUAGES CXX)
+project(auto_aim LANGUAGES CXX)
 
 # C++ Version && C++ Include Directory Settings
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
-set(IS_ENABLE_GTEST ON)
+set(IS_ENABLE_GTEST OFF)
 
 if (NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release)
@@ -30,27 +30,19 @@ add_subdirectory(src/serial_port)
 add_subdirectory(src/armor_tracker)
 add_subdirectory(src/solver)
 add_subdirectory(src/armor_detector)
+add_subdirectory(src/armor_auto_aim)
 
 if (IS_ENABLE_GTEST STREQUAL "ON")
     find_package(GTest REQUIRED)
     file(GLOB_RECURSE sources CONFIGURE_DEPENDS test/*.cpp test/*.h)
-elseif ()
-    file(sources src/main.cpp)
+else ()
+    file(GLOB sources "src/main.cpp")
+    message("-- Sources: ${sources}")
 endif ()
 add_executable(${PROJECT_NAME} ${sources})
 
 target_link_libraries(${PROJECT_NAME} PUBLIC
-#        macro_definition
-        plot_client_http
-        debug_toolkit
-        thread_pool
-        google_logger
-        spdlog_factory
-        hik_driver
-        serial_sort
-        armor_detector
-        armor_tracker
-        solver
+        armor_auto_aim
         )
 if (IS_ENABLE_GTEST STREQUAL "ON")
     target_include_directories(${PROJECT_NAME} PUBLIC
