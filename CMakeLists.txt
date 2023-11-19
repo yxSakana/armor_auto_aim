@@ -31,6 +31,7 @@ add_subdirectory(src/armor_tracker)
 add_subdirectory(src/solver)
 add_subdirectory(src/armor_detector)
 add_subdirectory(src/armor_auto_aim)
+add_subdirectory(src/vision_debug_widgets)
 
 if (IS_ENABLE_GTEST STREQUAL "ON")
     find_package(GTest REQUIRED)

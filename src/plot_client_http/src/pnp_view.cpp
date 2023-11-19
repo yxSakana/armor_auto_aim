@@ -42,7 +42,6 @@ void pnpViewUpdateDataRequest(PlotClientHttp* plot_client_http, const Tracker& t
                 { "window_name", "PnP View" },
                 { "row", 0 },
                 { "col", 0 },
-
         };
         solver::Pose tracked_armor_pose = tracker.tracked_armor.pose;
         json_data["data"] = nlohmann::json::array({tracked_armor_pose.yaw, tracked_armor_pose.pitch});

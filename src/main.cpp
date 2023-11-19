@@ -8,7 +8,7 @@
 #endif
 
 #include <google_logger/google_logger.h>
-#include <armor_auto_aim/armoar_auto_aim.h>
+#include <armor_auto_aim/armor_auto_aim.h>
 
 int main(int argc, char* argv[]) {
     armor_auto_aim::google_log::initGoogleLogger(argc, argv);
