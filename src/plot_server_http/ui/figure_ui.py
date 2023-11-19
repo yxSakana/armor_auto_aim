@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """  
   @projectName socket
-  @file figure_uii.py
+  @file figure_ui.py
   @brief 
  
   @author yx 
@@ -33,7 +33,6 @@ class FigureCanvasUi(QtWidgets.QMainWindow):
         layout = QtWidgets.QVBoxLayout(self._main_widget)
         layout.addWidget(NavigationToolbar(figure_canvas, self))
         layout.addWidget(figure_canvas)
-        logger.info(f"figure_canvas: {figure_canvas}")
         self.show()
 
 
@@ -41,12 +40,10 @@ class FigureCanvasUiFactory(QObject):
     __ui_factory: Dict = {}
     __factory_lock: threading.Lock = threading.Lock()
     create_ui_sign = pyqtSignal(str, dict)
-    update_ui_sign = pyqtSignal(FigureCanvas)
 
     def __init__(self):
         super().__init__(None)
         self.create_ui_sign.connect(self.create_ui)
-        self.update_ui_sign.connect(self.update_canvas)
 
     @staticmethod
     def create_ui(object_name: str, figure_pool: Dict):
@@ -62,7 +59,6 @@ class FigureCanvasUiFactory(QObject):
         with FigureCanvasUiFactory.__factory_lock:
             ui = FigureCanvasUi(figure_canvas, object_name)
             FigureCanvasUiFactory.__ui_factory[object_name] = ui
-            # ui.show()
 
         timer = figure_canvas.new_timer(80)
         timer.add_callback(figure_canvas.draw)
@@ -70,13 +66,3 @@ class FigureCanvasUiFactory(QObject):
         figure_pool[object_name]["timer"] = timer
         figure_pool[object_name]["figure_canvas"] = figure_canvas
         figure_pool[object_name]["grid_spec"] = grid_spec
-
-    @staticmethod
-    def update_canvas(figure_canvas: FigureCanvas):
-        logger.info("updated canvas!")
-        figure_canvas.draw()
-
-    @staticmethod
-    def get_ui(object_name: str) -> FigureCanvasUi:
-        with FigureCanvasUiFactory.__factory_lock:
-            return FigureCanvasUiFactory.__ui_factory[object_name]

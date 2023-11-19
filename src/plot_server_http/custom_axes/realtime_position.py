@@ -7,7 +7,6 @@
   @data 2023-11-12 17:12:57
 """
 
-import random
 from typing import Tuple
 from custom_axes.realtime_interface import RealtimeAxesInterface, RealtimeAxesProperty
 
@@ -29,8 +28,10 @@ class RealtimePositionAxesProperty(RealtimeAxesProperty):
 
 
 class RealtimePositionAxes(RealtimeAxesInterface):
-    def __init__(self, _axes: plt.Axes, position_axes_property: RealtimePositionAxesProperty):
-        super().__init__(_axes, position_axes_property)
+    __type_key = "realtime_position"
+
+    def __init__(self, _axes: plt.Axes, _position_axes_property: RealtimePositionAxesProperty):
+        super().__init__(_axes, _position_axes_property)
 
         self.x: float = 0
         self.y: float = 0
@@ -56,11 +57,11 @@ class RealtimePositionAxes(RealtimeAxesInterface):
 
     def update_data(self, data: Tuple[float, float]):
         self.point_setter.set_offsets(data)
-        # self.point_setter.figure.canvas.draw()
-        # self.point_setter = self.axes.scatter(data[0], data[1], color="green")
 
 
 if __name__ == "__main__":
+    import random
+
     import matplotlib
     from matplotlib.animation import FuncAnimation
     matplotlib.use("TKAgg")

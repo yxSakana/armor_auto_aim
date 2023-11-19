@@ -19,7 +19,7 @@ from flask import Flask, request
 from matplotlib.backends.qt_compat import QtWidgets
 
 import configure_logger
-from ui.figure_uii import FigureCanvasUiFactory
+from ui.figure_ui import FigureCanvasUiFactory
 
 app = Flask(__name__)
 k_FigurePool: Dict = {}
@@ -54,11 +54,11 @@ def update_data():
     col = data["col"]
     new_data = data["data"]
 
-    # def update_data_func():
-    #     k_FigurePool[window_name]["multiple_axes"][f"{row}{col}"]["axes"].update_data(new_data)
-    # with concurrent.futures.ThreadPoolExecutor() as executor:
-    #     executor.submit(update_data_func)
-    k_FigurePool[window_name]["multiple_axes"][f"{row}{col}"]["axes"].update_data(new_data)
+    def update_data_func():
+        k_FigurePool[window_name]["multiple_axes"][f"{row}{col}"]["axes"].update_data(new_data)
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        executor.submit(update_data_func)
+    # k_FigurePool[window_name]["multiple_axes"][f"{row}{col}"]["axes"].update_data(new_data)
     return f"Update data success: {window_name}-{row}:{col}", 200
 
 
@@ -69,6 +69,13 @@ def index():
 
 def run():
     app.run(host="127.0.0.1", port=12222)
+
+
+@app.after_request
+def after_request(response):
+    if response.status_code != 200:
+        logger.error(f'"{response.method} {response.url}": {response.status_code}')
+    return response
 
 
 if __name__ == "__main__":

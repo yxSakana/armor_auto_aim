@@ -8,14 +8,13 @@
   @date 2023-11-05 15:06
 """
 
-import random
 from typing import Tuple, List
 
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 from mpl_toolkits import axisartist
 
-from custom_axes.realtime_interface import RealtimeAxesInterface, RealtimeAxesProperty
+from custom_axes.realtime_interface import RealtimeAxesInterface, RealtimeAxesProperty, RealtimeAxesWaveformInterface
 
 
 class RealtimeComparisonAxesProperty(RealtimeAxesProperty):
@@ -25,7 +24,9 @@ class RealtimeComparisonAxesProperty(RealtimeAxesProperty):
         self.data_unit = data_unit
 
 
-class RealtimeComparisonAxes(RealtimeAxesInterface):
+class RealtimeComparisonAxes(RealtimeAxesWaveformInterface):
+    __type_key = "realtime_comparison"
+
     def __init__(self, _axes: axisartist.Axes, comparison_axes_property: RealtimeComparisonAxesProperty):
         super().__init__(_axes, comparison_axes_property)
 
@@ -44,40 +45,25 @@ class RealtimeComparisonAxes(RealtimeAxesInterface):
         self.init_canvas()
 
     def init_canvas(self):
-        self.axes.axis["y=0"] = self.axes.new_floating_axis(nth_coord=0,
-                                                            value=0,
-                                                            axis_direction="bottom")
-        self.axes.axis["y=0"].toggle(all=True)
-        self.axes.axis["bottom", "top", "right"].set_visible(False)
-        self.axes.set_ylabel(f"{self.axes_property.data_name}/{self.axes_property.data_unit}", rotation=45)
-        self.axes.set_xlabel(f"t/s")
-        self.axes.set_title(self.axes_property.axes_title)
-        self.axes.legend()
+        super().init_canvas()
 
     def update_data(self, data: Tuple[float, float]):
+        super().update_data(data)
         # append data
         self.measurement_data.append(data[0])
         self.prediction_data.append(data[1])
-        t = self.t_data[-1] + 1 if self.t_data else 0
-        self.t_data.append(t)
         # resize array size
-        self.t_data = self.t_data[len(self.t_data) - self.ShowMaxTimeThreshold:]
-        self.measurement_data = self.measurement_data[len(self.measurement_data) - self.ShowMaxTimeThreshold:]
-        self.prediction_data = self.prediction_data[len(self.prediction_data) - self.ShowMaxTimeThreshold:]
+        if len(self.measurement_data) > self.ShowMaxTimeThreshold:
+            self.measurement_data = self.measurement_data[len(self.measurement_data) - self.ShowMaxTimeThreshold:]
+        if len(self.prediction_data) > self.ShowMaxTimeThreshold:
+            self.prediction_data = self.prediction_data[len(self.prediction_data) - self.ShowMaxTimeThreshold:]
         # setter set data
         self.measurement_data_setter.set_data(self.t_data, self.measurement_data)
         self.prediction_data_setter.set_data(self.t_data, self.prediction_data)
         # set lim
         self.ylim_min = min((data[0], data[1], self.ylim_min))
         self.ylim_max = max((data[0], data[1], self.ylim_max))
-        if len(self.t_data) != 1:
-            self.axes.set_xlim(left=self.t_data[0], right=self.t_data[-1])
         self.axes.set_ylim(bottom=self.ylim_min, top=self.ylim_max)
-        # draw
-        # start_time = time.time()
-        # self.measurement_data_setter.figure.canvas.draw()
-        # end_time = time.time()
-        # print(f"time: {end_time - start_time}")
 
     @staticmethod
     def create_axes(_figure: plt.Figure, _grid_spec: gridspec.GridSpec, _row: int, _col: int):
@@ -85,6 +71,8 @@ class RealtimeComparisonAxes(RealtimeAxesInterface):
 
 
 if __name__ == "__main__":
+    import random
+
     import matplotlib
     from matplotlib.animation import FuncAnimation
 

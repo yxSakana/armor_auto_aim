@@ -41,7 +41,10 @@ void PlotClientHttp::updateDateRequest(const nlohmann::json& json_data) {
         if (result && result->status == 200) {
 //            DLOG_EVERY_N(INFO, 100) << "Send data successfully!";
         } else {
-            DLOG(ERROR) << fmt::format("Failed to send data: {}", to_string(result.error()));
+            DLOG(ERROR) << fmt::format("Failed to send data: {}; code: {}; body: {}",
+                                       to_string(result.error()),
+                                       result->status,
+                                       result->body);
         }
     }
 }
