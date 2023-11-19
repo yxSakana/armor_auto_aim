@@ -3,7 +3,7 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
 file(GLOB_RECURSE sources CONFIGURE_DEPENDS src/*.cpp include/*.h)
-add_library(hik_driver ${sources})
+add_library(hik_driver STATIC ${sources})
 set_target_properties(hik_driver PROPERTIES
         LINKER_LANGUAGE CXX
         )

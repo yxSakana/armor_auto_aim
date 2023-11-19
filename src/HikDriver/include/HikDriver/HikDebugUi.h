@@ -10,7 +10,7 @@
 #ifndef INTELLIGENTHANDING_HIKDEBUGUI_H
 #define INTELLIGENTHANDING_HIKDEBUGUI_H
 
-#ifdef DEBUG_YX
+#ifdef DEBUG
 
 #include <QWidget>
 #include <QVBoxLayout>
@@ -19,19 +19,19 @@
 #include <QButtonGroup>
 #include <QCheckBox>
 #include <HikDriver/HikDriver.h>
-#include <debug_widgets/DSlider.h>
+#include <vision_debug_widgets//slider.h>
 
 class HikDebugUi : public QWidget {
 public:
-    HikDebugUi(HikDriver& driver)
+    explicit HikDebugUi(HikDriver& driver)
       : m_driver(&driver),
         layout(new QVBoxLayout),
-        d_exposure_time(new vision_debug_ui::DSlider("exposure time", &m_exposure_time,
-                                                     static_cast<int>(m_driver->getExposureTime().min),
-                                                     50000)),
-        d_gain(new vision_debug_ui::DSlider("gain", &m_gain,
-                                            static_cast<int>(m_driver->getGain().min),
-                                            static_cast<int>(m_driver->getGain().max))),
+        d_exposure_time(new vision_debug_widgets::Slider("exposure time", &m_exposure_time,
+                                                         static_cast<int>(m_driver->getExposureTime().min),
+                                                         50000)),
+        d_gain(new vision_debug_widgets::Slider("gain", &m_gain,
+                                                static_cast<int>(m_driver->getGain().min),
+                                                static_cast<int>(m_driver->getGain().max))),
         m_exposure_time(static_cast<int>(m_driver->getExposureTime().current)),
         m_gain(static_cast<int>(m_driver->getGain().current))
     {
@@ -43,7 +43,7 @@ public:
         // TODO: 没有默认构造函数: 造成 CoreThread 线程在构造函数内部设置曝光和阈值之前就已经读取相机数据了
         auto_exposure_time_off->setChecked(true);
         this->m_driver->setAutoExposureTime(0);
-        connect(d_exposure_time, &vision_debug_ui::DSlider::valChanged, [this](){
+        connect(d_exposure_time, &vision_debug_widgets::Slider::valChanged, [this](){
             this->m_driver->setExposureTime(static_cast<float>(m_exposure_time));
         });
         // 按钮组
@@ -60,17 +60,17 @@ public:
         // 连接信号
         connect(auto_exposure_time_off, &QRadioButton::clicked, [this](bool checked){
             this->m_driver->setAutoExposureTime(0);
-            connect(d_exposure_time, &vision_debug_ui::DSlider::valChanged, [this](){
+            connect(d_exposure_time, &vision_debug_widgets::Slider::valChanged, [this](){
                 this->m_driver->setExposureTime(static_cast<float>(m_exposure_time));
             });
         });
         connect(auto_exposure_time_once, &QRadioButton::clicked, [this](bool checked){
             this->m_driver->setAutoExposureTime(1);
-            disconnect(d_exposure_time, &vision_debug_ui::DSlider::valChanged, this, nullptr);  // TODO： disconnect 修改 定义 QMetaObject::Connection _connection;
+            disconnect(d_exposure_time, &vision_debug_widgets::Slider::valChanged, this, nullptr);  // TODO： disconnect 修改 定义 QMetaObject::Connection _connection;
         });
         connect(auto_exposure_time_continuous, &QRadioButton::clicked, [this](bool checked){
             this->m_driver->setAutoExposureTime(2);
-            disconnect(d_exposure_time, &vision_debug_ui::DSlider::valChanged, this, nullptr);
+            disconnect(d_exposure_time, &vision_debug_widgets::Slider::valChanged, this, nullptr);
         });
         // 自动增益
         auto auto_gain_off = new QRadioButton("off");
@@ -79,7 +79,7 @@ public:
         // 初始值
         auto_gain_off->setChecked(true);
         this->m_driver->setAutoGain(0);
-        connect(d_gain, &vision_debug_ui::DSlider::valChanged, [this](){
+        connect(d_gain, &vision_debug_widgets::Slider::valChanged, [this](){
             this->m_driver->setGain(static_cast<float>(m_gain));
         });
         // 按钮组
@@ -96,17 +96,17 @@ public:
         // 连接信号
         connect(auto_gain_off, &QRadioButton::clicked, [this](bool checked){
             this->m_driver->setAutoGain(0);
-            connect(d_gain, &vision_debug_ui::DSlider::valChanged, [this](){
+            connect(d_gain, &vision_debug_widgets::Slider::valChanged, [this](){
                 this->m_driver->setGain(static_cast<float>(m_gain));
             });
         });
         connect(auto_gain_once, &QRadioButton::clicked, [this](bool checked){
             this->m_driver->setAutoGain(1);
-            disconnect(d_gain, &vision_debug_ui::DSlider::valChanged, this, nullptr);
+            disconnect(d_gain, &vision_debug_widgets::Slider::valChanged, this, nullptr);
         });
         connect(auto_gain_continuous, &QRadioButton::clicked, [this](bool checked){
             this->m_driver->setAutoGain(2);
-            disconnect(d_gain, &vision_debug_ui::DSlider::valChanged, this, nullptr);
+            disconnect(d_gain, &vision_debug_widgets::Slider::valChanged, this, nullptr);
         });
         // 总布局
         layout->addWidget(d_exposure_time);
@@ -122,8 +122,8 @@ private:
     int m_exposure_time;
     int m_gain;
 
-    vision_debug_ui::DSlider* d_exposure_time;  // 曝光时间
-    vision_debug_ui::DSlider* d_gain;  // 增益
+    vision_debug_widgets::Slider* d_exposure_time;  // 曝光时间
+    vision_debug_widgets::Slider* d_gain;  // 增益
 
     QVBoxLayout* layout;
 

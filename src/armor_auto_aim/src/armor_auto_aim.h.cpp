@@ -7,7 +7,7 @@
  */
 
 #include <google_logger/google_logger.h>
-#include <armor_auto_aim/armoar_auto_aim.h>
+#include <armor_auto_aim/armor_auto_aim.h>
 #include <debug_toolkit/draw_package.h>
 
 namespace armor_auto_aim {
@@ -84,6 +84,9 @@ void ArmorAutoAim::initHikCamera() {
         m_hik_driver->showParamInfo();
         m_hik_read_thread->start();
         std::this_thread::sleep_for(std::chrono::seconds(2));
+
+        m_hik_debug_ui = std::make_unique<HikDebugUi>(*m_hik_driver);
+        m_hik_debug_ui->show();
     } else {
         LOG(FATAL) << "Hik can't connected!";
     }

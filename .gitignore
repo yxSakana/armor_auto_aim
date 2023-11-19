@@ -1,6 +1,6 @@
+.idea/
+.cache/
 cmake-build-*/
 build/
-.idea/
 log/
-.cache/
 video/
