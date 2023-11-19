@@ -19,7 +19,7 @@
 #include <QButtonGroup>
 #include <QCheckBox>
 #include <HikDriver/HikDriver.h>
-#include <vision_debug_widgets//slider.h>
+#include <vision_debug_widgets/slider.h>
 
 class HikDebugUi : public QWidget {
 public:
