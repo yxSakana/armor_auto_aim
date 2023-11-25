@@ -35,6 +35,8 @@ public:
     [[nodiscard]] const Eigen::MatrixXd& getF() const { return F; }
     [[nodiscard]] const Eigen::MatrixXd& getP() const { return P_posterior; };
     [[nodiscard]] const Eigen::MatrixXd& getH() const { return H; }
+    [[nodiscard]] const Eigen::MatrixXd& getQ() const { return Q; }
+    [[nodiscard]] const Eigen::MatrixXd& getR() const { return R; }
 
     void showInfo();
 private:

@@ -11,6 +11,7 @@ find_package(nlohmann_json REQUIRED)
 target_link_libraries(plot_client_http PUBLIC
         google_logger
         armor_tracker
+        serial_sort
 
         Eigen3::Eigen
         httplib::httplib

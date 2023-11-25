@@ -15,14 +15,18 @@ from matplotlib.backends.backend_qtagg import FigureCanvas
 from custom_axes.realtime_interface import *
 from custom_axes.realtime_comparison import *
 from custom_axes.realtime_position import *
+from custom_axes.realtime_waveform import *
 
 
 class RealtimeFactory(object):
-    __axes_types = ["realtime_comparison", "realtime_position"]
+    __axes_types = ["realtime_comparison", "realtime_position", "realtime_waveform"]
 
     @staticmethod
     def create_axes(_figure_canvas: FigureCanvas, _grid_spec: plt.GridSpec, _row: int, _col: int,
-                    _axes_property: Dict) -> Union[None, RealtimeComparisonAxes, RealtimePositionAxes]:
+                    _axes_property: Dict) -> Union[None,
+                                                   RealtimeComparisonAxes,
+                                                   RealtimePositionAxes,
+                                                   RealtimeWaveformAxes]:
         if _axes_property["type"] not in RealtimeFactory.__axes_types:
             logger.error(f"Unknown type{_axes_property['type']}")
             return None
@@ -31,7 +35,7 @@ class RealtimeFactory(object):
             axes_title = _axes_property["property"]["axes_title"]
             data_name = _axes_property["property"]["data_name"]
             data_unit = _axes_property["property"]["data_unit"]
-            axes_ = _figure_canvas.figure.add_subplot(_grid_spec[_row, _col], axes_class=axisartist.Axes)
+            axes_ = RealtimeComparisonAxes.create_axes(_figure_canvas.figure, _grid_spec, _row, _col)
             axes_property_ = RealtimeComparisonAxesProperty(axes_title, data_name, data_unit)
             return RealtimeComparisonAxes(axes_, axes_property_)
         elif _axes_property["type"] == "realtime_position":
@@ -42,11 +46,17 @@ class RealtimeFactory(object):
             y_val_unit = _axes_property["property"]["y_val_unit"]
             x_lim = _axes_property["property"]["x_lim"]
             y_lim = _axes_property["property"]["y_lim"]
-            axes_ = _figure_canvas.figure.add_subplot(_grid_spec[_row, _col], axes_class=axisartist.Axes)
+            axes_ = RealtimePositionAxes.create_axes(_figure_canvas.figure, _grid_spec, _row, _col)
             axes_property_ = RealtimePositionAxesProperty(axes_title, x_lim, y_lim,
                                                           x_val_name, x_val_unit,
                                                           y_val_name, y_val_unit)
             return RealtimePositionAxes(axes_, axes_property_)
 
-    # @staticmethod
-    # def create_axes():
+        elif _axes_property["type"] == "realtime_waveform":
+            axes_title = _axes_property["property"]["axes_title"]
+            data_name = _axes_property["property"]["data_name"]
+            data_unit = _axes_property["property"]["data_unit"]
+            y_lim = _axes_property["property"]["y_lim"]
+            axes_ = RealtimeWaveformAxes.create_axes(_figure_canvas.figure, _grid_spec, _row, _col)
+            axes_property_ = RealtimeWaveformAxesProperty(axes_title, y_lim, data_name, data_unit)
+            return RealtimeWaveformAxes(axes_, axes_property_)

@@ -7,6 +7,8 @@
  * @date 2023-10-29 18:48
  */
 
+#include <cmath>
+
 #include <random>
 
 #include <fmt/format.h>
@@ -20,6 +22,7 @@
 #include <armor_detector/parser.h>
 #include <debug_toolkit/draw_package.h>
 #include <solver/pnp_solver.h>
+#include <solver/ballistic_solver.h>
 
 namespace {
 TEST(test_pnp_solver, pnp) {
@@ -64,14 +67,12 @@ TEST(test_pnp_solver, pnp) {
                         cv::line(frame, inference_armors[0].armor_apex[j], inference_armors[0].armor_apex[(j + 1) % 4],
                                  cv::Scalar(0, 0, 255), 3);
                     armors.emplace_back(inference_armors[i]);
-                    armor_auto_aim::solver::Pose spatial_location{};
-                    bool code = pnp_solver.obtain3dCoordinates(armors[i], spatial_location);
-                    LOG_IF_EVERY_N(INFO, code, 10) << spatial_location;
+                    armor_auto_aim::solver::Pose pose{};
+                    bool code = pnp_solver.obtain3dPose(armors[i], pose);
+                    LOG_IF_EVERY_N(INFO, code, 10) << pose;
 
-                    armor_auto_aim::debug_toolkit::drawYawPitch(frame, spatial_location.yaw, spatial_location.pitch);
+                    armor_auto_aim::debug_toolkit::drawYawPitch(frame, pose.yaw, pose.pitch);
                 }
-//                LOG(INFO) << "Detected!" << "size: " << inference_armors.size() << std::endl;
-//                LOG(INFO) << "inference_armors: " << inference_armors[0];
             }
 
             tick_meter.stop();
@@ -82,5 +83,30 @@ TEST(test_pnp_solver, pnp) {
             cv::waitKey(1);
         }
     }
+}
+
+TEST(test_solver, test_shortest_angular_distance) {
+    auto angleToRadian = [](double angel) -> double {
+        return (angel * M_PI) / 180;
+    };
+    auto radianToAngel = [](double radian) -> double {
+        return (radian * 180) / M_PI;
+    };
+
+    EXPECT_EQ(radianToAngel(armor_auto_aim::shortestAngularDistance(angleToRadian(20.0), angleToRadian(520.0))),
+              140.0);
+}
+
+TEST(test_solver, test_ballistic_solver) {
+    Eigen::Vector3d translation_vector({0.5, 0.6, 8.0});
+    double vertical = translation_vector(1);
+    double horizontal = sqrt(translation_vector.squaredNorm() - vertical * vertical);
+    double pitch = atan2(vertical, horizontal);
+    LOG(INFO) << fmt::format("z: {}; horizontal: {}", translation_vector(2), horizontal);
+    LOG(INFO) << fmt::format("my_pitch: {}; old_pitch: {}; new_pitch: {}; diff: {}",
+                             atan2(translation_vector(1), translation_vector(2)) * 180 / M_PI,
+                             pitch * 180 / M_PI,
+                             armor_auto_aim::solver::ballisticSolver(translation_vector, 25) * 180 / M_PI,
+                             (armor_auto_aim::solver::ballisticSolver(translation_vector, 25) - pitch) * 180 / M_PI);
 }
 }

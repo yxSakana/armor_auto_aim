@@ -16,15 +16,18 @@ Detector::Detector()
 
 bool Detector::detect(const cv::Mat& frame, std::vector<Armor>* armors) {
     armors->clear();
+    bool is_ok = false;
 
     std::vector<InferenceResult> inference_result;
     bool status = m_inference->inference(frame, &inference_result);
     if (status) {
         for (int i = 0; i < inference_result.size(); ++i) {
             armors->emplace_back(armor_auto_aim::InferenceResult(inference_result[i]));
-            bool is_ok = m_pnp_solver->obtain3dCoordinates((*armors)[i], (*armors)[i].pose);
-            return is_ok && !armors->empty();
+            is_ok = m_pnp_solver->obtain3dPose((*armors)[i], (*armors)[i].pose);
+            if (!is_ok)
+                armors->pop_back();
         }
+        return !armors->empty();
     } else {
         return false;
     }

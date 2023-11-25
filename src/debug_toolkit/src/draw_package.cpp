@@ -115,7 +115,7 @@ void drawFrameInfo(cv::Mat& src, const std::vector<Armor>& armors, const Tracker
     // tracker
     if (tracker.state() == armor_auto_aim::TrackerStateMachine::State::Tracking ||
         tracker.state() == armor_auto_aim::TrackerStateMachine::State::TempLost) {
-        cv::Point2d predict_point(tracker.getTargetSate()(0), tracker.getTargetSate()(2));
+        cv::Point2d predict_point(tracker.getTargetPredictSate()(0), tracker.getTargetPredictSate()(2));
         cv::Scalar predict_point_color(0, 0, 255);
         cv::circle(src, predict_point, 6, predict_point_color, -1);
     }
