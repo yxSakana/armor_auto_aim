@@ -39,6 +39,22 @@ Eigen::Vector3d rotationMatrixToEulerAngles(const Eigen::Matrix3d& R);
  * @return Unit: radian; roll, yaw, pitch
  */
 Eigen::Vector3d rotationVectorToEulerAngles(const cv::Mat& rvec);
+
+/**
+ * @brief 最小角度差
+ * @param from
+ * @param to
+ * @return Range: [-pi, pi]
+ */
+inline static double shortestAngularDistance(double from, double to) {
+    double delta = to - from;
+    delta = fmod(delta + M_PI, 2 * M_PI) - M_PI;
+    return delta;
+}
+
+inline double angleToRadian(double angel) { return (angel * M_PI) / 180; }
+
+inline double radianToAngel(double radian) { return (radian * 180) / M_PI; }
 }
 
 #endif //TEST_EXTENDED_KALMAN_FILTER_UTILS_H

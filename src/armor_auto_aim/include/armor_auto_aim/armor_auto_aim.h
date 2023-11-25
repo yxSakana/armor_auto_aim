@@ -20,6 +20,7 @@
 #include <serial_port/VCOMCOMM.h>
 #include <plot_client_http/ekf_plot.h>
 #include <plot_client_http/pnp_view.h>
+#include <plot_client_http/yaw_pitch_view.h>
 
 namespace armor_auto_aim {
 class ArmorAutoAim {
@@ -50,12 +51,14 @@ private:
     void sendCreateViewRequest();
 
     void initEkf();
-    Eigen::Matrix<double, 6, 6> F;
-    Eigen::Matrix<double, 3, 6> H;
-    Eigen::DiagonalMatrix<double, 6> Q;
-    Eigen::DiagonalMatrix<double, 3> R;
+    Eigen::Matrix<double, 8, 8> F;
+    Eigen::Matrix<double, 4, 8> H;
+    Eigen::DiagonalMatrix<double, 8> Q;
+    Eigen::DiagonalMatrix<double, 4> R;
     Eigen::VectorXd X;
     Eigen::VectorXd Z;
+
+    inline static CommunicateProtocol translation2YawPitch(const solver::Pose& pose);
 };
 }
 

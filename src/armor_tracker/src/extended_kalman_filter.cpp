@@ -45,7 +45,7 @@ Eigen::MatrixXd ExtendedKalmanFilter::predict(const Eigen::VectorXd& z) {
    X_posterior = X_prior + K * (z - h(X_prior));
    P_posterior = (I - K * H) * P_prior;
 
-    return X_posterior;
+   return X_posterior;
 }
 
 void ExtendedKalmanFilter::showInfo() {

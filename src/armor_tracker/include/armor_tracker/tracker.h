@@ -63,17 +63,15 @@ public:
 
     [[nodiscard]] inline std::string stateString() const { return m_tracker_state_machine.stateString(); }
 
-    [[nodiscard]] const Eigen::VectorXd& getTargetSate() const { return m_target_state; }
+    [[nodiscard]] const Eigen::VectorXd& getTargetPredictSate() const { return m_target_predict_state; }
 
-    ExtendedKalmanFilter* ekf = nullptr;
-
+    std::shared_ptr<ExtendedKalmanFilter> ekf = nullptr;
     Armor tracked_armor;
-
     Eigen::VectorXd measurement;
 private:
     const double m_MaxMatchDistance = DBL_MAX;
 
-    Eigen::VectorXd m_target_state;
+    Eigen::VectorXd m_target_predict_state;
     TrackerStateMachine m_tracker_state_machine;
     int m_tracked_id{};  // armor number
 

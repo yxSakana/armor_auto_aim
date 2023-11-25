@@ -11,10 +11,13 @@
 
 #include <cstdint>
 
+#include <string>
+
 struct CommunicateProtocol {
-    float yaw{};
     float pitch{};
+    float yaw{};
     float distance{};
+    float aim_shoot{};
 
     CommunicateProtocol() =default;
 
@@ -22,6 +25,15 @@ struct CommunicateProtocol {
         : yaw(y),
           pitch(p),
           distance(d) {}
+
+    [[nodiscard]] std::string to_string() const {
+        std::string info("[CommunicateProtocol ");
+        info += "yaw: " + std::to_string(yaw) + "; ";
+        info += "pitch: " + std::to_string(pitch) + "; ";
+        info += "distance: " + std::to_string(distance) + "; ";
+        info += "aim_shoot: " + std::to_string(aim_shoot) + ";]";
+        return info;
+    }
 };
 
 #endif //ARMOR_AUTO_AIMING_COMMUNICATION_PROTOCOL_H

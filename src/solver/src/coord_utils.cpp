@@ -32,6 +32,6 @@ Eigen::Vector3d rotationVectorToEulerAngles(const cv::Mat& rvec) {
     Eigen::Matrix3d rmat_eigen;
     cv::cv2eigen(rmat_cv, rmat_eigen);
     return rmat_eigen.eulerAngles(2, 1, 0);
-    return rotationMatrixToEulerAngles(rmat_eigen);
+//    return rotationMatrixToEulerAngles(rmat_eigen);
 }
 }

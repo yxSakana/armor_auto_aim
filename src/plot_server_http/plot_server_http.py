@@ -88,7 +88,6 @@ if __name__ == "__main__":
             },
         ]
     }
-    logger.info("-> [INFO] <- ^_^")
     # logger.configure(**app.config["LOGURU_CONFIG"])
     app.logger.disabled = True
 

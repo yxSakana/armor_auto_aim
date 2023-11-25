@@ -47,7 +47,7 @@ void pnpViewCreateWindowRequest(PlotClientHttp* plot_client_http) {
                     { "y_lim", nlohmann::json::array({-180, 180}) }
                 }}
             }}
-        } }
+        }}
     };
     plot_client_http->createWindowRequest(create_window_data);
 }
@@ -62,15 +62,15 @@ void pnpViewUpdateDataRequest(PlotClientHttp* plot_client_http, const Tracker& t
         };
         solver::Pose tracked_armor_pose = tracker.tracked_armor.pose;
 
-        json_data["data"] = nlohmann::json::array({tracked_armor_pose.yaw, tracked_armor_pose.pitch});
+        json_data["data"] = nlohmann::json::array({tracked_armor_pose.yaw * 180 / M_PI, tracked_armor_pose.pitch * 180 / M_PI});
         plot_client_http->updateDateRequest(json_data);
 
         json_data["col"] = 1;
-        json_data["data"] = nlohmann::json::array({tracked_armor_pose.yaw});
+        json_data["data"] = nlohmann::json::array({tracked_armor_pose.yaw * 180 / M_PI});
         plot_client_http->updateDateRequest(json_data);
 
         json_data["col"] = 2;
-        json_data["data"] = nlohmann::json::array({tracked_armor_pose.pitch});
+        json_data["data"] = nlohmann::json::array({tracked_armor_pose.pitch * 180 / M_PI});
         plot_client_http->updateDateRequest(json_data);
     }
 }

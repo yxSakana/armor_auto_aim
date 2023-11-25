@@ -62,7 +62,7 @@ protected:
         };
 
         tracker = std::make_unique<armor_auto_aim::Tracker>();
-        tracker->ekf = new armor_auto_aim::ExtendedKalmanFilter(p0, f, h, j_f, j_h, update_Q, update_R);
+        tracker->ekf = std::make_shared<armor_auto_aim::ExtendedKalmanFilter>(p0, f, h, j_f, j_h, update_Q, update_R);
         armor_auto_aim::ekf_plot::lineSystemCreateWindowRequest(&plot_client_http);
         armor_auto_aim::pnp_view::pnpViewCreateWindowRequest(&plot_client_http);
     }
@@ -117,7 +117,7 @@ TEST_F(TestKf, line_system) {
                     // Create armors
                     armors.emplace_back(armor_auto_aim::InferenceResult(inference_armors[i]));
                     // Pnp
-                    bool code = pnp_solver->obtain3dCoordinates(armors[i], armors[i].pose);
+                    bool code = pnp_solver->obtain3dPose(armors[i], armors[i].pose);
                     // debug draw
 //                    armor_auto_aim::debug_toolkit::drawYawPitch(frame, armors[i].pose.yaw, armors[i].pose.pitch);
                 }

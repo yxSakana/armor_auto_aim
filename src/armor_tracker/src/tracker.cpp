@@ -72,18 +72,21 @@ void Tracker::updateTracker(const Armors& armors) {
     bool is_matched = false;
     const Armor* same_id_armor;
     int same_id_armor_count = 0;
-    m_target_state = ekf->update();
+    m_target_predict_state = ekf->update();
     // 寻找tracked装甲板
     if (!armors.empty()) {
         double min_position_difference = DBL_MAX;
         double yaw_difference = DBL_MAX;
         Eigen::Vector3d measurement_position_vec;
-        Eigen::Vector3d predicted_position_vec(m_target_state(0), m_target_state(2), m_target_state(4));
+        Eigen::Vector3d predicted_position_vec(
+                m_target_predict_state(0),
+                m_target_predict_state(2),
+                m_target_predict_state(4));
         for (const auto& armor: armors) {
             if (armor.number == m_tracked_id) {
                 same_id_armor = &armor;
                 same_id_armor_count++;
-                measurement_position_vec = Eigen::Vector3d(armor.pose.x, armor.pose.y, armor.pose.z); // FIXME: 是否会转移所有权
+                measurement_position_vec = Eigen::Vector3d(armor.pose.x, armor.pose.y, armor.pose.z);
                 double position_difference = (predicted_position_vec - measurement_position_vec).norm();
                 if (position_difference < min_position_difference) {
                     min_position_difference = position_difference;
@@ -94,9 +97,11 @@ void Tracker::updateTracker(const Armors& armors) {
 //        DLOG(INFO) << "min_position_diff: " << min_position_difference;
         // 后验及装甲板跳变处理
         if (min_position_difference < m_MaxMatchDistance) {
+//             TODO: 是否需要使用shortestAngularDistance 对 yaw 进行处理
             is_matched = true;
-            measurement = Eigen::Vector3d(tracked_armor.pose.x, tracked_armor.pose.y, tracked_armor.pose.z);
-            m_target_state = ekf->predict(measurement);
+            measurement = Eigen::Vector4d(tracked_armor.pose.x, tracked_armor.pose.y,
+                                          tracked_armor.pose.z, tracked_armor.pose.yaw);
+            m_target_predict_state = ekf->predict(measurement);
         } else if (same_id_armor_count == 1) {
             LOG(WARNING) << "armor jump";
         }
@@ -111,9 +116,9 @@ void Tracker::initEkf(const Armor& armor) {
     double za = armor.pose.z;
     double yaw = armor.pose.yaw;
 
-    m_target_state = Eigen::VectorXd::Zero(6);
-    m_target_state << xa, 0, ya, 0, za, 0;
+    m_target_predict_state = Eigen::VectorXd::Zero(8);
+    m_target_predict_state << xa, 0, ya, 0, za, 0, yaw, 0;
 
-    ekf->setState(m_target_state);
+    ekf->setState(m_target_predict_state);
 }
 } // armor_auto_aim

@@ -9,6 +9,7 @@ find_package(OpenCV REQUIRED)
 find_package(Eigen3 REQUIRED)
 
 target_link_libraries(solver PUBLIC
+        google_logger
         armor_detector
 
         ${OpenCV_LIBS}

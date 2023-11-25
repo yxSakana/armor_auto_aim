@@ -20,7 +20,7 @@ class HikFrame {
 private:
 //    unsigned int m_data_size = {};  // 帧大小
     cv::Mat m_rgb_frame = {};
-    int64_t m_timestamp = 0;
+    int64_t m_timestamp = 0;  // milliseconds
 
 public:
 //    HikFrame() =default;

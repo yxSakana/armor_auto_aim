@@ -12,7 +12,6 @@ from typing import Tuple, List
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 from mpl_toolkits import axisartist
-from loguru import logger
 
 from custom_axes.realtime_interface import RealtimeAxesWaveformInterface, RealtimeWaveformAxesPropertyInterface
 
@@ -40,7 +39,7 @@ class RealtimeWaveformAxes(RealtimeAxesWaveformInterface):
 
     def init_canvas(self) -> None:
         super().init_canvas()
-        # self.axes.set_ylim(bottom=self.axes_property.y_lim[0], top=self.axes_property.y_lim[1])
+        self.axes.set_ylim(bottom=self.axes_property.y_lim[0], top=self.axes_property.y_lim[1])
 
     def update_data(self, data: Tuple[float]) -> None:
         data = data[0]

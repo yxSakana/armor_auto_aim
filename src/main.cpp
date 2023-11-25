@@ -22,6 +22,7 @@ int main(int argc, char* argv[]) {
     std::thread armor_auto_aim_thread([&armor_auto_aim]()-> void {
         armor_auto_aim.armorAutoAim();
     });
+    armor_auto_aim_thread.detach();
 //    armor_auto_aim_thread.detach();
 
 #ifdef DEBUG

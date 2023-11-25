@@ -22,6 +22,7 @@ PnPSolver::PnPSolver(const std::array<double, 9>& intrinsic_matrix,
     constexpr double large_half_y = LARGE_ARMOR_HEIGHT / 2.0 / 1000.0;
 
     // 3d Points(lt lb rb rt)
+    // FIXME: y轴需要调整一下吗
     m_small_armor_point3d.push_back(cv::Point3f(small_half_x, small_half_y, 0));
     m_small_armor_point3d.push_back(cv::Point3f(small_half_x, -small_half_y, 0));
     m_small_armor_point3d.push_back(cv::Point3f(-small_half_x, -small_half_y, 0));
@@ -39,13 +40,11 @@ bool PnPSolver::pnpSolver(const Armor& armor, cv::Mat& rvec, cv::Mat& tvec) {
                         rvec, tvec, false, cv::SOLVEPNP_IPPE);  // cv::SOLVEPNP_ITERATIVE ?
 }
 
-bool PnPSolver::obtain3dCoordinates(const Armor& armor, armor_auto_aim::solver::Pose& pose) {
+bool PnPSolver::obtain3dPose(const Armor& armor, armor_auto_aim::solver::Pose& pose) {
     cv::Mat rvec, tvec;
     if (pnpSolver(armor, rvec, tvec)) {
         auto correctEulerAngles = [](Eigen::Vector3d& euler_angles) {
 //            euler_angles(2) = euler_angles(2) > 0? euler_angles(2) - M_PI: euler_angles(2) + M_PI;
-//            euler_angles(1) = euler_angles(1) > 0? euler_angles(1) - M_PI: euler_angles(1) + M_PI;
-//            euler_angles(0) = euler_angles(0) > 0? euler_angles(0) - M_PI: euler_angles(0) + M_PI;
             if (euler_angles(2) > M_PI_2) {
                 euler_angles(2) = M_PI - euler_angles(2);
             } else if (euler_angles(2) < -M_PI_2) {
@@ -56,13 +55,10 @@ bool PnPSolver::obtain3dCoordinates(const Armor& armor, armor_auto_aim::solver::
             } else if (euler_angles(1) < -M_PI_2) {
                 euler_angles(1) = -M_PI - euler_angles(1);
             }
-
-            euler_angles(0) = euler_angles(0) * (180.0f / M_PI);
-            euler_angles(1) = euler_angles(1) * (180.0f / M_PI);  // pitch
-            euler_angles(2) = euler_angles(2) * (180.0f / M_PI);  // yaw
-        };  // 转化为角度，调整正负与范围
+        };  // 范围
         Eigen::Vector3d euler_angles = rotationVectorToEulerAngles(rvec);
 
+        // TODO: 是否需要修改为 弧度制
         // FIXME: pnp解算出的欧拉角, pitch yaw 是不是反了; x y 符号是否正确, 为什么符号相反?
         correctEulerAngles(euler_angles);
         pose.pitch = static_cast<float>(euler_angles(1));
