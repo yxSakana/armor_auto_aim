@@ -61,21 +61,7 @@ GoogleLogger::GoogleLogger(const char *program)
         : m_console_log_sink(new ConsoleLogSink)
 {
     google::InitGoogleLogging(program, CustomPrefix);
-    FLAGS_stderrthreshold = 5;  // 设置默认控制台记录器级别阈值, 消除默认控制台记录器
-    google::EnableLogCleaner(3);
-    // 日志输出目录
-    std::string pwd = std::filesystem::current_path().string();
-    m_info_log_dir = pwd + "/../log/info/";
-    m_warning_log_dir = pwd + "/../log/warning/";
-    m_error_log_dir = pwd + "/../log/error/";
-    checkDirectory(m_info_log_dir);
-    checkDirectory(m_warning_log_dir);
-    checkDirectory(m_error_log_dir);
-    google::SetLogDestination(google::GLOG_INFO, m_info_log_dir.c_str());
-    google::SetLogDestination(google::GLOG_WARNING, m_warning_log_dir.c_str());
-    google::SetLogDestination(google::GLOG_ERROR, m_error_log_dir.c_str());
-    // 控制台日志
-    google::AddLogSink(m_console_log_sink);
+    initGoogleConfig();
 }
 
 GoogleLogger::GoogleLogger(int argc, char** argv)
@@ -83,21 +69,7 @@ GoogleLogger::GoogleLogger(int argc, char** argv)
 {
     google::ParseCommandLineFlags(&argc, &argv, true);
     google::InitGoogleLogging(argv[0], CustomPrefix);
-    FLAGS_stderrthreshold = 5;  // 设置默认控制台记录器级别阈值, 消除默认控制台记录器
-    google::EnableLogCleaner(3);
-    // 日志输出目录 TODO: 当没有 log、log/info 等目录时会报错
-    std::string pwd = std::filesystem::current_path().string();
-    m_info_log_dir = pwd + "/../log/info/";
-    m_warning_log_dir = pwd + "/../log/warning/";
-    m_error_log_dir = pwd + "/../log/error/";
-    checkDirectory(m_info_log_dir);
-    checkDirectory(m_warning_log_dir);
-    checkDirectory(m_error_log_dir);
-    google::SetLogDestination(google::GLOG_INFO, m_info_log_dir.c_str());
-    google::SetLogDestination(google::GLOG_WARNING, m_warning_log_dir.c_str());
-    google::SetLogDestination(google::GLOG_ERROR, m_error_log_dir.c_str());
-    // 控制台日志
-    google::AddLogSink(m_console_log_sink);
+    initGoogleConfig();
 }
 
 GoogleLogger::~GoogleLogger() {
@@ -138,6 +110,24 @@ void GoogleLogger::CustomPrefix(std::ostream &os, const google::LogMessageInfo &
     os << fmt::format("({}:{})[{}][{:04d}-{:02d}-{:02d} {:02d}:{:02d}:{:02d}]",
                       log_info.filename, log_info.line_number, log_info.severity,
                       y, m, d, h, min, s);
+}
+
+void GoogleLogger::initGoogleConfig() {
+    google::InstallFailureSignalHandler();
+    FLAGS_stderrthreshold = 5;  // 设置默认控制台记录器级别阈值, 消除默认控制台记录器
+    google::EnableLogCleaner(3);
+    std::string pwd = std::filesystem::current_path().string();
+    m_info_log_dir = pwd + "/../log/info/";
+    m_warning_log_dir = pwd + "/../log/warning/";
+    m_error_log_dir = pwd + "/../log/error/";
+    checkDirectory(m_info_log_dir);
+    checkDirectory(m_warning_log_dir);
+    checkDirectory(m_error_log_dir);
+    google::SetLogDestination(google::GLOG_INFO, m_info_log_dir.c_str());
+    google::SetLogDestination(google::GLOG_WARNING, m_warning_log_dir.c_str());
+    google::SetLogDestination(google::GLOG_ERROR, m_error_log_dir.c_str());
+    // 控制台日志
+    google::AddLogSink(m_console_log_sink);
 }
 
 void GoogleLogger::filesRecursively(const std::filesystem::path &path) {

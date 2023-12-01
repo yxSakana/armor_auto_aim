@@ -75,6 +75,7 @@ void Tracker::updateTracker(const Armors& armors) {
     m_target_predict_state = ekf->update();
     // 寻找tracked装甲板
     if (!armors.empty()) {
+//        m_target_predict_state = ekf->update();
         double min_position_difference = DBL_MAX;
         double yaw_difference = DBL_MAX;
         Eigen::Vector3d measurement_position_vec;
@@ -82,7 +83,7 @@ void Tracker::updateTracker(const Armors& armors) {
                 m_target_predict_state(0),
                 m_target_predict_state(2),
                 m_target_predict_state(4));
-        for (const auto& armor: armors) {
+        for (const auto& armor: armors) { // FIXME: 优先级: 同id > 上次击打(距离最近) || 上次击打 > 同id ?
             if (armor.number == m_tracked_id) {
                 same_id_armor = &armor;
                 same_id_armor_count++;
@@ -94,16 +95,21 @@ void Tracker::updateTracker(const Armors& armors) {
                 }
             }
         }
-//        DLOG(INFO) << "min_position_diff: " << min_position_difference;
         // 后验及装甲板跳变处理
         if (min_position_difference < m_MaxMatchDistance) {
 //             TODO: 是否需要使用shortestAngularDistance 对 yaw 进行处理
+            LOG_IF(INFO, min_position_difference > m_MaxMatchDistance) << min_position_difference;
             is_matched = true;
             measurement = Eigen::Vector4d(tracked_armor.pose.x, tracked_armor.pose.y,
                                           tracked_armor.pose.z, tracked_armor.pose.yaw);
             m_target_predict_state = ekf->predict(measurement);
         } else if (same_id_armor_count == 1) {
+            LOG_IF(WARNING, min_position_difference > m_MaxMatchDistance) << min_position_difference;
             LOG(WARNING) << "armor jump";
+            handleArmorJump(*same_id_armor);
+        } else {
+            LOG_IF(WARNING, min_position_difference > m_MaxMatchDistance) << min_position_difference;
+            LOG(WARNING) << "No matched armor!";
         }
     }
     // update
@@ -120,5 +126,16 @@ void Tracker::initEkf(const Armor& armor) {
     m_target_predict_state << xa, 0, ya, 0, za, 0, yaw, 0;
 
     ekf->setState(m_target_predict_state);
+}
+
+void Tracker::handleArmorJump(const armor_auto_aim::Armor& same_id_armor) {
+    m_target_predict_state[0] = same_id_armor.pose.x;
+    m_target_predict_state[1] = 0;
+    m_target_predict_state[2] = same_id_armor.pose.y;
+    m_target_predict_state[3] = 0;
+    m_target_predict_state[4] = same_id_armor.pose.z;
+    m_target_predict_state[5] = 0;
+    m_target_predict_state[6] = same_id_armor.pose.yaw;
+    m_target_predict_state[7] = 0;
 }
 } // armor_auto_aim

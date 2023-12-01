@@ -13,38 +13,35 @@
 namespace armor_auto_aim::pnp_view {
 void pnpViewCreateWindowRequest(PlotClientHttp* plot_client_http) {
     nlohmann::json create_window_data = {
-        { "window_name", "PnP View" },
+        { "window_name", "Tracked Armor Translation - PNP" },
         { "rows", 1 },
         { "cols", 3 },
         { "multiple_axes", {
             {"00", {
-                { "type", "realtime_position" },
+                { "type", "realtime_waveform" },
                 { "property", {
-                    { "axes_title", "PnP Yaw-Pitch" },
-                    { "x_val_name", "yaw" },
-                    { "x_val_unit", "°" },
-                    { "y_val_name", "pitch" },
-                    { "y_val_unit", "°" },
-                    { "x_lim", nlohmann::json::array({-180, 180}) },
-                    { "y_lim", nlohmann::json::array({-180, 180}) }
+                    { "axes_title", "armor x" },
+                    { "data_name", "x" },
+                    { "data_unit", "m" },
+                    { "y_lim", nlohmann::json::array({-5, 5}) }
                 }}
             }},
             {"01", {
                 { "type", "realtime_waveform" },
                 { "property", {
-                    { "axes_title", "PnP Yaw" },
-                    { "data_name", "Yaw" },
-                    { "data_unit", "°" },
-                    { "y_lim", nlohmann::json::array({-180, 180}) }
+                    { "axes_title", "armor y" },
+                    { "data_name", "y" },
+                    { "data_unit", "m" },
+                    { "y_lim", nlohmann::json::array({-5, 5}) }
                 }}
             }},
             {"02", {
                 { "type", "realtime_waveform" },
                 { "property", {
-                    { "axes_title", "PnP Pitch" },
-                    { "data_name", "Pitch" },
-                    { "data_unit", "°" },
-                    { "y_lim", nlohmann::json::array({-180, 180}) }
+                    { "axes_title", "armor z" },
+                    { "data_name", "z" },
+                    { "data_unit", "m" },
+                    { "y_lim", nlohmann::json::array({-5, 5}) }
                 }}
             }}
         }}
@@ -56,21 +53,21 @@ void pnpViewUpdateDataRequest(PlotClientHttp* plot_client_http, const Tracker& t
     if (tracker.state() == armor_auto_aim::TrackerStateMachine::State::Tracking ||
         tracker.state() == armor_auto_aim::TrackerStateMachine::State::TempLost) {
         nlohmann::json json_data = {
-                { "window_name", "PnP View" },
+                { "window_name", "Tracked Armor Translation - PNP" },
                 { "row", 0 },
                 { "col", 0 },
         };
         solver::Pose tracked_armor_pose = tracker.tracked_armor.pose;
 
-        json_data["data"] = nlohmann::json::array({tracked_armor_pose.yaw * 180 / M_PI, tracked_armor_pose.pitch * 180 / M_PI});
+        json_data["data"] = nlohmann::json::array({tracked_armor_pose.x});
         plot_client_http->updateDateRequest(json_data);
 
         json_data["col"] = 1;
-        json_data["data"] = nlohmann::json::array({tracked_armor_pose.yaw * 180 / M_PI});
+        json_data["data"] = nlohmann::json::array({tracked_armor_pose.y});
         plot_client_http->updateDateRequest(json_data);
 
         json_data["col"] = 2;
-        json_data["data"] = nlohmann::json::array({tracked_armor_pose.pitch * 180 / M_PI});
+        json_data["data"] = nlohmann::json::array({tracked_armor_pose.z});
         plot_client_http->updateDateRequest(json_data);
     }
 }

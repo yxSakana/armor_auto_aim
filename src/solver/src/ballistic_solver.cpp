@@ -23,10 +23,11 @@ double ballisticSolver(const Eigen::Vector3d& translation_vector,
 //    constexpr double k = 0.01903;  // 25°C, 1atm, 小弹丸
 //    constexpr double k = 0.000556; // 25°C, 1atm, 大弹丸
 //    constexpr double k = 0.000530; // 25°C, 1atm, 发光大弹丸
-
-    double vertical = translation_vector(1);
+    // FIXME:  NaN Failed 是否因为 vertical 有时候为负
+    // TODO: 世界坐标系下进行迭代
+    double vertical = translation_vector[1]; //
     double temp_vertical = vertical;
-    double horizontal = sqrt(translation_vector.squaredNorm() - vertical * vertical);  // FIXME: 是否需要直接改为 translation_vector(2);
+    double horizontal = sqrt(translation_vector.squaredNorm() - vertical * vertical);
     double pitch = atan2(vertical, horizontal);
     double pitch_new = pitch;
     for (int i = 0; i < max_number_iteration; ++i) {
@@ -69,7 +70,7 @@ double ballisticSolver(const Eigen::Vector3d& translation_vector,
             pitch_new = atan2(temp_vertical, horizontal);
         }
     }
-    return pitch_new;
+    return pitch_new - pitch;
 }
 
 void ballisticSolver_0() {

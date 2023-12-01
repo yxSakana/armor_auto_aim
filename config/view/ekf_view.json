@@ -1,0 +1,88 @@
+{
+  "Predict Translation - EKF": {
+    "window_name": "Predict Translation - EKF",
+    "rows": 2,
+    "cols": 3,
+    "multiple_axes": {
+      "00": {
+        "type": "realtime_comparison",
+        "property": {
+          "axes_title": "tracked armor x(predict)",
+          "y_lim": [-5, 5],
+          "data_name": "xa",
+          "data_unit": "m"
+        }
+      },
+      "01": {
+        "type": "realtime_comparison",
+        "property": {
+          "axes_title": "tracked armor y(predict)",
+          "y_lim": [-5, 5],
+          "data_name": "ya",
+          "data_unit": "m"
+        }
+      },
+      "02": {
+        "type": "realtime_comparison",
+        "property": {
+          "axes_title": "tracked armor z(predict)",
+          "y_lim": [-15, 15],
+          "data_name": "za",
+          "data_unit": "m"
+        }
+      },
+      "10": {
+        "type": "realtime_waveform",
+        "property": {
+          "axes_title": "tracked armor v_x(predict)",
+          "y_lim": [-0.01, 0.01],
+          "data_name": "v_x",
+          "data_unit": "m/s"
+        }
+      },
+      "11": {
+        "type": "realtime_waveform",
+        "property": {
+          "axes_title": "tracked armor v_y(predict)",
+          "y_lim": [-0.01, 0.01],
+          "data_name": "v_y",
+          "data_unit": "m/s"
+        }
+      },
+      "12": {
+        "type": "realtime_waveform",
+        "property": {
+          "axes_title": "tracked armor v_z(predict)",
+          "y_lim": [-0.01, 0.01],
+          "data_name": "v_z",
+          "data_unit": "m/s"
+        }
+      }
+    }
+  },
+  "Camera Yaw-Pitch": {
+    "window_name": "Camera Yaw-Pitch",
+    "rows": 1,
+    "cols": 2,
+    "multiple_axes": {
+      "00": {
+        "type": "realtime_waveform",
+        "property": {
+          "axes_title": "tracked armor yaw(predict)",
+          "y_lim": [-180, 180],
+          "data_name": "yaw",
+          "data_unit": "°"
+        }
+      },
+      "01": {
+        "type": "realtime_waveform",
+        "property": {
+          "axes_title": "tracked armor pitch(predict)",
+          "y_lim": [-180, 180],
+          "data_name": "pitch",
+          "data_unit": "°"
+        }
+      }
+    }
+  }
+}

@@ -38,14 +38,20 @@ void PlotClientHttp::createWindowRequest(const nlohmann::json& json_data) {
 void PlotClientHttp::updateDateRequest(const nlohmann::json& json_data) {
     if (m_is_connected) {
         httplib::Result result = m_client.Post("/update_data", json_data.dump(), "application/json");
-        if (result && result->status == 200) {
-//            DLOG_EVERY_N(INFO, 100) << "Send data successfully!";
-        } else {
-            DLOG(ERROR) << fmt::format("Failed to send data: {}; code: {}; body: {}",
-                                       to_string(result.error()),
-                                       result->status,
-                                       result->body);
+        if (!(result && result->status == 200)) {
+            DLOG(ERROR) << fmt::format(
+                    "Failed to send data: {}; code: {}; body: {}",
+                    to_string(result.error()),
+                    result->status,
+                    result->body);
         }
     }
+}
+
+void PlotClientHttp::asyncUpdateDateRequest(const nlohmann::json& json_data) {
+    auto request = [this, json_data]() -> void {
+        m_client.Post("/update_data", json_data.dump(), "application/json");
+    };
+    m_request_thread_pool.enqueue(request);
 }
 }

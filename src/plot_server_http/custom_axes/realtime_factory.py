@@ -33,10 +33,11 @@ class RealtimeFactory(object):
 
         if _axes_property["type"] == "realtime_comparison":
             axes_title = _axes_property["property"]["axes_title"]
+            y_lim = _axes_property["property"]["y_lim"]
             data_name = _axes_property["property"]["data_name"]
             data_unit = _axes_property["property"]["data_unit"]
             axes_ = RealtimeComparisonAxes.create_axes(_figure_canvas.figure, _grid_spec, _row, _col)
-            axes_property_ = RealtimeComparisonAxesProperty(axes_title, data_name, data_unit)
+            axes_property_ = RealtimeComparisonAxesProperty(axes_title, y_lim, data_name, data_unit)
             return RealtimeComparisonAxes(axes_, axes_property_)
         elif _axes_property["type"] == "realtime_position":
             axes_title = _axes_property["property"]["axes_title"]

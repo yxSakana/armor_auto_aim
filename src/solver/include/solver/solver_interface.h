@@ -12,6 +12,8 @@
 
 #include <ostream>
 
+#include <fmt/format.h>
+
 namespace armor_auto_aim::solver {
     struct Pose {
         float pitch;
@@ -25,13 +27,13 @@ namespace armor_auto_aim::solver {
             : pitch(p), yaw(yaw), roll(r), x(x), y(y), z(z)
         {}
 
-        friend std::ostream& operator<<(std::ostream& os, const Pose& location) {
-            os << "pitch: " << location.pitch
-               << "; yaw: " << location.yaw
-               << "; roll: " << location.roll
-               << "; x: " << location.x
-               << "; y: " << location.y
-               << "; z: " << location.z;
+        std::string to_string() const {
+            return fmt::format("x: {}; y: {}; z: {}; yaw: {}; pitch: {}; roll: {};",
+                               x, y, z, yaw, pitch, roll);
+        }
+
+        friend std::ostream& operator<<(std::ostream& os, const Pose& pose) {
+            os << pose.to_string();
             return os;
         }
     };

@@ -21,7 +21,7 @@ namespace armor_auto_aim::solver {
   * @param stop_error
   * @param k
   * @param g
-  * @return new_pitch
+  * @return (new_pitch - pitch)补偿后的pitch与原来pitch的差值
   */
 double ballisticSolver(const Eigen::Vector3d& translation_vector,
                        const double& bullet_speed,
