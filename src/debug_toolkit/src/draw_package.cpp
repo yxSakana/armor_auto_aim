@@ -100,11 +100,16 @@ void drawFrameInfo(cv::Mat& src, const std::vector<Armor>& armors, const Tracker
     int thickness = 2;
     int y = 30;
     // fps && timestamp  && state of tracker
-    cv::putText(src, "fps: " + std::to_string(static_cast<int>(fps)), cv::Point(20, y), face, foot_scale, text_color, thickness);
-    cv::putText(src, std::to_string(timestamp), cv::Point(150, y), face, foot_scale, text_color, thickness);
-    cv::putText(src, tracker.stateString(), cv::Point(400, y), face, foot_scale, text_color, thickness);
-    cv::putText(src, "armors: " + std::to_string(armors.size()), cv::Point(550, y), face, foot_scale, text_color, thickness);
-    cv::putText(src, "dt: " + std::to_string(dt), cv::Point(700, y), face, foot_scale, text_color, thickness);
+    auto putText = [&src, face, foot_scale, text_color, thickness](
+            const std::string& text, const int& x, const int& y)-> void {
+        cv::putText(src, text, cv::Point(x, y), face, foot_scale, text_color, thickness);
+    };
+    putText("fps: " + std::to_string(static_cast<int>(fps)), 20, y);
+    putText(std::to_string(timestamp), 150, y);
+    putText(tracker.stateString(), 400, y);
+    putText("armors: " + std::to_string(armors.size()), 550, y);
+    putText("dt: " + std::to_string(dt), 700, y);
+
     // armor
     for (const auto& armor: armors) {
         for (int i = 0; i < 4; ++i) {
@@ -115,9 +120,13 @@ void drawFrameInfo(cv::Mat& src, const std::vector<Armor>& armors, const Tracker
     // tracker
     if (tracker.state() == armor_auto_aim::TrackerStateMachine::State::Tracking ||
         tracker.state() == armor_auto_aim::TrackerStateMachine::State::TempLost) {
-        cv::Point2d predict_point(tracker.getTargetPredictSate()(0), tracker.getTargetPredictSate()(2));
-        cv::Scalar predict_point_color(0, 0, 255);
-        cv::circle(src, predict_point, 6, predict_point_color, -1);
+        putText("p: " + std::to_string(tracker.tracked_armor.probability), 900, y);
+        putText("color: " + to_string(tracker.tracked_armor.color), 20, 60);
+        putText("number: " + std::to_string(tracker.tracked_armor.number), 20, 60);
+        putText("type: " + to_string(tracker.tracked_armor.type), 130, 60);
+//        cv::Point2d predict_point(tracker.getTargetPredictSate()(0), tracker.getTargetPredictSate()(2));
+//        cv::Scalar predict_point_color(0, 0, 255);
+//        cv::circle(src, predict_point, 6, predict_point_color, -1);
     }
 }
 }

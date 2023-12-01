@@ -14,10 +14,10 @@
 #include <string>
 
 struct CommunicateProtocol {
-    float pitch{};
     float yaw{};
+    float pitch{};
     float distance{};
-    float aim_shoot{};
+    uint8_t aim_shoot{};
 
     CommunicateProtocol() =default;
 

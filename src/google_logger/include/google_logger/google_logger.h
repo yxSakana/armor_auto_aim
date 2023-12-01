@@ -93,6 +93,8 @@ private:
     std::string m_error_log_dir;
     ConsoleLogSink* m_console_log_sink;
 
+    void initGoogleConfig();
+
     /**
      * @brief 日志前缀
      *

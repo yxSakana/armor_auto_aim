@@ -58,14 +58,11 @@ bool PnPSolver::obtain3dPose(const Armor& armor, armor_auto_aim::solver::Pose& p
         };  // 范围
         Eigen::Vector3d euler_angles = rotationVectorToEulerAngles(rvec);
 
-        // TODO: 是否需要修改为 弧度制
-        // FIXME: pnp解算出的欧拉角, pitch yaw 是不是反了; x y 符号是否正确, 为什么符号相反?
-        correctEulerAngles(euler_angles);
         pose.pitch = static_cast<float>(euler_angles(1));
         pose.yaw = static_cast<float>(euler_angles(2));
         pose.roll = static_cast<float>(euler_angles(0));
-        pose.x = -static_cast<float>(tvec.at<double>(0, 0));
-        pose.y = -static_cast<float>(tvec.at<double>(1, 0));
+        pose.x = static_cast<float>(tvec.at<double>(0, 0));
+        pose.y = static_cast<float>(tvec.at<double>(1, 0));
         pose.z = static_cast<float>(tvec.at<double>(2, 0));
 
         return true;

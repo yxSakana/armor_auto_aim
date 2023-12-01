@@ -8,7 +8,8 @@
   @date 2023-11-05 15:06
 """
 
-from typing import Tuple, List
+import math
+from typing import Tuple, List, Union
 
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
@@ -18,10 +19,15 @@ from custom_axes.realtime_interface import RealtimeAxesInterface, RealtimeAxesPr
 
 
 class RealtimeComparisonAxesProperty(RealtimeAxesProperty):
-    def __init__(self, axes_title: str, data_name: str = "y", data_unit: str = "m"):
+    def __init__(self, axes_title: str,
+                 y_lim: Tuple[float, float],
+                 data_name: str = "y",
+                 data_unit: str = "m",
+                 ):
         self.axes_title = axes_title
         self.data_name = data_name
         self.data_unit = data_unit
+        self.y_lim: Union[str, Tuple[float, float]] = y_lim
 
 
 class RealtimeComparisonAxes(RealtimeAxesWaveformInterface):
@@ -35,8 +41,10 @@ class RealtimeComparisonAxes(RealtimeAxesWaveformInterface):
         self.prediction_data: List = []
 
         self.ShowMaxTimeThreshold: int = 40
-        self.ylim_min = 10000
-        self.ylim_max = -10000
+        self.auto_y_lim: bool = isinstance(self.axes_property.y_lim, str) and \
+                                self.axes_property.y_lim == "auto"
+        self.ylim_min = float("inf")
+        self.ylim_max = float("-inf")
 
         self.measurement_data_setter: plt.Line2D = self.axes.plot(
             self.t_data, self.measurement_data, color="green", label="measurement")[0]
@@ -46,6 +54,7 @@ class RealtimeComparisonAxes(RealtimeAxesWaveformInterface):
 
     def init_canvas(self):
         super().init_canvas()
+        self.axes.set_ylim(bottom=self.axes_property.y_lim[0], top=self.axes_property.y_lim[1])
 
     def update_data(self, data: Tuple[float, float]):
         super().update_data(data)
@@ -61,9 +70,10 @@ class RealtimeComparisonAxes(RealtimeAxesWaveformInterface):
         self.measurement_data_setter.set_data(self.t_data, self.measurement_data)
         self.prediction_data_setter.set_data(self.t_data, self.prediction_data)
         # set lim
-        self.ylim_min = min((data[0], data[1], self.ylim_min))
-        self.ylim_max = max((data[0], data[1], self.ylim_max))
-        self.axes.set_ylim(bottom=self.ylim_min, top=self.ylim_max)
+        if self.auto_y_lim:
+            self.ylim_min = min((data[0], data[1], self.ylim_min))
+            self.ylim_max = max((data[0], data[1], self.ylim_max))
+            self.axes.set_ylim(bottom=self.ylim_min, top=self.ylim_max)
 
     @staticmethod
     def create_axes(_figure: plt.Figure, _grid_spec: gridspec.GridSpec, _row: int, _col: int):

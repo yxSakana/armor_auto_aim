@@ -40,8 +40,8 @@ private:
     State m_state = State::Lost;
     int m_detect_count = 0;
     int m_lost_count = 0;
-    static constexpr int m_tracking_threshold = 50;
-    static constexpr int m_lost_threshold = 30;
+    static constexpr int m_tracking_threshold = 30;
+    static constexpr int m_lost_threshold = 40;
 
     std::map<State, std::string> m_state_map {
             { State::Lost, "Lost" },
@@ -69,13 +69,15 @@ public:
     Armor tracked_armor;
     Eigen::VectorXd measurement;
 private:
-    const double m_MaxMatchDistance = DBL_MAX;
+    static constexpr double m_MaxMatchDistance = 6.0;
 
     Eigen::VectorXd m_target_predict_state;
     TrackerStateMachine m_tracker_state_machine;
     int m_tracked_id{};  // armor number
 
     void initEkf(const Armor& armor);
+
+    void handleArmorJump(const Armor& same_id_armor);
 };
 } // armor_auto_aim
 

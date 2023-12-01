@@ -13,6 +13,8 @@
 #include <httplib.h>
 #include <nlohmann/json.hpp>
 
+#include <thread_pool/thread_pool.h>
+
 namespace armor_auto_aim {
 class PlotClientHttp {
 public:
@@ -22,10 +24,13 @@ public:
 
     void updateDateRequest(const nlohmann::json& json_data);
 
+    void asyncUpdateDateRequest(const nlohmann::json& json_data);
+
     [[nodiscard]] inline bool isConnected() const { return m_is_connected; };
 private:
     httplib::Client m_client;
     bool m_is_connected = false;
+    ThreadPool m_request_thread_pool;
 };
 }
 
