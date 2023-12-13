@@ -27,11 +27,11 @@ public:
 private:
     const std::string m_model_path = "../model/opt-0527-001.xml";
     const std::array<double, 9> m_intrinsic_matrix {
-            1664.5, -7.7583, 743.8596,
-            0.0, 1669.6, 573.3738,
-            0.0, 573.37, 1.0
+            2665.005527408399, 0,                  696.8233, // fx 0  cx
+            0,                 2673.364537791387,  500.5147099572225, // 0  fy cy
+            0,                 0,                  1
     };
-    const std::vector<double> m_distortion_vector { -0.44044, 0.2949, 0, -0.0042, 0 };
+    const std::vector<double> m_distortion_vector {-0.303608974614145, 4.163247825941419, -0.008432853056627, -0.003830248744148, 0};
 
     std::unique_ptr<Inference> m_inference;
     std::unique_ptr<PnPSolver> m_pnp_solver;

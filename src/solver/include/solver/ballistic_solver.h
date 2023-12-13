@@ -16,8 +16,8 @@ namespace armor_auto_aim::solver {
   * @brief 四阶龙格-库塔法弹道解算
   * @param translation_vector 水平、垂直、距离
   * @param bullet_speed 子弹速度
-  * @param max_number_iteration
-  * @param max_number_kutta_iteration
+  * @param max_number_iteration 最大迭代次数
+  * @param max_number_kutta_iteration 龙格-库塔最大迭代次数
   * @param stop_error
   * @param k
   * @param g

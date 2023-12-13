@@ -34,4 +34,21 @@ Eigen::Vector3d rotationVectorToEulerAngles(const cv::Mat& rvec) {
     return rmat_eigen.eulerAngles(2, 1, 0);
 //    return rotationMatrixToEulerAngles(rmat_eigen);
 }
+
+std::string to_string(const Eigen::MatrixXd& matrix) {
+    std::string info("[");
+    long rows = matrix.rows();
+    for (int i = 0; i < rows; ++i) {
+        long cols = matrix.cols();
+        for (int j = 0; j < cols; ++j) {
+            info += std::to_string(matrix(i, j));
+            if (j != cols - 1)
+                info += ", ";
+        }
+        if (i != rows - 1)
+            info += "\n";
+    }
+    info += "]";
+    return info;
+}
 }

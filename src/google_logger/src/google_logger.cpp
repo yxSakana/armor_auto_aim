@@ -44,17 +44,25 @@ void ConsoleLogSink::send(google::LogSeverity severity, const char *full_filenam
     const std::string time_color("\033[90m");
     const std::array<std::string, 4> color {"\033[92m", "\033[93m", "\033[91m", "\033[101m"};
     const std::array<std::string, 4> level_info {"INFO", "WARNING", "ERROR", "FATAL"};
-
-    std::cout << "(" << base_filename << ":" << line << ")"
-              << color[toascii(severity)] << "[" << level_info[toascii(severity)] << "]" << reset_color
-              //<< thread_id_color << "(thread: " << std::this_thread::get_id() << ")" << reset_color
-              << time_color << "[" << y << "-"
-              << std::setw(2) << std::setfill('0') << m << "-"
-              << std::setw(2) << std::setfill('0') << d << " "
-              << std::setw(2) << std::setfill('0') << h << ":"
-              << std::setw(2) << std::setfill('0') << min << ":"
-              << std::setw(2) << std::setfill('0') << s << "] " << reset_color
-              << color[toascii(severity)] << message << reset_color;
+    fmt::print("({}:{})"
+               "{}[{}]{}"
+               "{}[{:04d}-{:02d}-{:02d} {:02d}:{:02d}:{:02d}]{}"
+               "{}{}{}",
+               base_filename, line,
+               color[toascii(severity)], level_info[toascii(severity)], reset_color,
+               time_color, y, m, d, h, min, s, reset_color,
+               color[toascii(severity)], message, reset_color
+    );
+//    std::cout << "(" << base_filename << ":" << line << ")"
+//              << color[toascii(severity)] << "[" << level_info[toascii(severity)] << "]" << reset_color
+//              << thread_id_color << "(thread: " << std::this_thread::get_id() << ")" << reset_color
+//              << time_color << "[" << y << "-"
+//              << std::setw(2) << std::setfill('0') << m << "-"
+//              << std::setw(2) << std::setfill('0') << d << " "
+//              << std::setw(2) << std::setfill('0') << h << ":"
+//              << std::setw(2) << std::setfill('0') << min << ":"
+//              << std::setw(2) << std::setfill('0') << s << "] " << reset_color
+//              << color[toascii(severity)] << message << reset_color;
 }
 
 GoogleLogger::GoogleLogger(const char *program)

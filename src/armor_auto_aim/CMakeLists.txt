@@ -1,3 +1,5 @@
+
+
 file(GLOB_RECURSE sources CONFIGURE_DEPENDS src/*.cpp include/*.h)
 add_library(armor_auto_aim STATIC ${sources})
 set_target_properties(armor_auto_aim PROPERTIES
@@ -10,6 +12,7 @@ target_link_libraries(armor_auto_aim PUBLIC
         armor_detector
         armor_tracker
         solver
+        threadsafe_queue
         thread_pool
         serial_sort
         google_logger

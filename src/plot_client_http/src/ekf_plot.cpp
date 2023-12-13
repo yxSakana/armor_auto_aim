@@ -21,7 +21,7 @@ void lineSystemCreateWindowRequest(PlotClientHttp* plot_client_http) {
     nlohmann::json create_window_data;
     for (const auto& key: {"Predict Translation - EKF",  "Camera Yaw-Pitch"}) {
         create_window_data = json_data[key];
-        DLOG(INFO) << create_window_data;
+//        DLOG(INFO) << create_window_data;
         plot_client_http->createWindowRequest(create_window_data);
     }
 }
