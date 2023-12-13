@@ -9,6 +9,10 @@
 #ifndef ARMOR_AUTO_AIMING_ARMOAR_AUTO_AIM_H
 #define ARMOR_AUTO_AIMING_ARMOAR_AUTO_AIM_H
 
+#include <mutex>
+#include <condition_variable>
+
+#include <threadsafe_queue/threadsafe_queue.h>
 #include <thread_pool/thread_pool.h>
 #include <HikDriver/HikDriver.h>
 #include <HikDriver/HikFrame.hpp>
@@ -24,12 +28,14 @@
 
 namespace armor_auto_aim {
 class ArmorAutoAim {
+//    Q_OBJECT
 public:
     ArmorAutoAim();
 
     void armorAutoAim();
 private:
     static constexpr uint8_t  m_SendAutoAimFuncCode = 0;
+    static constexpr uint8_t m_LastFuncCode = 1;
     static constexpr uint16_t m_SendId = 0;
     static constexpr double m_BallisticSpeed = 6.0;
     static constexpr double m_DeltaTime = 200.0;
@@ -37,11 +43,13 @@ private:
     static constexpr int q = 1, r = 10000;
 
     const std::array<double, 9> m_intrinsic_matrix {
-            1664.5, -7.7583, 743.8596,
-            0.0, 1669.6, 573.3738,
-            0.0, 573.37, 1.0
+            2665.005527408399, 0,                  696.8233, // fx 0  cx
+            0,                 2673.364537791387,  500.5147099572225, // 0  fy cy
+            0,                 0,                  1
     };
-    const std::vector<double> m_distortion_vector { -0.44044, 0.2949, 0, -0.0042, 0 };
+    const std::vector<double> m_distortion_vector {-0.303608974614145, 4.163247825941419, -0.008432853056627, -0.003830248744148, 0};
+    Eigen::Matrix4d m_T_ci;
+    Eigen::Vector3d m_tvec_iw;
 
     ThreadPool m_thread_pool;
     std::unique_ptr<HikDriver> m_hik_driver;
@@ -58,6 +66,8 @@ private:
     cv::Mat m_frame;
     std::vector<Armor> m_armors;
     float dt = 0.0f;
+    std::shared_ptr<ImuData> m_imu_data = std::make_shared<ImuData>();
+    ThreadSafeQueue<ImuData> m_imu_data_queue;
 
     void initHikCamera();
 
@@ -76,9 +86,9 @@ private:
      */
     Eigen::Vector3d ballisticCompensate();
 
-    inline static CommunicateProtocol translation2YawPitch(const solver::Pose& pose);
+    inline static PredictData translation2YawPitch(const solver::Pose& pose);
 
-    inline static CommunicateProtocol translation2YawPitch(const Eigen::Vector3d& translation);
+    inline static PredictData translation2YawPitch(const Eigen::Vector3d& translation);
 };
 }
 

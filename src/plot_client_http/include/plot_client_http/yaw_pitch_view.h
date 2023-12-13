@@ -15,7 +15,7 @@
 namespace armor_auto_aim::yaw_pitch_view {
 void yawPitchViewCreateWindowRequest(PlotClientHttp* plot_client_http);
 
-void yawPitchViewUpdateDataRequest(PlotClientHttp* plot_client_http, const CommunicateProtocol& communicate_protocol);
+void yawPitchViewUpdateDataRequest(PlotClientHttp* plot_client_http, const PredictData& communicate_protocol);
 }
 
 #endif //AUTO_AIM_YAW_PITCH_VIEW_H

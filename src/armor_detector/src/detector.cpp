@@ -8,6 +8,7 @@
  */
 
 #include <armor_detector/detector.h>
+#include <solver/coordinate_solver.h>
 
 namespace armor_auto_aim {
 Detector::Detector()
@@ -24,6 +25,7 @@ bool Detector::detect(const cv::Mat& frame, std::vector<Armor>* armors) {
         for (int i = 0; i < inference_result.size(); ++i) {
             armors->emplace_back(armor_auto_aim::InferenceResult(inference_result[i]));
             is_ok = m_pnp_solver->obtain3dPose((*armors)[i], (*armors)[i].pose);
+            Eigen::Vector3d c_point((*armors)[i].pose.x, (*armors)[i].pose.y, (*armors)[i].pose.z);
             if (!is_ok)
                 armors->pop_back();
         }

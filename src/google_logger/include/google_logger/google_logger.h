@@ -116,20 +116,20 @@ private:
 static std::unique_ptr<GoogleLogger> k_GoogleLogger;
 } // yx
 
-template <>
-struct fmt::formatter<armor_auto_aim::google_log::GoogleLogger> {
-    template <typename ParseContext>
-    constexpr auto parse(ParseContext& ctx) {
-        return ctx.begin();
-    }
-
-    template <typename FormatContext>
-    auto format(const armor_auto_aim::google_log::GoogleLogger& google_logger, FormatContext& ctx) {
-        return fmt::format_to(ctx.out(),
-                              "[(yx::GoogleLogger) -> (dir)info: {}; waning: {}; error: {}]",
-                              google_logger.info_log_dir(),
-                              google_logger.warning_log_dir(),
-                              google_logger.error_log_dir());
-    }
-};
+//template <>
+//struct fmt::formatter<armor_auto_aim::google_log::GoogleLogger> {
+//    template <typename ParseContext>
+//    constexpr auto parse(ParseContext& ctx) {
+//        return ctx.begin();
+//    }
+//
+//    template <typename FormatContext>
+//    auto format(const armor_auto_aim::google_log::GoogleLogger& google_logger, FormatContext& ctx) {
+//        return fmt::format_to(ctx.out(),
+//                              "[(yx::GoogleLogger) -> (dir)info: {}; waning: {}; error: {}]",
+//                              google_logger.info_log_dir(),
+//                              google_logger.warning_log_dir(),
+//                              google_logger.error_log_dir());
+//    }
+//};
 #endif //TEST_GLOG_GOOGLELOGGER_H

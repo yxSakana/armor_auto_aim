@@ -56,8 +56,8 @@ void Tracker::initTracker(const Armors& armors) {
     tracked_armor = armors[0];
     for (const auto& armor: armors) {
         // TODO: 是否需要改为 (z, x) 与 image_point(x, y)的距离
-        if (armor.pose.z < min_distance) {
-            min_distance = armor.pose.z;
+        if (armor.world_coordinate[2] < min_distance) {
+            min_distance = armor.world_coordinate[2];
             tracked_armor = armor;
         }
     }
@@ -87,7 +87,9 @@ void Tracker::updateTracker(const Armors& armors) {
             if (armor.number == m_tracked_id) {
                 same_id_armor = &armor;
                 same_id_armor_count++;
-                measurement_position_vec = Eigen::Vector3d(armor.pose.x, armor.pose.y, armor.pose.z);
+                measurement_position_vec = Eigen::Vector3d(armor.world_coordinate[0],
+                                                           armor.world_coordinate[1],
+                                                           armor.world_coordinate[2]);
                 double position_difference = (predicted_position_vec - measurement_position_vec).norm();
                 if (position_difference < min_position_difference) {
                     min_position_difference = position_difference;
@@ -100,8 +102,8 @@ void Tracker::updateTracker(const Armors& armors) {
 //             TODO: 是否需要使用shortestAngularDistance 对 yaw 进行处理
             LOG_IF(INFO, min_position_difference > m_MaxMatchDistance) << min_position_difference;
             is_matched = true;
-            measurement = Eigen::Vector4d(tracked_armor.pose.x, tracked_armor.pose.y,
-                                          tracked_armor.pose.z, tracked_armor.pose.yaw);
+            measurement = Eigen::Vector4d(tracked_armor.world_coordinate[0], tracked_armor.world_coordinate[1],
+                                          tracked_armor.world_coordinate[2], tracked_armor.pose.yaw);
             m_target_predict_state = ekf->predict(measurement);
         } else if (same_id_armor_count == 1) {
             LOG_IF(WARNING, min_position_difference > m_MaxMatchDistance) << min_position_difference;
@@ -117,9 +119,9 @@ void Tracker::updateTracker(const Armors& armors) {
 }
 
 void Tracker::initEkf(const Armor& armor) {
-    double xa = armor.pose.x;
-    double ya = armor.pose.y;
-    double za = armor.pose.z;
+    double xa = armor.world_coordinate[0];
+    double ya = armor.world_coordinate[1];
+    double za = armor.world_coordinate[2];
     double yaw = armor.pose.yaw;
 
     m_target_predict_state = Eigen::VectorXd::Zero(8);
@@ -129,11 +131,11 @@ void Tracker::initEkf(const Armor& armor) {
 }
 
 void Tracker::handleArmorJump(const armor_auto_aim::Armor& same_id_armor) {
-    m_target_predict_state[0] = same_id_armor.pose.x;
+    m_target_predict_state[0] = same_id_armor.world_coordinate[0];
     m_target_predict_state[1] = 0;
-    m_target_predict_state[2] = same_id_armor.pose.y;
+    m_target_predict_state[2] = same_id_armor.world_coordinate[1];
     m_target_predict_state[3] = 0;
-    m_target_predict_state[4] = same_id_armor.pose.z;
+    m_target_predict_state[4] = same_id_armor.world_coordinate[2];
     m_target_predict_state[5] = 0;
     m_target_predict_state[6] = same_id_armor.pose.yaw;
     m_target_predict_state[7] = 0;

@@ -22,7 +22,6 @@ PnPSolver::PnPSolver(const std::array<double, 9>& intrinsic_matrix,
     constexpr double large_half_y = LARGE_ARMOR_HEIGHT / 2.0 / 1000.0;
 
     // 3d Points(lt lb rb rt)
-    // FIXME: y轴需要调整一下吗
     m_small_armor_point3d.push_back(cv::Point3f(small_half_x, small_half_y, 0));
     m_small_armor_point3d.push_back(cv::Point3f(small_half_x, -small_half_y, 0));
     m_small_armor_point3d.push_back(cv::Point3f(-small_half_x, -small_half_y, 0));

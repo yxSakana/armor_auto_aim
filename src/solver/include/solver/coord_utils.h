@@ -7,7 +7,6 @@
  * @date 2023-10-22 14:50
  */
 
-
 #ifndef TEST_EXTENDED_KALMAN_FILTER_UTILS_H
 #define TEST_EXTENDED_KALMAN_FILTER_UTILS_H
 
@@ -55,6 +54,14 @@ inline static double shortestAngularDistance(double from, double to) {
 inline double angleToRadian(double angel) { return (angel * M_PI) / 180; }
 
 inline double radianToAngel(double radian) { return (radian * 180) / M_PI; }
+
+std::string to_string(const Eigen::MatrixXd& matrix);
+
+inline void getYawPitchDis(const Eigen::Vector3d& translation, float& yaw, float& pitch, float& distance) {
+    yaw = static_cast<float>(atan2(translation(0), translation(2)) * 180.0f / M_PI),
+    pitch = static_cast<float>(atan2(translation(1), translation(2)) * 180.0f / M_PI),
+    distance = static_cast<float>(translation(2));
+}
 }
 
 #endif //TEST_EXTENDED_KALMAN_FILTER_UTILS_H

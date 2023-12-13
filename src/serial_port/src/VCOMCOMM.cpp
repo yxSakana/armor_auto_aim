@@ -8,6 +8,8 @@
 #include <serial_port/VCOMCOMM.h>
 
 #include <QSerialPortInfo>
+#include <glog/logging.h>
+#include <fmt/format.h>
 
 namespace armor_auto_aim {
 VCOMCOMM::VCOMCOMM(uint16_t PID, uint16_t VID, QObject* parent)
@@ -80,9 +82,9 @@ void VCOMCOMM::portReadyRead() {
         QByteArray array((const char*) (pdata + 6), len);
         uint16_t c = armor_auto_aim::Verify_CRC16_Check_Sum(array);
         if (len == 0 || c == crc) {
-            DLOG(INFO) << fmt::format("RX: fun=0x{:02X}, id=0x{:04X}, crc=0x{:04X}|0x{:04X}", fun, id, crc, c);
+//            DLOG(INFO) << fmt::format("RX: fun=0x{:02X}, id=0x{:04X}, crc=0x{:04X}|0x{:04X}", fun, id, crc, c);
             emit receiveData(fun, id, array);
-        } else LOG(INFO) << fmt::format("RX: fun=0x{:02X}, id=0x{:04X}, crc=0x{:04X}|0x{:04X} CRC Error", fun, id, crc, c);
+        } else LOG(ERROR) << fmt::format("RX: fun=0x{:02X}, id=0x{:04X}, crc=0x{:04X}|0x{:04X} CRC Error", fun, id, crc, c);
     }
 }
 
@@ -98,8 +100,6 @@ void VCOMCOMM::Transmit(uint8_t fun_code, uint16_t id, const QByteArray& data) {
         emit CrossThreadTransmitSignal(fun_code, id, data);
         return;
     }
-//    DLOG(INFO) << "VCOMCOMM: " << std::this_thread::get_id();
-//    DLOG(INFO) << fmt::format("Send info: fun=0x{:02X}, id=0x{:04X}", fun_code, id);
     /* 忽略读写错误 */
     SerialPortError port_err = this->error();
     if (port_err == ReadError || port_err == WriteError)

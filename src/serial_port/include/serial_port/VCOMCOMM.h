@@ -10,8 +10,6 @@
 #include <QMetaEnum>
 #include <QThread>
 #include <QSerialPort>
-#include <glog/logging.h>
-#include <fmt/format.h>
 
 #include <serial_port/CRC.h>
 //#include <spdlogger.h>

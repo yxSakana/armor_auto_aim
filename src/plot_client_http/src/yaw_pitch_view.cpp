@@ -52,7 +52,7 @@ void yawPitchViewCreateWindowRequest(PlotClientHttp* plot_client_http) {
     plot_client_http->createWindowRequest(create_window_data);
 }
 
-void yawPitchViewUpdateDataRequest(PlotClientHttp* plot_client_http, const CommunicateProtocol& communicate_protocol) {
+void yawPitchViewUpdateDataRequest(PlotClientHttp* plot_client_http, const PredictData& communicate_protocol) {
     nlohmann::json json_data = {
             { "window_name", "Yaw-Pitch-View" },
             { "row", 0 },

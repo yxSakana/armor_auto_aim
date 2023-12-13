@@ -23,6 +23,7 @@
 #include <debug_toolkit/draw_package.h>
 #include <solver/pnp_solver.h>
 #include <solver/ballistic_solver.h>
+#include <solver/coordinate_solver.h>
 
 namespace {
 TEST(test_pnp_solver, pnp) {
@@ -108,5 +109,20 @@ TEST(test_solver, test_ballistic_solver) {
                              pitch * 180 / M_PI,
                              armor_auto_aim::solver::ballisticSolver(translation_vector, 25) * 180 / M_PI,
                              (armor_auto_aim::solver::ballisticSolver(translation_vector, 25) - pitch) * 180 / M_PI);
+}
+
+TEST(test_solver, test_cameraToWorld)  {
+    Eigen::Vector3d test_camera(-0.38434481620788574, 0.1538430005311966, 0.7577510476112366);
+    Eigen::Matrix3d imu_rmat;
+    Eigen::Matrix4d transform_c2i;
+    Eigen::Vector3d tvec_i2w(0, 0, 0);
+    imu_rmat << 0.378659, 0.895026, 0.235142,
+                0.906899, -0.409057, 0.098146,
+                0.184115, 0.176142, -0.966579;
+    transform_c2i << -0.126888,   -0.07949653, -0.98872632,  -0.01136594,
+                     -0.97296189,  0.20391038,  0.10846988,   0.01663877,
+                      0.19298858,  0.97575656, -0.10322087,  -0.0867562,
+                      0.,          0.,          0.,           1.;
+    armor_auto_aim::coordinate_solver::cameraToWorld(test_camera, imu_rmat, transform_c2i, tvec_i2w);
 }
 }

@@ -22,6 +22,18 @@ ArmorAutoAim::ArmorAutoAim()
 #ifdef DEBUG
     sendCreateViewRequest();
 #endif
+    m_T_ci << -0.126888,   -0.07949653, -0.98872632, -0.01136594, // -0.01136594
+              -0.97296189,  0.20391038,  0.10846988,  0.01663877, // 0.01663877
+               0.19298858,  0.97575656, -0.10322087, -0.0867562 , // -0.0867562
+               0.        ,  0.        ,  0.        ,  1.        ;
+    m_tvec_iw << 0, 0, 0;
+    QObject::connect(&m_serial_port, &VCOMCOMM::receiveData,
+                     [this](uint8_t fun_code, uint16_t id, const QByteArray& data) {
+        ImuData imu_data;
+        std::memcpy(&imu_data, data, sizeof(imu_data));
+        m_imu_data_queue.push(imu_data);
+//        LOG(INFO) << "Get Data" << ";  SIZE: " << m_imu_data_queue.size();
+    });
 }
 
 void ArmorAutoAim::armorAutoAim() {
@@ -39,6 +51,15 @@ void ArmorAutoAim::armorAutoAim() {
     int64_t last_t = std::chrono::system_clock::now().time_since_epoch().count();
 
     while (true) {
+        bool is_have = m_imu_data_queue.tryPop(*m_imu_data);
+        if (!is_have) {
+//            m_hik_frame = m_hik_read_thread->getFrame();
+//            m_frame = m_hik_frame.getRgbFrame();
+//            cv::imshow("frame", m_frame);
+//            cv::waitKey(1);
+            continue;
+        }
+//        m_imu_data = m_imu_data_queue.waitPop();
         // start fps clock
         if (is_reset) {
             tick_meter.reset();
@@ -57,6 +78,22 @@ void ArmorAutoAim::armorAutoAim() {
 //                                 timestamp);
         // -- detect --
         m_detector.detect(m_frame, &m_armors);
+        // get world coordinate
+        Eigen::Vector3d c_point;
+        Eigen::Quaterniond quaternion;
+        for (auto& armor: m_armors) {
+            c_point = Eigen::Vector3d(armor.pose.x, armor.pose.y, armor.pose.z);
+            quaternion = Eigen::Quaterniond(m_imu_data->quaternion.w,
+                                            m_imu_data->quaternion.x,
+                                            m_imu_data->quaternion.y,
+                                            m_imu_data->quaternion.z);
+            armor.world_coordinate = coordinate_solver::cameraToWorld(c_point, quaternion.matrix(), m_T_ci, m_tvec_iw);
+//            LOG(INFO) << fmt::format("Camera Point: {};"
+//                                     "World Point: {}, {}, {};",
+//                                     armor.pose.to_string(),
+//                                     armor.world_coordinate[0], armor.world_coordinate[1],
+//                                     armor.world_coordinate[2]);
+        }
         // dt
         dt = static_cast<float>(timestamp - last_t);
         last_t = timestamp;
@@ -71,37 +108,40 @@ void ArmorAutoAim::armorAutoAim() {
             m_tracker.state() == TrackerStateMachine::State::TempLost) {
             Eigen::Vector3d predict_translation = ballisticCompensate();
             double delta_pitch = solver::ballisticSolver(predict_translation, m_BallisticSpeed);
-            CommunicateProtocol communicate_protocol =
+            PredictData predict_data =
                     ArmorAutoAim::translation2YawPitch(predict_translation);
             if (!std::isnan(delta_pitch)) {
                 LOG(INFO) << "delta_pitch: " << delta_pitch;
-                communicate_protocol.pitch -= static_cast<float>(delta_pitch);
+                predict_data.pitch -= static_cast<float>(delta_pitch);
             } else {
                 LOG(WARNING) << "delta_pitch is NaN";
             }
 
-            if ((-40.0 < communicate_protocol.yaw && communicate_protocol.yaw < 40.0) &&
-                (-40.0 < communicate_protocol.pitch && communicate_protocol.pitch < 40.0)) {
+            if ((-40.0 < predict_data.yaw && predict_data.yaw < 40.0) &&
+                (-40.0 < predict_data.pitch && predict_data.pitch < 40.0)) {
                 data.clear();
-                data.resize(sizeof(communicate_protocol));
-                std::memcpy(data.data(), &communicate_protocol, sizeof(communicate_protocol));
+                data.resize(sizeof(predict_data));
+                std::memcpy(data.data(), &predict_data, sizeof(predict_data));
                 send_meter.stop();
                 emit m_serial_port.CrossThreadTransmitSignal(m_SendAutoAimFuncCode, m_SendId, data);
-                LOG(INFO) << "Send to control! " << communicate_protocol.to_string();
+                LOG(INFO) << "Send to control! " << predict_data.to_string();
                 LOG(INFO) << fmt::format("send t: {} Hz", 1 / send_meter.getTimeSec());
                 m_thread_pool.enqueue(yaw_pitch_view::yawPitchViewUpdateDataRequest,
                                       &m_plot_client_http,
-                                      communicate_protocol);
+                                      predict_data);
             } else {
                 send_meter.stop();
+                emit m_serial_port.CrossThreadTransmitSignal(m_SendAutoAimFuncCode, m_LastFuncCode, "");
                 LOG(WARNING) << fmt::format("\narmors_size: {};\ntracked_armor-pose: {}; ",
                                             m_armors.size(),
                                             m_tracker.tracked_armor.pose.to_string())
                              << "\npredict: " << predict_translation << "; "
                              << "\ntarget_predict_state: " << m_tracker.getTargetPredictSate()
-                             << "\ncommunicate info: " << communicate_protocol.to_string();
+                             << "\ncommunicate info: " << predict_data.to_string();
                 LOG(WARNING) << "异常值!";
             }
+        } else {
+            emit m_serial_port.CrossThreadTransmitSignal(m_SendAutoAimFuncCode, m_LastFuncCode, "");
         }
         // -- debug --
         // - view -
@@ -164,22 +204,22 @@ void ArmorAutoAim::initEkf() {
          0,  0,   0,  0,  0,   0,   0,  q;// v_yaw
     //  xa   ya  za  yaw
     R << r,  0,   0,  0, // xa
-         0,  r,   0,  0,// vxa
-         0,  0,   r,  0,// ya
-         0,  0,   0,  r;// vya
+         0,  r,   0,  0, // vxa
+         0,  0,   r,  0, // ya
+         0,  0,   0,  r; // vya
 //    Q.setIdentity();
 //    R.setIdentity();
     Eigen::DiagonalMatrix<double, 8> p0;
     p0.setIdentity();
     //   x  vx  y  vy   z   yz  yaw v_yaw
-    F << 1, dt, 0,  0,  0,  0,   0,  0,   // x
-         0, 1,  0,  0,  0,  0,   0,  0,   // vx
-         0, 0,  1,  dt, 0,  0,   0,  0,   // y
-         0, 0,  0,  1,  0,  0,   0,  0,   // vy
-         0, 0,  0,  0,  1,  dt,  0,  0,   // z
-         0, 0,  0,  0,  0,  1,   0,  0,   // vz
-         0, 0,  0,  0,  0,  0,   1,  dt,  // yaw
-         0, 0,  0,  0,  0,  0,   0,  1;   // v_yaw
+    F << 1, dt, 0,  0,  0,  0,   0,  0,  // x
+         0, 1,  0,  0,  0,  0,   0,  0,  // vx
+         0, 0,  1,  dt, 0,  0,   0,  0,  // y
+         0, 0,  0,  1,  0,  0,   0,  0,  // vy
+         0, 0,  0,  0,  1,  dt,  0,  0,  // z
+         0, 0,  0,  0,  0,  1,   0,  0,  // vz
+         0, 0,  0,  0,  0,  0,   1,  dt, // yaw
+         0, 0,  0,  0,  0,  0,   0,  1;  // v_yaw
     //    x  vx  y  vy  z  yz yaw  v_yaw
     H <<  1, 0,  0, 0,  0, 0,   0,  0, // x
           0, 0,  1, 0,  0, 0,   0,  0, // y
@@ -225,7 +265,7 @@ void ArmorAutoAim::initEkf() {
     m_tracker.ekf = std::make_shared<ExtendedKalmanFilter>(p0, f, h, j_f, j_h, update_Q, update_R);
 }
 
-CommunicateProtocol ArmorAutoAim::translation2YawPitch(const solver::Pose& pose) {
+PredictData ArmorAutoAim::translation2YawPitch(const solver::Pose& pose) {
     return {
         static_cast<float>(atan2(pose.x, pose.z) * 180.0f / M_PI),
         static_cast<float>(atan2(pose.y, pose.z) * 180.0f / M_PI),
@@ -233,7 +273,7 @@ CommunicateProtocol ArmorAutoAim::translation2YawPitch(const solver::Pose& pose)
     };
 }
 
-CommunicateProtocol ArmorAutoAim::translation2YawPitch(const Eigen::Vector3d& translation) {
+PredictData ArmorAutoAim::translation2YawPitch(const Eigen::Vector3d& translation) {
     return {
         static_cast<float>(atan2(translation(0), translation(2)) * 180.0f / M_PI),
         static_cast<float>(atan2(translation(1), translation(2)) * 180.0f / M_PI),
