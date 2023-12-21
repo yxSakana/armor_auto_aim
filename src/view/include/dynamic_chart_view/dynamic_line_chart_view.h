@@ -21,10 +21,41 @@ Q_OBJECT
 public:
     explicit DynamicLineChartView(QWidget* parent = nullptr);
 
-    void insert(const float& x, const float& y) { m_series->append(x, y); }
-    void insert(const QPointF& p) { m_series->append(p); }
+    void addSeries(const std::string& name) {
+        QString k = QString::fromStdString(name);
+        auto data = new QtCharts::QLineSeries;
+        data->setName(k);
+        m_chart->addSeries(data);
+        (*m_table)[k] = data;
+        m_chart->createDefaultAxes();
+    }
 
-    QPointF getLastPoint() const { return m_series->at(m_series->count() - 1); }
+    QtCharts::QLineSeries* get(const std::string& name) {
+        const QString&& k = QString::fromStdString(name);
+        if (m_table->contains(k))
+            return (*m_table)[k];
+        else
+            return nullptr;
+    }
+
+    void insert(const std::string& name, const float& x, const float& y) {
+        const QString&& k = QString::fromStdString(name);
+        if (m_table->contains(k))
+            (*m_table)[k]->append(x, y);
+    }
+    void insert(const std::string& name, const QPointF& p) {
+        const QString&& k = QString::fromStdString(name);
+        if (m_table->contains(k))
+            (*m_table)[k]->append(p);
+    }
+
+    QPointF getLastPoint(const std::string& name) const {
+        const QString&& k = QString::fromStdString(name);
+        if (m_table->contains(k))
+            return (*m_table)[k]->at((*m_table)[k]->count() - 1);
+        else
+            return {};
+    }
 
     void setShowNumber(const int& n) { m_show_number = n; };
 
@@ -41,11 +72,12 @@ private:
 
     int m_show_number = 50;
     int m_right_side = 20;
+    double m_min_x = 0.f;
+    double m_max_x = 0.f;
     double m_min_y = 0.f;
     double m_max_y = 0.f;
 
     QTimer* m_timer;
-    QtCharts::QLineSeries* m_series;
     DataTable* m_table;
     QtCharts::QChart* m_chart;
     QtCharts::QChartView* m_chart_view;

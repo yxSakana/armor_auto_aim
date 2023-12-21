@@ -35,7 +35,8 @@ predict:
   delta_time: 100
   kf:
     q: 1
-    r: 1000
+    r: 10000
+
 serial:
   pc:
     id: 0
