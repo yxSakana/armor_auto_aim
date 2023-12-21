@@ -39,7 +39,7 @@ bool PnPSolver::pnpSolver(const Armor& armor, cv::Mat& rvec, cv::Mat& tvec) {
                         rvec, tvec, false, cv::SOLVEPNP_IPPE);  // cv::SOLVEPNP_ITERATIVE ?
 }
 
-bool PnPSolver::obtain3dPose(const Armor& armor, armor_auto_aim::solver::Pose& pose) {
+bool PnPSolver::obtain3dPose(Armor& armor) {
     cv::Mat rvec, tvec;
     if (pnpSolver(armor, rvec, tvec)) {
         auto correctEulerAngles = [](Eigen::Vector3d& euler_angles) {
@@ -57,12 +57,12 @@ bool PnPSolver::obtain3dPose(const Armor& armor, armor_auto_aim::solver::Pose& p
         };  // 范围
         Eigen::Vector3d euler_angles = rotationVectorToEulerAngles(rvec);
 
-        pose.pitch = static_cast<float>(euler_angles(1));
-        pose.yaw = static_cast<float>(euler_angles(2));
-        pose.roll = static_cast<float>(euler_angles(0));
-        pose.x = static_cast<float>(tvec.at<double>(0, 0));
-        pose.y = static_cast<float>(tvec.at<double>(1, 0));
-        pose.z = static_cast<float>(tvec.at<double>(2, 0));
+        armor.pose.pitch = static_cast<float>(euler_angles(1));
+        armor.pose.yaw = static_cast<float>(euler_angles(2));
+        armor.pose.roll = static_cast<float>(euler_angles(0));
+        armor.pose.x = static_cast<float>(tvec.at<double>(0, 0));
+        armor.pose.y = static_cast<float>(tvec.at<double>(1, 0));
+        armor.pose.z = static_cast<float>(tvec.at<double>(2, 0));
 
         return true;
     } else {
