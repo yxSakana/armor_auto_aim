@@ -30,16 +30,27 @@ ArmorAutoAim::ArmorAutoAim(const std::string& config_path)
 #ifdef DEBUG
     sendCreateViewRequest();
 #endif
-    QObject::connect(&m_serial_port, &VCOMCOMM::receiveData,
+    m_auto_connect_serial = new QTimer(this);
+    m_auto_connect_serial->start(1000);
+    connect(m_auto_connect_serial, &QTimer::timeout, [this](){
+        if ((!this->m_serial_port.isOpen()) || m_serial_port.error() != QSerialPort::NoError) {
+            LOG(WARNING) << "Serial close. try auto connect...";
+            this->m_serial_port.auto_connect();
+        } else {
+            LOG(INFO) << "Serial is opened";
+        }
+    });
+    connect(&m_serial_port, &VCOMCOMM::receiveData,
                      [this](uint8_t fun_code, uint16_t id, const QByteArray& data) {
         ImuData imu_data;
         std::memcpy(&imu_data, data, sizeof(imu_data));
         m_imu_data_queue.push(imu_data);
     });
 #ifdef DEBUG
-    m_view.m_ekf_view->show();
-    m_view.m_ekf_view->get("x")->setShowNumber(300);
-    m_view.m_ekf_view->get("v_x")->setShowNumber(300);
+    m_view.m_ekf_view->showMaximized();
+//    m_view.m_ekf_view->show();
+    for (const auto& k: {"x", "v_x", "y", "v_y"})
+        m_view.m_ekf_view->get(k)->setShowNumber(300);
 #endif
 }
 
@@ -106,21 +117,49 @@ void ArmorAutoAim::armorAutoAim() {
             // -- predict --
             const Eigen::VectorXd& predict_state = m_tracker.getTargetPredictSate();
             Eigen::Vector3d predict_translation(predict_state(0), predict_state(2), predict_state(4));
+            Eigen::Vector3d world_predict_translation = predict_translation;
             predict_translation = m_solver.worldToCamera(predict_translation, quaternion.matrix());
-            LOG(INFO) << "x: " << predict_state[0] << "; v_x: " << predict_state[1]
-                      << "; y: " << predict_state[2] << "; v_y: " << predict_state[3];
-#ifdef DEBUG
-            QPointF p = m_view.m_ekf_view->getLastPoint("x");
-            m_view.m_ekf_view->insert("x", p.x()+1, predict_translation[0]);
-            p = m_view.m_ekf_view->getLastPoint("v_x");
-            m_view.m_ekf_view->insert("v_x", p.x()+1, predict_state[1]);
-#endif
             auto point = m_solver.reproject(predict_translation);
             cv::circle(m_frame, point, 6, cv::Scalar(59, 188, 235), -1);
             predict_translation[0] -= predict_state[1] * (m_params.delta_time + std::abs(predict_translation.norm() / m_solver.getSpeed()));
             point = m_solver.reproject(predict_translation);
             cv::circle(m_frame, point, 6, cv::Scalar(0, 0, 235), -1);
-
+#ifdef DEBUG // View
+            QPointF p;
+            // x-measure-word
+            p = m_view.m_ekf_view->getLastPoint("x", "measure_world");
+            m_view.m_ekf_view->insert("x", "measure_world", p.x()+1, m_tracker.tracked_armor.world_coordinate[0]);
+            // x-predict-world
+            p = m_view.m_ekf_view->getLastPoint("x", "predict_world");
+            m_view.m_ekf_view->insert("x", "predict_world", p.x()+1, world_predict_translation[0]);
+            // x-measure
+            p = m_view.m_ekf_view->getLastPoint("x", "measure");
+            m_view.m_ekf_view->insert("x", "measure", p.x()+1, m_tracker.tracked_armor.pose.x);
+            // x-predict
+            p = m_view.m_ekf_view->getLastPoint("x", "predict");
+            m_view.m_ekf_view->insert("x", "predict", p.x()+1, predict_translation[0]);
+            // x-predict_shoot
+            p = m_view.m_ekf_view->getLastPoint("x", "predict_shoot");
+            m_view.m_ekf_view->insert("x", "predict_shoot", p.x()+1, predict_translation[0]);
+            // v_x-predict
+            p = m_view.m_ekf_view->getLastPoint("v_x", "predict");
+            m_view.m_ekf_view->insert("v_x", "predict", p.x()+1, predict_state[1]);
+            // y-measure-word
+            p = m_view.m_ekf_view->getLastPoint("y", "measure_world");
+            m_view.m_ekf_view->insert("y", "measure_world", p.x()+1, m_tracker.tracked_armor.world_coordinate[1]);
+            // y-predict-world
+            p = m_view.m_ekf_view->getLastPoint("y", "predict_world");
+            m_view.m_ekf_view->insert("y", "predict_world", p.x()+1, world_predict_translation[1]);
+            // y-measure
+            p = m_view.m_ekf_view->getLastPoint("y", "measure");
+            m_view.m_ekf_view->insert("y", "measure", p.x()+1, m_tracker.tracked_armor.pose.y);
+            // y-predict
+            p = m_view.m_ekf_view->getLastPoint("y", "predict");
+            m_view.m_ekf_view->insert("y", "predict", p.x()+1, predict_translation[1]);
+            // v_y-predict
+            p = m_view.m_ekf_view->getLastPoint("v_y", "predict");
+            m_view.m_ekf_view->insert("v_y", "predict", p.x()+1, predict_state[3]);
+#endif
             double delta_pitch = m_solver.ballisticSolver(predict_translation);
             PredictData predict_data = translation2YawPitch(predict_translation);
             if (!std::isnan(delta_pitch)) {
