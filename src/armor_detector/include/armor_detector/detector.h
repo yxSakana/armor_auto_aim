@@ -21,20 +21,27 @@
 namespace armor_auto_aim {
 class Detector {
 public:
-    Detector();
+    Detector() =default;
+
+    Detector(const std::string& model_filename,
+             const std::array<double, 9>& intrinsic_matrix,
+             const std::vector<double>& distortion_cess);
+
+    Detector(const std::string& model_filename,
+             std::shared_ptr<PnPSolver> pnp_solver_ptr);
+
+    Detector(Detector&& detector) noexcept;
+
+    Detector& operator=(Detector&& other) noexcept;
 
     bool detect(const cv::Mat& frame, std::vector<Armor>* armors);
 private:
-    const std::string m_model_path = "../model/opt-0527-001.xml";
-    const std::array<double, 9> m_intrinsic_matrix {
-            2665.005527408399, 0,                  696.8233, // fx 0  cx
-            0,                 2673.364537791387,  500.5147099572225, // 0  fy cy
-            0,                 0,                  1
-    };
-    const std::vector<double> m_distortion_vector {-0.303608974614145, 4.163247825941419, -0.008432853056627, -0.003830248744148, 0};
+    const std::string m_model_path{};
+    const std::array<double, 9> m_intrinsic_matrix{};
+    const std::vector<double> m_distortion_vector{};
 
     std::unique_ptr<Inference> m_inference;
-    std::unique_ptr<PnPSolver> m_pnp_solver;
+    std::shared_ptr<PnPSolver> m_pnp_solver;
 };
 
 } // armor_auto_aim

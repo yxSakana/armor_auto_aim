@@ -6,6 +6,10 @@
  * @data 2023-11-14 21:13:26
  */
 
+#ifdef DEBUG
+#include <QPointF>
+#endif
+
 #include <google_logger/google_logger.h>
 #include <armor_auto_aim/armor_auto_aim.h>
 #include <solver/coordinate_solver.h>
@@ -13,27 +17,30 @@
 #include <debug_toolkit/draw_package.h>
 
 namespace armor_auto_aim {
-ArmorAutoAim::ArmorAutoAim()
+ArmorAutoAim::ArmorAutoAim(const std::string& config_path)
     : m_hik_driver(std::make_unique<HikDriver>(0)),
-      m_hik_read_thread(std::make_unique<HikReadThread>(m_hik_driver.get()))
+      m_hik_read_thread(std::make_unique<HikReadThread>(m_hik_driver.get())),
+      m_config_path(config_path)
        {
+    loadConfig();
+    m_solver = Solver(m_solver_builder.build());
+    m_detector = Detector(m_params.armor_model_path, m_solver.pnp_solver);
     initHikCamera();
     initEkf();
 #ifdef DEBUG
     sendCreateViewRequest();
 #endif
-    m_T_ci << -0.126888,   -0.07949653, -0.98872632, -0.01136594, // -0.01136594
-              -0.97296189,  0.20391038,  0.10846988,  0.01663877, // 0.01663877
-               0.19298858,  0.97575656, -0.10322087, -0.0867562 , // -0.0867562
-               0.        ,  0.        ,  0.        ,  1.        ;
-    m_tvec_iw << 0, 0, 0;
     QObject::connect(&m_serial_port, &VCOMCOMM::receiveData,
                      [this](uint8_t fun_code, uint16_t id, const QByteArray& data) {
         ImuData imu_data;
         std::memcpy(&imu_data, data, sizeof(imu_data));
         m_imu_data_queue.push(imu_data);
-//        LOG(INFO) << "Get Data" << ";  SIZE: " << m_imu_data_queue.size();
     });
+#ifdef DEBUG
+    m_view.m_ekf_view->show();
+    m_view.m_ekf_view->get("x")->setShowNumber(300);
+    m_view.m_ekf_view->get("v_x")->setShowNumber(300);
+#endif
 }
 
 void ArmorAutoAim::armorAutoAim() {
@@ -73,9 +80,6 @@ void ArmorAutoAim::armorAutoAim() {
         m_hik_frame = m_hik_read_thread->getFrame();
         m_frame = m_hik_frame.getRgbFrame();
         timestamp = m_hik_frame.getTimestamp();
-//        LOG(INFO) << fmt::format("system_timestamp: {}; hik_timestamp: {}",
-//                                 std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(),
-//                                 timestamp);
         // -- detect --
         m_detector.detect(m_frame, &m_armors);
         // get world coordinate
@@ -83,16 +87,9 @@ void ArmorAutoAim::armorAutoAim() {
         Eigen::Quaterniond quaternion;
         for (auto& armor: m_armors) {
             c_point = Eigen::Vector3d(armor.pose.x, armor.pose.y, armor.pose.z);
-            quaternion = Eigen::Quaterniond(m_imu_data->quaternion.w,
-                                            m_imu_data->quaternion.x,
-                                            m_imu_data->quaternion.y,
-                                            m_imu_data->quaternion.z);
-            armor.world_coordinate = coordinate_solver::cameraToWorld(c_point, quaternion.matrix(), m_T_ci, m_tvec_iw);
-//            LOG(INFO) << fmt::format("Camera Point: {};"
-//                                     "World Point: {}, {}, {};",
-//                                     armor.pose.to_string(),
-//                                     armor.world_coordinate[0], armor.world_coordinate[1],
-//                                     armor.world_coordinate[2]);
+            quaternion = Eigen::Quaterniond(m_imu_data->quaternion.w, m_imu_data->quaternion.x,
+                                            m_imu_data->quaternion.y, m_imu_data->quaternion.z);
+            armor.world_coordinate = m_solver.cameraToWorld(c_point, quaternion.matrix());
         }
         // dt
         dt = static_cast<float>(timestamp - last_t);
@@ -103,13 +100,29 @@ void ArmorAutoAim::armorAutoAim() {
         } else {
             m_tracker.updateTracker(m_armors);
         }
-        // -- send --
+        // -- predict && send --
         if (m_tracker.state() == TrackerStateMachine::State::Tracking ||
             m_tracker.state() == TrackerStateMachine::State::TempLost) {
-            Eigen::Vector3d predict_translation = ballisticCompensate();
-            double delta_pitch = solver::ballisticSolver(predict_translation, m_BallisticSpeed);
-            PredictData predict_data =
-                    ArmorAutoAim::translation2YawPitch(predict_translation);
+            // -- predict --
+            const Eigen::VectorXd& predict_state = m_tracker.getTargetPredictSate();
+            Eigen::Vector3d predict_translation(predict_state(0), predict_state(2), predict_state(4));
+            predict_translation = m_solver.worldToCamera(predict_translation, quaternion.matrix());
+            LOG(INFO) << "x: " << predict_state[0] << "; v_x: " << predict_state[1]
+                      << "; y: " << predict_state[2] << "; v_y: " << predict_state[3];
+#ifdef DEBUG
+            QPointF p = m_view.m_ekf_view->getLastPoint("x");
+            m_view.m_ekf_view->insert("x", p.x()+1, predict_translation[0]);
+            p = m_view.m_ekf_view->getLastPoint("v_x");
+            m_view.m_ekf_view->insert("v_x", p.x()+1, predict_state[1]);
+#endif
+            auto point = m_solver.reproject(predict_translation);
+            cv::circle(m_frame, point, 6, cv::Scalar(59, 188, 235), -1);
+            predict_translation[0] -= predict_state[1] * (m_params.delta_time + std::abs(predict_translation.norm() / m_solver.getSpeed()));
+            point = m_solver.reproject(predict_translation);
+            cv::circle(m_frame, point, 6, cv::Scalar(0, 0, 235), -1);
+
+            double delta_pitch = m_solver.ballisticSolver(predict_translation);
+            PredictData predict_data = translation2YawPitch(predict_translation);
             if (!std::isnan(delta_pitch)) {
                 LOG(INFO) << "delta_pitch: " << delta_pitch;
                 predict_data.pitch -= static_cast<float>(delta_pitch);
@@ -123,7 +136,7 @@ void ArmorAutoAim::armorAutoAim() {
                 data.resize(sizeof(predict_data));
                 std::memcpy(data.data(), &predict_data, sizeof(predict_data));
                 send_meter.stop();
-                emit m_serial_port.CrossThreadTransmitSignal(m_SendAutoAimFuncCode, m_SendId, data);
+                emit m_serial_port.CrossThreadTransmitSignal(m_SendAutoAimFuncCode, m_PcId, data);
                 LOG(INFO) << "Send to control! " << predict_data.to_string();
                 LOG(INFO) << fmt::format("send t: {} Hz", 1 / send_meter.getTimeSec());
                 m_thread_pool.enqueue(yaw_pitch_view::yawPitchViewUpdateDataRequest,
@@ -131,7 +144,7 @@ void ArmorAutoAim::armorAutoAim() {
                                       predict_data);
             } else {
                 send_meter.stop();
-                emit m_serial_port.CrossThreadTransmitSignal(m_SendAutoAimFuncCode, m_LastFuncCode, "");
+                emit m_serial_port.CrossThreadTransmitSignal(m_LastFuncCode, m_PcId, "");
                 LOG(WARNING) << fmt::format("\narmors_size: {};\ntracked_armor-pose: {}; ",
                                             m_armors.size(),
                                             m_tracker.tracked_armor.pose.to_string())
@@ -141,7 +154,7 @@ void ArmorAutoAim::armorAutoAim() {
                 LOG(WARNING) << "异常值!";
             }
         } else {
-            emit m_serial_port.CrossThreadTransmitSignal(m_SendAutoAimFuncCode, m_LastFuncCode, "");
+            emit m_serial_port.CrossThreadTransmitSignal(m_LastFuncCode, m_PcId, "");
         }
         // -- debug --
         // - view -
@@ -168,11 +181,46 @@ void ArmorAutoAim::armorAutoAim() {
     }
 }
 
+void ArmorAutoAim::loadConfig() {
+    // detector
+    m_config = YAML::LoadFile(m_config_path);
+    if (!m_config)
+        LOG(FATAL) << fmt::format("Failed: Invalid configuration file: {}!", m_config_path);
+    const YAML::Node&& detector_config = m_config["detector"];
+    m_params.exp_time = detector_config["camera"]["exposure_time"].as<float>();
+    m_params.gain = detector_config["camera"]["gain"].as<float>();
+    m_params.armor_model_path = detector_config["armor_model_path"].as<std::string>();
+    auto c = detector_config["target_color"].as<std::string>();
+    std::transform(c.begin(), c.end(), c.begin(), ::toupper);
+    if (c == "RED")        m_params.target_color = ArmorColor::RED;
+    else if (c == "BLUE")  m_params.target_color = ArmorColor::BLUE;
+    else                   LOG(FATAL) << "Unknown color: " << c << "(transform to all upper case)";
+    // solver config
+    const YAML::Node&& solver_config = m_config["solver"];
+    m_solver_builder.setG(solver_config["env"]["g"].as<double>());
+    m_solver_builder.setBallSpeed(solver_config["ballistic"]["speed"].as<double>());
+    m_solver_builder.setIntrinsicMatrix(solver_config["camera_params"]["intrinsic_matrix"].as<std::array<double, 9>>());
+    m_solver_builder.setDistortionCess(solver_config["camera_params"]["distortion"].as<std::vector<double>>());
+    auto T_ic_ci = solver_config["coordinate"]["T_ic"].as<std::vector<double>>();
+    m_solver_builder.setTic(Eigen::Map<Eigen::Matrix4d>(T_ic_ci.data(), 4, 4).transpose());
+    T_ic_ci = solver_config["coordinate"]["T_ci"].as<std::vector<double>>();
+    m_solver_builder.setTci(Eigen::Map<Eigen::Matrix4d>(T_ic_ci.data(), 4, 4).transpose());
+    auto tvec_i2w = solver_config["coordinate"]["tvec_i2w"].as<std::array<double, 3>>();
+    Eigen::Vector3d tvec = Eigen::Map<Eigen::Vector3d>(tvec_i2w.data(), 3, 1);
+    m_solver_builder.setTvecI2C(tvec);
+    m_solver_builder.setTvecC2I(-tvec);
+    // predict
+    const YAML::Node&& predict_config = m_config["predict"];
+    m_params.delta_time = predict_config["delta_time"].as<float>();
+    q = predict_config["kf"]["q"].as<int>();
+    r = predict_config["kf"]["r"].as<int>();
+}
+
 void ArmorAutoAim::initHikCamera() {
     if (m_hik_driver->isConnected()) {
         LOG(INFO) << "Hik Connected!";
-        m_hik_driver->setExposureTime(16000);
-        m_hik_driver->setGain(10);
+        m_hik_driver->setExposureTime(m_params.exp_time);
+        m_hik_driver->setGain(m_params.gain);
         m_hik_driver->showParamInfo();
         m_hik_read_thread->start();
         std::this_thread::sleep_for(std::chrono::seconds(2));
@@ -282,11 +330,12 @@ PredictData ArmorAutoAim::translation2YawPitch(const Eigen::Vector3d& translatio
 }
 
 Eigen::Vector3d ArmorAutoAim::ballisticCompensate() {
+    // FIXME: 修改到 Solver
     const Eigen::VectorXd& predict_state = m_tracker.getTargetPredictSate();
     Eigen::Vector3d predict_translation(predict_state(0),
                                         predict_state(2),
                                         predict_state(4));
-    auto point = coordinate_solver::reproject(m_intrinsic_matrix, predict_translation);
+    auto point = m_solver.reproject(predict_translation);
     cv::circle(m_frame, point, 6, cv::Scalar(59, 188, 235), -1);
     // 弹道模型
 //    double delta_pitch = solver::ballisticSolver(predict_translation, m_BallisticSpeed);
@@ -299,9 +348,9 @@ Eigen::Vector3d ArmorAutoAim::ballisticCompensate() {
 //    predict_translation[0] += predict_translation[2] * cos(m_OffsetYaw * M_PI / 180);
     predict_translation += Eigen::Vector3d(0.18, -0.27, 0);
     // 延迟
-    predict_translation[0] += predict_state[1] * (m_DeltaTime + predict_translation.norm() / m_BallisticSpeed); // FIXME: +-
+    predict_translation[0] += predict_state[1] * (m_DeltaTime + predict_translation.norm() / m_solver.getSpeed()); // FIXME: +-
     // 重投影
-    point = coordinate_solver::reproject(m_intrinsic_matrix, predict_translation);
+    point = m_solver.reproject(predict_translation);
     cv::circle(m_frame, point, 6, cv::Scalar(0, 0, 235), -1);
     return predict_translation;
 }

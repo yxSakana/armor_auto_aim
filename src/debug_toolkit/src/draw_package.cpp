@@ -122,8 +122,8 @@ void drawFrameInfo(cv::Mat& src, const std::vector<Armor>& armors, const Tracker
         tracker.state() == armor_auto_aim::TrackerStateMachine::State::TempLost) {
         putText("p: " + std::to_string(tracker.tracked_armor.probability), 900, y);
         putText("color: " + to_string(tracker.tracked_armor.color), 20, 60);
-        putText("number: " + std::to_string(tracker.tracked_armor.number), 20, 60);
-        putText("type: " + to_string(tracker.tracked_armor.type), 130, 60);
+        putText("number: " + std::to_string(tracker.tracked_armor.number), 200, 60);
+        putText("type: " + to_string(tracker.tracked_armor.type), 400, 60);
 //        cv::Point2d predict_point(tracker.getTargetPredictSate()(0), tracker.getTargetPredictSate()(2));
 //        cv::Scalar predict_point_color(0, 0, 255);
 //        cv::circle(src, predict_point, 6, predict_point_color, -1);

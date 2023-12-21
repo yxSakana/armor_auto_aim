@@ -79,10 +79,9 @@ void Tracker::updateTracker(const Armors& armors) {
         double min_position_difference = DBL_MAX;
         double yaw_difference = DBL_MAX;
         Eigen::Vector3d measurement_position_vec;
-        Eigen::Vector3d predicted_position_vec(
-                m_target_predict_state(0),
-                m_target_predict_state(2),
-                m_target_predict_state(4));
+        Eigen::Vector3d predicted_position_vec(m_target_predict_state(0),
+                                               m_target_predict_state(2),
+                                               m_target_predict_state(4));
         for (const auto& armor: armors) { // FIXME: 优先级: 同id > 上次击打(距离最近) || 上次击打 > 同id ?
             if (armor.number == m_tracked_id) {
                 same_id_armor = &armor;
@@ -100,17 +99,26 @@ void Tracker::updateTracker(const Armors& armors) {
         // 后验及装甲板跳变处理
         if (min_position_difference < m_MaxMatchDistance) {
 //             TODO: 是否需要使用shortestAngularDistance 对 yaw 进行处理
-            LOG_IF(INFO, min_position_difference > m_MaxMatchDistance) << min_position_difference;
+            LOG_IF(INFO, min_position_difference > m_MaxMatchDistance)
+                    << min_position_difference
+                    << "\n predicted_position_vec: " << predicted_position_vec
+                    << "\n measurement_position_vec: " << measurement_position_vec;
             is_matched = true;
             measurement = Eigen::Vector4d(tracked_armor.world_coordinate[0], tracked_armor.world_coordinate[1],
                                           tracked_armor.world_coordinate[2], tracked_armor.pose.yaw);
             m_target_predict_state = ekf->predict(measurement);
         } else if (same_id_armor_count == 1) {
-            LOG_IF(WARNING, min_position_difference > m_MaxMatchDistance) << min_position_difference;
+            LOG_IF(WARNING, min_position_difference > m_MaxMatchDistance)
+                    << min_position_difference
+                    << "\n predicted_position_vec: " << predicted_position_vec
+                    << "\n measurement_position_vec: " << measurement_position_vec;;
             LOG(WARNING) << "armor jump";
             handleArmorJump(*same_id_armor);
         } else {
-            LOG_IF(WARNING, min_position_difference > m_MaxMatchDistance) << min_position_difference;
+//            LOG_IF(WARNING, min_position_difference > m_MaxMatchDistance)
+//                    << min_position_difference
+//                    << "\n predicted_position_vec: " << predicted_position_vec
+//                    << "\n measurement_position_vec: " << measurement_position_vec;
             LOG(WARNING) << "No matched armor!";
         }
     }
