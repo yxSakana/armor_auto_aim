@@ -24,7 +24,7 @@ public:
 
     bool pnpSolver(const Armor& armor, cv::Mat& rvec, cv::Mat& tvec);
 
-    bool obtain3dPose(const Armor& armor, armor_auto_aim::solver::Pose& pose);
+    bool obtain3dPose(Armor& armor);
 private:
     // Unit: mm
     static constexpr float SMALL_ARMOR_WIDTH = 135;

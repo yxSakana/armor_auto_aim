@@ -34,6 +34,11 @@ Eigen::Vector3d cameraToWorld(const Eigen::Vector3d& o1c_point,
                               const Eigen::Matrix3d& imu_rmat,
                               const Eigen::Matrix4d& transform_c2i,
                               const Eigen::Vector3d& tvec_i2w);
+
+Eigen::Vector3d worldToCamera(const Eigen::Vector3d& o1w_point,
+                              const Eigen::Matrix3d& imu_rmat,
+                              const Eigen::Matrix4d& transform_i2c,
+                              const Eigen::Vector3d& tvec_w2i);
 }
 
 #endif //AUTO_AIM_COORDINATE_SOLVER_H

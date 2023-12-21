@@ -69,7 +69,7 @@ TEST(test_pnp_solver, pnp) {
                                  cv::Scalar(0, 0, 255), 3);
                     armors.emplace_back(inference_armors[i]);
                     armor_auto_aim::solver::Pose pose{};
-                    bool code = pnp_solver.obtain3dPose(armors[i], pose);
+                    bool code = pnp_solver.obtain3dPose(armors[i]);
                     LOG_IF_EVERY_N(INFO, code, 10) << pose;
 
                     armor_auto_aim::debug_toolkit::drawYawPitch(frame, pose.yaw, pose.pitch);

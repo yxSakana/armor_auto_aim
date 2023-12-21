@@ -14,12 +14,12 @@
 
 namespace armor_auto_aim::solver {
 double ballisticSolver(const Eigen::Vector3d& translation_vector,
-                     const double& bullet_speed,
-                     const int& max_number_iteration,
-                     const int& max_number_kutta_iteration,
-                     const float& stop_error,
-                     const double& k,
-                     const double& g) {
+                       const double& bullet_speed,
+                       const int& max_number_iteration,
+                       const int& max_number_kutta_iteration,
+                       const float& stop_error,
+                       const double& k,
+                       const double& g) {
 //    constexpr double k = 0.01903;  // 25°C, 1atm, 小弹丸
 //    constexpr double k = 0.000556; // 25°C, 1atm, 大弹丸
 //    constexpr double k = 0.000530; // 25°C, 1atm, 发光大弹丸

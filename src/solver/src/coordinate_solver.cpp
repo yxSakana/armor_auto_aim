@@ -32,22 +32,51 @@ Eigen::Vector3d cameraToWorld(const Eigen::Vector3d& o1c_point,
     Eigen::Vector3d imu_tvec(imu_homogeneous_tvec[0], imu_homogeneous_tvec[1], imu_homogeneous_tvec[2]); // 装甲板在imu 非齐次坐标
     const Eigen::Vector3d& world = imu_rmat * imu_tvec + tvec_i2w;
 
-    float yaw, pitch, distance;
-    std::string yaw_pitch_info;
-    armor_auto_aim::getYawPitchDis(o1c_point, yaw, pitch, distance);
-    yaw_pitch_info += fmt::format("\n\tCamera: yaw: {}; pitch: {};", yaw, pitch);
-    armor_auto_aim::getYawPitchDis(imu_tvec, yaw, pitch, distance);
-    yaw_pitch_info += fmt::format("\n\tIMU: yaw: {}; pitch: {};", yaw, pitch);
-    armor_auto_aim::getYawPitchDis(world, yaw, pitch, distance);
-    yaw_pitch_info += fmt::format("\n\tWorld: yaw: {}; pitch: {};", yaw, pitch);
-    LOG(INFO) << fmt::format("\n\tCamera Point: {}, {}, {};\n"
-                             "\tIMU Poin: {}, {}, {};\n"
-                             "\tWorld Point: {}, {}, {};",
-                             o1c_point[0], o1c_point[1], o1c_point[2],
-                             imu_tvec[0], imu_tvec[1], imu_tvec[2],
-                             world[0], world[1], world[2]);
-    LOG(INFO) << yaw_pitch_info;
-    LOG(INFO) << fmt::format("\nimu_rmat: \n{}", armor_auto_aim::to_string(imu_rmat));
+//    float yaw, pitch, distance;
+//    std::string yaw_pitch_info;
+//    armor_auto_aim::getYawPitchDis(o1c_point, yaw, pitch, distance);
+//    yaw_pitch_info += fmt::format("\n\tCamera: yaw: {}; pitch: {};", yaw, pitch);
+//    armor_auto_aim::getYawPitchDis(imu_tvec, yaw, pitch, distance);
+//    yaw_pitch_info += fmt::format("\n\tIMU: yaw: {}; pitch: {};", yaw, pitch);
+//    armor_auto_aim::getYawPitchDis(world, yaw, pitch, distance);
+//    yaw_pitch_info += fmt::format("\n\tWorld: yaw: {}; pitch: {};", yaw, pitch);
+//    LOG(INFO) << fmt::format("\n\tCamera Point: {}, {}, {};\n"
+//                             "\tIMU Poin: {}, {}, {};\n"
+//                             "\tWorld Point: {}, {}, {};",
+//                             o1c_point[0], o1c_point[1], o1c_point[2],
+//                             imu_tvec[0], imu_tvec[1], imu_tvec[2],
+//                             world[0], world[1], world[2]);
+//    LOG(INFO) << yaw_pitch_info;
+//    LOG(INFO) << fmt::format("\nimu_rmat: \n{}", armor_auto_aim::to_string(imu_rmat));
     return world; // 装甲板在imu参考惯性坐标系下的坐标
+}
+
+Eigen::Vector3d worldToCamera(const Eigen::Vector3d& o1w_point,
+                              const Eigen::Matrix3d& imu_rmat,
+                              const Eigen::Matrix4d& transform_i2c,
+                              const Eigen::Vector3d& tvec_w2i) {
+    Eigen::Vector3d o1i_point = imu_rmat.transpose() * o1w_point + tvec_w2i;
+    Eigen::Vector4d o1i_point_h(o1i_point[0], o1i_point[1], o1i_point[2], 1);
+    Eigen::Vector4d o1c_point_h = transform_i2c * o1i_point_h;
+    Eigen::Vector3d o1c_point(o1c_point_h[0], o1c_point_h[1], o1c_point_h[2]);
+
+
+//    float yaw, pitch, distance;
+//    std::string yaw_pitch_info;
+//    armor_auto_aim::getYawPitchDis(o1w_point, yaw, pitch, distance);
+//    yaw_pitch_info += fmt::format("\n\tWorld: yaw: {}; pitch: {};", yaw, pitch);
+//    armor_auto_aim::getYawPitchDis(o1i_point, yaw, pitch, distance);
+//    yaw_pitch_info += fmt::format("\n\tIMU: yaw: {}; pitch: {};", yaw, pitch);
+//    armor_auto_aim::getYawPitchDis(o1c_point, yaw, pitch, distance);
+//    yaw_pitch_info += fmt::format("\n\tCamera: yaw: {}; pitch: {};", yaw, pitch);
+//    LOG(INFO) << fmt::format("\n\tWorld Point: {}, {}, {};\n"
+//                             "\tIMU Poin: {}, {}, {};\n"
+//                             "\tCamera Point: {}, {}, {};\n",
+//                             o1w_point[0], o1w_point[1], o1w_point[2],
+//                             o1i_point[0], o1i_point[1], o1i_point[2],
+//                             o1c_point[0], o1c_point[1], o1c_point[2]);
+//    LOG(INFO) << yaw_pitch_info;
+//    LOG(INFO) << fmt::format("\nimu_rmat: \n{}", armor_auto_aim::to_string(imu_rmat));
+    return o1c_point;
 }
 }

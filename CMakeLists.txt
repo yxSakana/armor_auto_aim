@@ -20,8 +20,10 @@ endif ()
 
 # sub library
 #add_subdirectory(src/macro_definition)
+add_subdirectory(src/view)
 add_subdirectory(src/plot_client_http)
 add_subdirectory(src/debug_toolkit)
+add_subdirectory(src/utils)
 add_subdirectory(src/threadsafe_queue)
 add_subdirectory(src/thread_pool)
 add_subdirectory(src/google_logger)

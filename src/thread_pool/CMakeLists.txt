@@ -7,5 +7,4 @@ target_include_directories(thread_pool PUBLIC include)
 
 find_package(Threads REQUIRED)
 target_link_libraries(thread_pool PUBLIC
-        Threads::Threads
-        )
+        Threads::Threads)

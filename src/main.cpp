@@ -12,13 +12,12 @@
 
 int main(int argc, char* argv[]) {
     armor_auto_aim::google_log::initGoogleLogger(argc, argv);
-
 #ifdef DEBUG
     QApplication q_core(argc, argv);
 #else
     QCoreApplication q_core(argc, argv);
 #endif
-    armor_auto_aim::ArmorAutoAim armor_auto_aim;
+    armor_auto_aim::ArmorAutoAim armor_auto_aim("../config/config.yaml");
     std::thread armor_auto_aim_thread([&armor_auto_aim]()-> void {
         armor_auto_aim.armorAutoAim();
     });
