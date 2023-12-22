@@ -13,6 +13,8 @@
 #include <condition_variable>
 
 #include <yaml-cpp/yaml.h>
+#include <QObject>
+#include <QTimer>
 
 #include <threadsafe_queue/threadsafe_queue.h>
 #include <solver/solver.h>
@@ -39,8 +41,8 @@ struct AutoAimParams {
     float delta_time;
 };
 
-class ArmorAutoAim {
-//    Q_OBJECT
+class ArmorAutoAim: QObject {
+    Q_OBJECT
 public:
     explicit ArmorAutoAim(const std::string& config_path);
 
@@ -69,6 +71,7 @@ private:
     Detector m_detector;
     Tracker m_tracker;
     VCOMCOMM m_serial_port;
+    QTimer* m_auto_connect_serial;
     PlotClientHttp m_plot_client_http;
     HikFrame m_hik_frame;
     cv::Mat m_frame;
