@@ -18,6 +18,14 @@ template<typename T>
 class SafeStack {
 public:
     SafeStack();
+
+    void push(T data) {
+
+    }
+
+    void clear() {
+
+    }
 private:
     mutable std::mutex m_mutex;
     std::condition_variable m_condition;

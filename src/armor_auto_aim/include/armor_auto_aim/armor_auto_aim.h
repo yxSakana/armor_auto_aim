@@ -33,6 +33,7 @@
 #include <plot_client_http/pnp_view.h>
 #include <plot_client_http/yaw_pitch_view.h>
 #include <view/view.h>
+#include <safe_container/safe_stack.h>
 
 namespace armor_auto_aim {
 struct AutoAimParams {
@@ -51,12 +52,30 @@ public:
     explicit ArmorAutoAim(const std::string& config_path, QObject* parent = nullptr);
 
     void run() override;
+public slots:
+    void pushImuData(const ImuData& data) { m_imu_data_queue.push(data); }
+
+    void pushCameraData(const HikFrame& frame) { m_camera_stack.push(frame); }
+signals:
+    void sendAimInfo(const AutoAimInfo& aim_info);
+
+    void showFrame(const cv::Mat& frame,
+                   const std::vector<Armor>& armors, const Tracker& tracker,
+                   const double& fps, const uint64& timestamp, const float& dt);
+
+    void viewEkfSign(const armor_auto_aim::Tracker& tracker,
+                     const Eigen::Vector3d& predict_camera_coordinate,
+                     const Eigen::Vector3d& shoot_camera_coordinate);
+
+    void viewTimestampSign(const uint64& camera_timestamp,
+                           const uint64& imu_timestamp);
+#ifdef DEBUG
+    void viewSign(const Eigen::Vector3d& world_predict_translation,
+                  const Eigen::Vector3d& predict_translation,
+                  const uint64_t& timestamp,
+                  const uint64_t& imu_timestamp);
+#endif
 private:
-    static constexpr uint16_t m_PcId = 0; // id: PC
-    static constexpr uint8_t m_SendAutoAimInfoCode = 1; // code: 发送自瞄信息
-    static constexpr uint8_t m_SendTimestampCode = 2; // code: 发送pc当前时间戳
-    static constexpr uint16_t m_MicrocontrollerId = 1;  // id: 单片机
-    static constexpr uint8_t m_ImuInfoCode = 0;  // code: IMU数据
     static constexpr double m_DeltaTime = 50.0;
     int q = 1, r = 1, p = 10000;
 
@@ -69,22 +88,20 @@ private:
     std::unique_ptr<HikReadThread> m_hik_read_thread;
 #ifdef DEBUG
     std::unique_ptr<HikDebugUi> m_hik_debug_ui;
-    view::View m_view;
+//    view::View m_view;
 #endif
     SolverBuilder m_solver_builder;
     Solver m_solver;
     Detector m_detector;
     Tracker m_tracker;
-    VCOMCOMM m_serial_port;
-    QTimer* m_auto_connect_serial;
     HikFrame m_hik_frame;
     cv::Mat m_frame;
     std::vector<Armor> m_armors;
     float dt = 0.0f;
     std::shared_ptr<ImuData> m_imu_data = std::make_shared<ImuData>();
     ThreadSafeQueue<ImuData> m_imu_data_queue;  // FIXME: 不使用队列、会明显滞后、因为每次都是取得是之前的； 另外KF加入速度观测值
+    ThreadSafeQueue<HikFrame> m_camera_stack;
     AutoAimInfo m_aim_info;
-    QByteArray m_data;
 
     void loadConfig();
 
@@ -101,24 +118,6 @@ private:
     inline static AutoAimInfo translation2YawPitch(const solver::Pose& pose);
 
     inline static AutoAimInfo translation2YawPitch(const Eigen::Vector3d& translation);
-signals:
-#ifdef DEBUG
-    void viewSign(const Eigen::Vector3d& world_predict_translation,
-                  const Eigen::Vector3d& predict_translation,
-                  const uint64_t& timestamp,
-                  const uint64_t& imu_timestamp);
-#endif
-private slots:
-    void funcSelect(uint8_t fun_code, uint16_t id, const QByteArray& data);
-
-    void sendNowTimestamp();
-
-#ifdef DEBUG
-    void view(const Eigen::Vector3d& world_predict_translation,
-              const Eigen::Vector3d& predict_translation,
-              const uint64_t& timestamp,
-              const uint64_t& imu_timestamp);
-#endif
 };
 }
 
