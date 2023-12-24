@@ -135,7 +135,19 @@ void Tracker::initEkf(const Armor& armor) {
     m_target_predict_state = Eigen::VectorXd::Zero(8);
     m_target_predict_state << xa, 0, ya, 0, za, 0, yaw, 0;
 
-    ekf->setState(m_target_predict_state);
+    Eigen::Matrix<double, 8, 8> p0;
+    double p = 10000;
+    //  xa  vxa  ya  vya  za  vza  yaw v_yaw
+    p0 << p,  0,   0,  0,  0,   0,   0,  0, // xa
+          0,  p,   0,  0,  0,   0,   0,  0, // vxa
+          0,  0,   p,  0,  0,   0,   0,  0, // ya
+          0,  0,   0,  p,  0,   0,   0,  0, // vya
+          0,  0,   0,  0,  p,   0,   0,  0, // za
+          0,  0,   0,  0,  0,   p,   0,  0, // vza
+          0,  0,   0,  0,  0,   0,   p,  0, // yaw
+          0,  0,   0,  0,  0,   0,   0,  p; // v_yaw
+
+    ekf->initEkf(m_target_predict_state, p0);
 }
 
 void Tracker::handleArmorJump(const armor_auto_aim::Armor& same_id_armor) {

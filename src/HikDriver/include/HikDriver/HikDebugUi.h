@@ -40,7 +40,7 @@ public:
         auto auto_exposure_time_off = new QRadioButton("off");
         auto auto_exposure_time_once = new QRadioButton("once");
         auto auto_exposure_time_continuous = new QRadioButton("continuous");
-        // TODO: 没有默认构造函数: 造成 CoreThread 线程在构造函数内部设置曝光和阈值之前就已经读取相机数据了
+        // FIXME: 没有默认构造函数: 造成 CoreThread 线程在构造函数内部设置曝光和阈值之前就已经读取相机数据了
         auto_exposure_time_off->setChecked(true);
         this->m_driver->setAutoExposureTime(0);
         connect(d_exposure_time, &vision_debug_widgets::Slider::valChanged, [this](){

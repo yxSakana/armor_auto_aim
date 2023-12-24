@@ -4,7 +4,7 @@
   @file realtime_waveform.py
   @brief
   @author yx
-  @data 2023-11-19 15:13:20
+  @date 2023-11-19 15:13:20
 """
 
 from typing import Tuple, List

@@ -3,7 +3,7 @@
  * @file coordinate_solver.cpp
  * @brief
  * @author yx
- * @data 2023-11-26 14:14:15
+ * @date 2023-11-26 14:14:15
  */
 
 #include <solver/coord_utils.h>
@@ -27,10 +27,10 @@ Eigen::Vector3d cameraToWorld(const Eigen::Vector3d& o1c_point,
                               const Eigen::Matrix3d& imu_rmat,
                               const Eigen::Matrix4d& transform_c2i,
                               const Eigen::Vector3d& tvec_i2w) {
-    Eigen::Vector4d homogeneous_tvec(o1c_point[0], o1c_point[1], o1c_point[2], 1); // 装甲板在相机 坐标齐次
-    Eigen::Vector4d imu_homogeneous_tvec = transform_c2i * homogeneous_tvec; // 装甲板在imu 齐次坐标
-    Eigen::Vector3d imu_tvec(imu_homogeneous_tvec[0], imu_homogeneous_tvec[1], imu_homogeneous_tvec[2]); // 装甲板在imu 非齐次坐标
-    const Eigen::Vector3d& world = imu_rmat * imu_tvec + tvec_i2w;
+    Eigen::Vector4d o1c_point_h(o1c_point[0], o1c_point[1], o1c_point[2], 1); // 装甲板在相机 坐标齐次
+    Eigen::Vector4d o1i_point_h = transform_c2i * o1c_point_h; // 装甲板在imu 齐次坐标
+    Eigen::Vector3d o1i_point(o1i_point_h[0], o1i_point_h[1], o1i_point_h[2]); // 装甲板在imu 非齐次坐标
+    const Eigen::Vector3d& o1w_point = imu_rmat * o1i_point + tvec_i2w;
 
 //    float yaw, pitch, distance;
 //    std::string yaw_pitch_info;
@@ -48,7 +48,7 @@ Eigen::Vector3d cameraToWorld(const Eigen::Vector3d& o1c_point,
 //                             world[0], world[1], world[2]);
 //    LOG(INFO) << yaw_pitch_info;
 //    LOG(INFO) << fmt::format("\nimu_rmat: \n{}", armor_auto_aim::to_string(imu_rmat));
-    return world; // 装甲板在imu参考惯性坐标系下的坐标
+    return o1w_point; // 装甲板在imu参考惯性坐标系下的坐标
 }
 
 Eigen::Vector3d worldToCamera(const Eigen::Vector3d& o1w_point,

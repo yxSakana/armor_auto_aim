@@ -3,13 +3,13 @@
  * @file armor_auto_aim.h.cpp
  * @brief
  * @author yx
- * @data 2023-11-14 21:13:26
+ * @date 2023-11-14 21:13:26
  */
 
 #ifdef DEBUG
 #include <QPointF>
 #endif
-
+#include <stack>
 #include <google_logger/google_logger.h>
 #include <armor_auto_aim/armor_auto_aim.h>
 #include <solver/coordinate_solver.h>
@@ -17,59 +17,62 @@
 #include <debug_toolkit/draw_package.h>
 
 namespace armor_auto_aim {
-ArmorAutoAim::ArmorAutoAim(const std::string& config_path)
-    : m_hik_driver(std::make_unique<HikDriver>(0)),
+ArmorAutoAim::ArmorAutoAim(const std::string& config_path, QObject* parent)
+    : QThread(parent),
+      m_hik_driver(std::make_unique<HikDriver>(0)),
       m_hik_read_thread(std::make_unique<HikReadThread>(m_hik_driver.get())),
       m_config_path(config_path)
        {
+#ifdef DEBUG
+    qRegisterMetaType<Eigen::Vector3d>("Eigen::Vector3d");
+    qRegisterMetaType<uint64_t>("uint64_t");
+#endif
     loadConfig();
     m_solver = Solver(m_solver_builder.build());
     m_detector = Detector(m_params.armor_model_path, m_solver.pnp_solver);
     initHikCamera();
     initEkf();
-#ifdef DEBUG
-    sendCreateViewRequest();
-#endif
     m_auto_connect_serial = new QTimer(this);
-    m_auto_connect_serial->start(1000);
+    m_auto_connect_serial->start(100);
     connect(m_auto_connect_serial, &QTimer::timeout, [this](){
         if ((!this->m_serial_port.isOpen()) || m_serial_port.error() != QSerialPort::NoError) {
             LOG(WARNING) << "Serial close. try auto connect...";
             this->m_serial_port.auto_connect();
-        } else {
-            LOG(INFO) << "Serial is opened";
         }
     });
-    connect(&m_serial_port, &VCOMCOMM::receiveData,
-                     [this](uint8_t fun_code, uint16_t id, const QByteArray& data) {
-        ImuData imu_data;
-        std::memcpy(&imu_data, data, sizeof(imu_data));
-        m_imu_data_queue.push(imu_data);
-    });
+    connect(&m_serial_port, &VCOMCOMM::receiveData, this, &ArmorAutoAim::funcSelect);
 #ifdef DEBUG
+    connect(this, &ArmorAutoAim::viewSign, this, &ArmorAutoAim::view);
+    m_view.m_timestamp_view->showMaximized();
     m_view.m_ekf_view->showMaximized();
 //    m_view.m_ekf_view->show();
     for (const auto& k: {"x", "v_x", "y", "v_y"})
         m_view.m_ekf_view->get(k)->setShowNumber(300);
+    m_view.m_timestamp_view->get("Camera-IMU timestamp")->setShowNumber(100);
 #endif
 }
 
-void ArmorAutoAim::armorAutoAim() {
+void ArmorAutoAim::run() {
 #ifdef DEBUG
     cv::namedWindow("frame", cv::WINDOW_NORMAL);
 #endif
-    QByteArray data;
     cv::TickMeter tick_meter;
-    cv::TickMeter send_meter;
+//    cv::TickMeter send_meter;
     float fps = 0.0f;
     int frame_count = 0;
     constexpr int from_fps_frame_count = 10;
     bool is_reset = true;
-    int64_t timestamp = 0;
-    int64_t last_t = std::chrono::system_clock::now().time_since_epoch().count();
+    uint64_t timestamp = 0;
+    uint64_t last_t = ProgramClock::now().time_since_epoch().count();
+    Eigen::Vector3d camera_point;
+    Eigen::Quaterniond quaternion;
 
     while (true) {
         bool is_have = m_imu_data_queue.tryPop(*m_imu_data);
+//        m_imu_data = m_imu_data_queue.waitPop();
+//        emit m_serial_port.CrossThreadTransmitSignal(5, 5, "");
+//        LOG_IF(INFO, is_have) << "HAVE!";
+//        continue;
         if (!is_have) {
 //            m_hik_frame = m_hik_read_thread->getFrame();
 //            m_frame = m_hik_frame.getRgbFrame();
@@ -77,15 +80,17 @@ void ArmorAutoAim::armorAutoAim() {
 //            cv::waitKey(1);
             continue;
         }
-//        m_imu_data = m_imu_data_queue.waitPop();
+        m_aim_info.reset();
+        m_data.clear();
+        m_data.resize(sizeof(m_aim_info));
         // start fps clock
         if (is_reset) {
             tick_meter.reset();
             tick_meter.start();
             is_reset = false;
         }
-        send_meter.reset();
-        send_meter.start();
+//        send_meter.reset();
+//        send_meter.start();
         // -- main --
         // 获取当前时间点
         m_hik_frame = m_hik_read_thread->getFrame();
@@ -94,13 +99,11 @@ void ArmorAutoAim::armorAutoAim() {
         // -- detect --
         m_detector.detect(m_frame, &m_armors);
         // get world coordinate
-        Eigen::Vector3d c_point;
-        Eigen::Quaterniond quaternion;
         for (auto& armor: m_armors) {
-            c_point = Eigen::Vector3d(armor.pose.x, armor.pose.y, armor.pose.z);
+            camera_point = Eigen::Vector3d(armor.pose.x, armor.pose.y, armor.pose.z);
             quaternion = Eigen::Quaterniond(m_imu_data->quaternion.w, m_imu_data->quaternion.x,
                                             m_imu_data->quaternion.y, m_imu_data->quaternion.z);
-            armor.world_coordinate = m_solver.cameraToWorld(c_point, quaternion.matrix());
+            armor.world_coordinate = m_solver.cameraToWorld(camera_point, quaternion.matrix());
         }
         // dt
         dt = static_cast<float>(timestamp - last_t);
@@ -111,21 +114,21 @@ void ArmorAutoAim::armorAutoAim() {
         } else {
             m_tracker.updateTracker(m_armors);
         }
-        // -- predict && send --
+        // -- predict --
         if (m_tracker.state() == TrackerStateMachine::State::Tracking ||
             m_tracker.state() == TrackerStateMachine::State::TempLost) {
-            // -- predict --
             const Eigen::VectorXd& predict_state = m_tracker.getTargetPredictSate();
-            Eigen::Vector3d predict_translation(predict_state(0), predict_state(2), predict_state(4));
-            Eigen::Vector3d world_predict_translation = predict_translation;
-            predict_translation = m_solver.worldToCamera(predict_translation, quaternion.matrix());
-            auto point = m_solver.reproject(predict_translation);
-            cv::circle(m_frame, point, 6, cv::Scalar(59, 188, 235), -1);
+            Eigen::Vector3d world_predict_translation(predict_state(0), predict_state(2), predict_state(4));
+            Eigen::Vector3d  predict_translation = m_solver.worldToCamera(world_predict_translation, quaternion.matrix());
+            cv::circle(m_frame, m_solver.reproject(predict_translation), 6, cv::Scalar(59, 188, 235), -1);
             predict_translation[0] -= predict_state[1] * (m_params.delta_time + std::abs(predict_translation.norm() / m_solver.getSpeed()));
-            point = m_solver.reproject(predict_translation);
-            cv::circle(m_frame, point, 6, cv::Scalar(0, 0, 235), -1);
-#ifdef DEBUG // View
+            cv::circle(m_frame, m_solver.reproject(predict_translation), 6, cv::Scalar(0, 0, 235), -1);
+#ifdef DEBUG
+            emit viewSign(world_predict_translation, predict_translation, timestamp, m_imu_data->timestamp);
+#endif
+#ifdef DEBUG_ // View
             QPointF p;
+            // --- EKF-View ---
             // x-measure-word
             p = m_view.m_ekf_view->getLastPoint("x", "measure_world");
             m_view.m_ekf_view->insert("x", "measure_world", p.x()+1, m_tracker.tracked_armor.world_coordinate[0]);
@@ -159,48 +162,40 @@ void ArmorAutoAim::armorAutoAim() {
             // v_y-predict
             p = m_view.m_ekf_view->getLastPoint("v_y", "predict");
             m_view.m_ekf_view->insert("v_y", "predict", p.x()+1, predict_state[3]);
+            // --- Timestamp-View ---
+            p = m_view.m_timestamp_view->getLastPoint("Camera-IMU timestamp", "timestamp");
+            LOG(INFO) << "hik-timestamp: " << timestamp;
+            LOG(INFO) << m_imu_data->to_string();
+            m_view.m_timestamp_view->insert("Camera-IMU timestamp", "timestamp", p.x()+1, static_cast<double>(timestamp - m_imu_data->timestamp));
 #endif
-            double delta_pitch = m_solver.ballisticSolver(predict_translation);
-            PredictData predict_data = translation2YawPitch(predict_translation);
+            double delta_pitch = m_solver.ballisticSolver(-predict_translation);
+            m_aim_info = translation2YawPitch(predict_translation);
             if (!std::isnan(delta_pitch)) {
                 LOG(INFO) << "delta_pitch: " << delta_pitch;
-                predict_data.pitch -= static_cast<float>(delta_pitch);
+                m_aim_info.pitch -= static_cast<float>(delta_pitch);
             } else {
                 LOG(WARNING) << "delta_pitch is NaN";
             }
-
-            if ((-40.0 < predict_data.yaw && predict_data.yaw < 40.0) &&
-                (-40.0 < predict_data.pitch && predict_data.pitch < 40.0)) {
-                data.clear();
-                data.resize(sizeof(predict_data));
-                std::memcpy(data.data(), &predict_data, sizeof(predict_data));
-                send_meter.stop();
-                emit m_serial_port.CrossThreadTransmitSignal(m_SendAutoAimFuncCode, m_PcId, data);
-                LOG(INFO) << "Send to control! " << predict_data.to_string();
-                LOG(INFO) << fmt::format("send t: {} Hz", 1 / send_meter.getTimeSec());
-                m_thread_pool.enqueue(yaw_pitch_view::yawPitchViewUpdateDataRequest,
-                                      &m_plot_client_http,
-                                      predict_data);
-            } else {
-                send_meter.stop();
-                emit m_serial_port.CrossThreadTransmitSignal(m_LastFuncCode, m_PcId, "");
+            if (!((-40.0 < m_aim_info.yaw && m_aim_info.yaw < 40.0) &&
+                  (-40.0 < m_aim_info.pitch && m_aim_info.pitch < 40.0))) {
                 LOG(WARNING) << fmt::format("\narmors_size: {};\ntracked_armor-pose: {}; ",
                                             m_armors.size(),
                                             m_tracker.tracked_armor.pose.to_string())
                              << "\npredict: " << predict_translation << "; "
                              << "\ntarget_predict_state: " << m_tracker.getTargetPredictSate()
-                             << "\ncommunicate info: " << predict_data.to_string();
+                             << "\ncommunicate info: " << m_aim_info.to_string();
                 LOG(WARNING) << "异常值!";
             }
-        } else {
-            emit m_serial_port.CrossThreadTransmitSignal(m_LastFuncCode, m_PcId, "");
         }
+        // -- Send --
+        m_aim_info.tracker_status = static_cast<uint8_t>(m_tracker.state());
+        std::memcpy(m_data.data(), &m_aim_info, sizeof(m_aim_info));
+//        send_meter.stop();
+//        continue;
+        emit m_serial_port.CrossThreadTransmitSignal(m_SendAutoAimInfoCode, m_PcId, m_data);
+//        LOG(INFO) << fmt::format("send t: {} Hz", 1 / send_meter.getTimeSec());
+//        LOG(INFO) << "Send to control! " << m_aim_info.to_string() << fmt::format("({})", m_tracker.stateString());
         // -- debug --
-        // - view -
-#ifdef DEBUG
-        m_thread_pool.enqueue(armor_auto_aim::ekf_plot::lineSystemUpdateDataRequest, &m_plot_client_http, m_tracker);
-        m_thread_pool.enqueue(armor_auto_aim::pnp_view::pnpViewUpdateDataRequest, &m_plot_client_http, m_tracker);
-#endif
         // - append information to frame(fps, tracker_info, timestamp, armors) -
         if (frame_count < from_fps_frame_count) {
             frame_count++;
@@ -216,6 +211,7 @@ void ArmorAutoAim::armorAutoAim() {
         cv::waitKey(1);
 #else
         LOG_EVERY_N(INFO, 10) << fmt::format("fps: {}", fps);
+        LOG_EVERY_T(INFO, 10) << m_imu_data->to_string();
 #endif
     }
 }
@@ -273,12 +269,6 @@ void ArmorAutoAim::initHikCamera() {
     }
 }
 
-void ArmorAutoAim::sendCreateViewRequest() {
-    ekf_plot::lineSystemCreateWindowRequest(&m_plot_client_http);
-    pnp_view::pnpViewCreateWindowRequest(&m_plot_client_http);
-    yaw_pitch_view::yawPitchViewCreateWindowRequest(&m_plot_client_http);
-}
-
 void ArmorAutoAim::initEkf() {
     //  xa  vxa  ya  vya  za  vza  yaw v_yaw
     Q << q,  0,   0,  0,  0,   0,   0,  0, // xa
@@ -296,8 +286,16 @@ void ArmorAutoAim::initEkf() {
          0,  0,   0,  r; // vya
 //    Q.setIdentity();
 //    R.setIdentity();
-    Eigen::DiagonalMatrix<double, 8> p0;
-    p0.setIdentity();
+    Eigen::Matrix<double, 8, 8> p0;
+    //  xa  vxa  ya  vya  za  vza  yaw v_yaw
+    p0 << p,  0,   0,  0,  0,   0,   0,  0, // xa
+          0,  p,   0,  0,  0,   0,   0,  0, // vxa
+          0,  0,   p,  0,  0,   0,   0,  0, // ya
+          0,  0,   0,  p,  0,   0,   0,  0, // vya
+          0,  0,   0,  0,  p,   0,   0,  0, // za
+          0,  0,   0,  0,  0,   p,   0,  0, // vza
+          0,  0,   0,  0,  0,   0,   p,  0, // yaw
+          0,  0,   0,  0,  0,   0,   0,  p; // v_yaw
     //   x  vx  y  vy   z   yz  yaw v_yaw
     F << 1, dt, 0,  0,  0,  0,   0,  0,  // x
          0, 1,  0,  0,  0,  0,   0,  0,  // vx
@@ -352,7 +350,7 @@ void ArmorAutoAim::initEkf() {
     m_tracker.ekf = std::make_shared<ExtendedKalmanFilter>(p0, f, h, j_f, j_h, update_Q, update_R);
 }
 
-PredictData ArmorAutoAim::translation2YawPitch(const solver::Pose& pose) {
+AutoAimInfo ArmorAutoAim::translation2YawPitch(const solver::Pose& pose) {
     return {
         static_cast<float>(atan2(pose.x, pose.z) * 180.0f / M_PI),
         static_cast<float>(atan2(pose.y, pose.z) * 180.0f / M_PI),
@@ -360,7 +358,7 @@ PredictData ArmorAutoAim::translation2YawPitch(const solver::Pose& pose) {
     };
 }
 
-PredictData ArmorAutoAim::translation2YawPitch(const Eigen::Vector3d& translation) {
+AutoAimInfo ArmorAutoAim::translation2YawPitch(const Eigen::Vector3d& translation) {
     return {
         static_cast<float>(atan2(translation(0), translation(2)) * 180.0f / M_PI),
         static_cast<float>(atan2(translation(1), translation(2)) * 180.0f / M_PI),
@@ -368,29 +366,91 @@ PredictData ArmorAutoAim::translation2YawPitch(const Eigen::Vector3d& translatio
     };
 }
 
-Eigen::Vector3d ArmorAutoAim::ballisticCompensate() {
-    // FIXME: 修改到 Solver
-    const Eigen::VectorXd& predict_state = m_tracker.getTargetPredictSate();
-    Eigen::Vector3d predict_translation(predict_state(0),
-                                        predict_state(2),
-                                        predict_state(4));
-    auto point = m_solver.reproject(predict_translation);
-    cv::circle(m_frame, point, 6, cv::Scalar(59, 188, 235), -1);
-    // 弹道模型
-//    double delta_pitch = solver::ballisticSolver(predict_translation, m_BallisticSpeed);
-//    if (!std::isnan(delta_pitch))
-//        predict_translation[1] = predict_translation[2] * sin();
-//        predict_translation[1] = tan(atan2(predict_translation[1], predict_translation[2]) - delta_pitch);
-//    else
-//        LOG(WARNING) << "delta_pitch is NaN!";
-//     安装偏移
-//    predict_translation[0] += predict_translation[2] * cos(m_OffsetYaw * M_PI / 180);
-    predict_translation += Eigen::Vector3d(0.18, -0.27, 0);
-    // 延迟
-    predict_translation[0] += predict_state[1] * (m_DeltaTime + predict_translation.norm() / m_solver.getSpeed()); // FIXME: +-
-    // 重投影
-    point = m_solver.reproject(predict_translation);
-    cv::circle(m_frame, point, 6, cv::Scalar(0, 0, 235), -1);
-    return predict_translation;
+void ArmorAutoAim::funcSelect(uint8_t fun_code, uint16_t id, const QByteArray& data) {
+    if (id == m_MicrocontrollerId) {
+        switch (fun_code) {
+            case m_ImuInfoCode: {
+                ImuData imu_data;
+                std::memcpy(&imu_data, data, sizeof(imu_data));
+//                imu_data.timestamp = std::chrono::duration_cast<ClockUnit>(ProgramClock::now().time_since_epoch()).count();
+                uint64_t now = std::chrono::duration_cast<ClockUnit>(ProgramClock::now().time_since_epoch()).count();
+                uint64_t i_t = imu_data.timestamp;
+                LOG_EVERY_T(INFO, 3) << fmt::format("now: {}; imu timestamp: {}; diff: {}",
+                                         now, i_t, static_cast<int64_t>(now) - static_cast<int64_t>(i_t));
+                m_imu_data_queue.push(imu_data);
+                break;
+            }
+            case m_SendTimestampCode: {
+                sendNowTimestamp();
+                break;
+            }
+            default: {
+                LOG(WARNING) << fmt::format("Unknown function code {}, id: {}, data: {}", fun_code, id, data.data());
+            }
+        }
+    } else {
+        LOG(WARNING) << "Unknown id: " << id;
+    }
 }
+
+void ArmorAutoAim::sendNowTimestamp() {
+    uint64_t timestamp = std::chrono::duration_cast<ClockUnit>(ProgramClock ::now().time_since_epoch()).count();
+//    QByteArray data(reinterpret_cast<const char*>(&timestamp), sizeof(timestamp));
+    QByteArray data;
+    data.resize(sizeof(timestamp));
+    std::memcpy(data.data(), &timestamp, sizeof(timestamp));
+    LOG(INFO) << "Send";
+    emit m_serial_port.CrossThreadTransmitSignal(m_SendTimestampCode, m_PcId, data);
+}
+
+#ifdef DEBUG
+void ArmorAutoAim::view(const Eigen::Vector3d& world_predict_translation,
+                        const Eigen::Vector3d& predict_translation,
+                        const uint64_t& timestamp,
+                        const uint64_t& imu_timestamp) {
+    QPointF p;
+    const Eigen::VectorXd& predict_state = m_tracker.getTargetPredictSate();
+    // --- EKF-View ---
+    // x-measure-word
+    p = m_view.m_ekf_view->getLastPoint("x", "measure_world");
+    m_view.m_ekf_view->insert("x", "measure_world", p.x()+1, m_tracker.tracked_armor.world_coordinate[0]);
+    // x-predict-world
+    p = m_view.m_ekf_view->getLastPoint("x", "predict_world");
+    m_view.m_ekf_view->insert("x", "predict_world", p.x()+1, world_predict_translation[0]);
+//     x-measure
+//    p = m_view.m_ekf_view->getLastPoint("x", "measure");
+//    m_view.m_ekf_view->insert("x", "measure", p.x()+1, m_tracker.tracked_armor.pose.x);
+    // x-predict
+//    p = m_view.m_ekf_view->getLastPoint("x", "predict");
+//    m_view.m_ekf_view->insert("x", "predict", p.x()+1, predict_translation[0]);
+    // x-predict_shoot
+//    p = m_view.m_ekf_view->getLastPoint("x", "predict_shoot");
+//    m_view.m_ekf_view->insert("x", "predict_shoot", p.x()+1, predict_translation[0]);
+    // v_x-predict
+    p = m_view.m_ekf_view->getLastPoint("v_x", "predict");
+    m_view.m_ekf_view->insert("v_x", "predict", p.x()+1, predict_state[1]);
+    // y-measure-word
+    p = m_view.m_ekf_view->getLastPoint("y", "measure_world");
+    m_view.m_ekf_view->insert("y", "measure_world", p.x()+1, m_tracker.tracked_armor.world_coordinate[1]);
+    // y-predict-world
+    p = m_view.m_ekf_view->getLastPoint("y", "predict_world");
+    m_view.m_ekf_view->insert("y", "predict_world", p.x()+1, world_predict_translation[1]);
+    // y-measure
+    p = m_view.m_ekf_view->getLastPoint("y", "measure");
+    m_view.m_ekf_view->insert("y", "measure", p.x()+1, m_tracker.tracked_armor.pose.y);
+    // y-predict
+    p = m_view.m_ekf_view->getLastPoint("y", "predict");
+    m_view.m_ekf_view->insert("y", "predict", p.x()+1, predict_translation[1]);
+    // v_y-predict
+    p = m_view.m_ekf_view->getLastPoint("v_y", "predict");
+    m_view.m_ekf_view->insert("v_y", "predict", p.x()+1, predict_state[3]);
+    // --- Timestamp-View ---
+    p = m_view.m_timestamp_view->getLastPoint("Camera-IMU timestamp", "timestamp");
+    LOG_EVERY_T(INFO, 5) << "timestamp: " << timestamp << ", imu_timestamp: " << imu_timestamp
+                         << "diff: " << static_cast<int64_t>(timestamp) - static_cast<int64_t>(imu_timestamp);
+    m_view.m_timestamp_view->insert("Camera-IMU timestamp", "timestamp", p.x()+1, static_cast<double>(
+            static_cast<int64_t>(timestamp) - static_cast<int64_t>(imu_timestamp)
+            ));
+}
+#endif
 }

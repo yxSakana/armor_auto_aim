@@ -3,7 +3,7 @@
  * @file ballistic_solver.h
  * @brief
  * @author yx
- * @data 2023-11-25 15:29:07
+ * @date 2023-11-25 15:29:07
  */
 
 #ifndef AUTO_AIM_BALLISTIC_SOLVER_H

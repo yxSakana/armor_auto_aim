@@ -11,20 +11,19 @@ set_target_properties(armor_auto_aim PROPERTIES
 target_include_directories(armor_auto_aim PUBLIC include)
 
 target_link_libraries(armor_auto_aim PUBLIC
-        view
-        hik_driver
-        armor_detector
-        armor_tracker
-        solver
-        threadsafe_queue
-        thread_pool
-        serial_sort
-        google_logger
-        spdlog_factory
-        plot_client_http
-        vision_debug_widgets
-        debug_toolkit
-)
+    view
+    hik_driver
+    armor_detector
+    armor_tracker
+    solver
+    safe_container
+    thread_pool
+    serial_sort
+    google_logger
+    spdlog_factory
+    plot_client_http
+    vision_debug_widgets
+    debug_toolkit)
 
 set(QT_PACKAGES
     Core)

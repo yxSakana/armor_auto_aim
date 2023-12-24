@@ -29,15 +29,13 @@ public:
         T min;
         T max;
 
-        explicit ParamInfo(MVCC_FLOATVALUE & p)
-        {
+        explicit ParamInfo(MVCC_FLOATVALUE & p) {
             current = p.fCurValue;
             min = p.fMin;
             max = p.fMax;
         }
 
-        [[nodiscard]] std::string toString() const
-        {
+        [[nodiscard]] std::string toString() const {
             std::string info;
             info = "current: " + std::to_string(current) +
                     "\nmin: " + std::to_string(min) +
@@ -102,7 +100,12 @@ public:
      * @return
      */
     bool connectDriver(int _index=0) {
-        return this->enumDriver() && this->openDriver(_index) && this->initFrameInfo();
+        m_index = _index;
+        return reconnectDriver();
+    }
+
+    bool reconnectDriver() {
+        return this->enumDriver() && this->openDriver(m_index) && this->initFrameInfo();
     }
 
     /**
@@ -186,6 +189,7 @@ public:
     void infoToString();
 
 private:
+    int m_index;
     void* m_handle = nullptr; // 设备句柄
     QMutex m_handle_lock;
 
@@ -220,6 +224,4 @@ private:
             return true;
     }
 };
-
-
 #endif //HIKDRIVER_HIKDRIVER_H

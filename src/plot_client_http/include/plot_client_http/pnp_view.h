@@ -3,7 +3,7 @@
  * @file pnp_view.h
  * @brief
  * @author yx
- * @data 2023-11-18 10:53:17
+ * @date 2023-11-18 10:53:17
  */
 
 #ifndef AUTO_AIM_PNP_VIEW_H

@@ -3,7 +3,7 @@
  * @file ballistic_solver.cpp
  * @brief
  * @author yx
- * @data 2023-11-25 15:31:40
+ * @date 2023-11-25 15:31:40
  */
 
 #include <solver/ballistic_solver.h>

@@ -26,7 +26,7 @@ public:
           logger(__FUNCTION__)
     {}
 
-    HikReadThread(HikDriver* _driver)
+    explicit HikReadThread(HikDriver* _driver)
             : QThread(nullptr),
               m_data_size(_driver->getDadaSize()),
               m_buffer(new unsigned char[m_data_size]),
@@ -56,6 +56,8 @@ public:
     }
 
     void run() override;
+signals:
+    void readyData(const HikFrame& frame);
 private:
     unsigned int m_data_size = {};  // 帧大小
     unsigned char* m_buffer = {};  // 缓冲区
