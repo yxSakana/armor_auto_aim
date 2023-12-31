@@ -1,0 +1,38 @@
+2023-12-31
+
+@BUG:
+    1. 串口发送错误时的信号发射似乎会引起报错
+    2. 调用 waitPopRecent() 方法, 则程序会在一段时间后被137信号终止, 实现存在问题, 初步猜测是, 实现中对内存访问存在问题
+
+@communicate protocol: v2.1
+    struct AutoAimInfo {
+        float yaw{};
+        float pitch{};
+        float distance{};
+        uint8_t aim_shoot{};
+        uint8_t tracker_status{};
+        uint8_t data_id{};
+    }
+
+    struct ImuData {
+        uint64_t timestamp = std::chrono::steady_clock::now().time_since_epoch().count();
+        uint8_t data_id{};
+        struct ImuQuaternion {
+            float w{};
+            float x{};
+            float y{};
+            float z{};
+        } quaternion{};
+    }
+
+    static constexpr uint16_t m_PcId = 0; // id: PC
+    static constexpr uint8_t m_SendTimestampCode = 0; // code: 发送pc当前时间戳
+    static constexpr uint8_t m_SendAutoAimInfoCode = 1; // code: 发送自瞄信息
+    static constexpr uint16_t m_MicrocontrollerId = 1;  // id: 单片机
+    static constexpr uint8_t m_RecvTimestampCode = 0; // code: 发送pc当前时间戳
+    static constexpr uint8_t m_RecvImuInfoCode = 1;  // code: IMU数据
+
+    PC断虚拟串口发送函数不调用 waitForBytesWritten(100);
+
+@New Features:
+    实现 safe_circular_buffer.h LIFO, clear()为 O(1)时间复杂度, 只能取一次, 去玩之后会清空buffer
