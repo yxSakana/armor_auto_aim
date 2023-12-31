@@ -24,16 +24,22 @@ public:
     explicit SerialWork(QObject* parent = nullptr);
 public slots:
     void sendAimInfo(const AutoAimInfo& aim_info);
+
+    void showThreadId() { LOG(INFO) << "serial_work_thread: " << QThread::currentThreadId(); }
 signals:
     void readyImuData(const ImuData& imu_data);
+
+    void showThreadIdSignal();
 private:
     static constexpr uint16_t m_PcId = 0; // id: PC
+    static constexpr uint8_t m_SendTimestampCode = 0; // code: 发送pc当前时间戳
     static constexpr uint8_t m_SendAutoAimInfoCode = 1; // code: 发送自瞄信息
-    static constexpr uint8_t m_SendTimestampCode = 2; // code: 发送pc当前时间戳
     static constexpr uint16_t m_MicrocontrollerId = 1;  // id: 单片机
-    static constexpr uint8_t m_ImuInfoCode = 0;  // code: IMU数据
+    static constexpr uint8_t m_RecvTimestampCode = 0; // code: 发送pc当前时间戳
+    static constexpr uint8_t m_RecvImuInfoCode = 1;  // code: IMU数据
 
     VCOMCOMM m_serial;
+    QTimer* m_timer;
 
     void sendNowTimestamp();
 private:

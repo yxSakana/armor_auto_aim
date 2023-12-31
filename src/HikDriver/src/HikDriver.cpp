@@ -9,21 +9,48 @@
 
 #include <HikDriver/HikDriver.h>
 
+HikDriver::HikDriver()
+        : logger(__FUNCTION__),
+          m_devices{}
+{}
+
+HikDriver::HikDriver(int _index)
+        : logger(__FUNCTION__),
+          m_devices{},
+          m_index(_index) {
+    connectDriver(m_index);
+}
+
+HikDriver::~HikDriver() {
+    MV_CC_StopGrabbing(m_handle);
+    MV_CC_CloseDevice(m_handle);
+    MV_CC_DestroyHandle(m_handle);
+}
+
+bool HikDriver::connectDriver() {
+    return this->enumDriver() && this->openDriver(m_index) && this->initFrameInfo();
+}
+
+bool HikDriver::connectDriver(int _index) {
+    m_index = _index;
+    return connectDriver();
+}
+
 std::string HikDriver::getParamInfo() const {
     std::string info = "Param Info: \n";
     info += "    Auto Exposure Time: " + getAutoExposureTime() + "\n";
     info += "    Auto Gain: " + getAutoGain() + "\n";
-    auto _ = getExposureTime();
+    auto v = getExposureTime();
     info += "    Exposure Time: "
-            "\n        current: " + std::to_string(_.current) +
-            "\n        min: " + std::to_string(_.min) +
-            "\n        max: " + std::to_string(_.max) + "\n";
+            "\n        current: " + std::to_string(v.current) +
+            "\n        min: " + std::to_string(v.min) +
+            "\n        max: " + std::to_string(v.max) + "\n";
 
-    _ = getGain();
+    v = getGain();
     info += "    Gain: "
-            "\n        current: " + std::to_string(_.current) +
-            "\n        min: " + std::to_string(_.min) +
-            "\n        max: " + std::to_string(_.max) + "\n";
+            "\n        current: " + std::to_string(v.current) +
+            "\n        min: " + std::to_string(v.min) +
+            "\n        max: " + std::to_string(v.max) + "\n";
 
     return info;
 }
@@ -53,7 +80,7 @@ bool HikDriver::enumDriver(int _mode)
 
 bool HikDriver::openDriver(int _index)
 {
-    QMutexLocker locker(&m_handle_lock);
+    QMutexLocker locker(&m_handle_mutex);
 
     MV_CC_CreateHandle(&m_handle, m_devices.pDeviceInfo[_index]);
     MV_CC_OpenDevice(m_handle);
@@ -73,9 +100,9 @@ bool HikDriver::initFrameInfo()
         return false;
     }
 
-    m_handle_lock.lock();
+    m_handle_mutex.lock();
     MV_CC_GetIntValue(m_handle, "PayloadSize", &m_frame_size_info);
-    m_handle_lock.unlock();
+    m_handle_mutex.unlock();
 
     m_data_size = m_frame_size_info.nCurValue;
     m_is_initialized_frame_info = true;
@@ -90,7 +117,7 @@ bool HikDriver::readImageData(unsigned char* _data_buffer, MV_FRAME_OUT_INFO_EX&
         return false;
     }
 
-    QMutexLocker locker(&m_handle_lock);
+    QMutexLocker locker(&m_handle_mutex);
     unsigned int status = MV_CC_GetOneFrameTimeout(m_handle, _data_buffer, m_data_size, &_frame_info, 1000);
     if (status != MV_OK)
         logger.error("No data[{:02X}]\n", status);
@@ -148,7 +175,7 @@ void HikDriver::setGainRange(int lower, int upper)
 void HikDriver::setAuto(int brightness)
 {
     /* 自动曝光、自动增益、亮度255 */
-    QMutexLocker locker(&m_handle_lock);
+    QMutexLocker locker(&m_handle_mutex);
     MV_CC_SetEnumValue(m_handle, "ExposureAuto", 2);
     MV_CC_SetEnumValue(m_handle, "GainAuto", 2);
     unsigned int code = MV_CC_SetIntValue(m_handle, "Brightness", brightness);
@@ -157,14 +184,14 @@ void HikDriver::setAuto(int brightness)
 
 void HikDriver::setAutoExposureTime(int mode)
 {
-    QMutexLocker locker(&m_handle_lock);
+    QMutexLocker locker(&m_handle_mutex);
     unsigned int code = MV_CC_SetEnumValue(m_handle, "ExposureAuto", mode);
     checkStatusCode(code, "setAutoExposureTime()");
 }
 
 void HikDriver::setAutoGain(int mode)
 {
-    QMutexLocker locker(&m_handle_lock);
+    QMutexLocker locker(&m_handle_mutex);
     unsigned int code = MV_CC_SetEnumValue(m_handle, "GainAuto", mode);
     checkStatusCode(code, "setAutoGain()");
 }

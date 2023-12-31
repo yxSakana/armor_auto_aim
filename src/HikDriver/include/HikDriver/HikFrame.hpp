@@ -18,30 +18,21 @@
 class HikFrame {
     friend class HikReadThread;
 private:
-//    unsigned int m_data_size = {};  // 帧大小
     cv::Mat m_rgb_frame = {};
     int64_t m_timestamp = 0;  // milliseconds
 
 public:
-//    HikFrame() =default;
-    explicit HikFrame(/*const unsigned int& _data_size*/)
-//        : m_data_size(_data_size)
-    {}
+    HikFrame() =default;
 
     HikFrame(const HikFrame& other)
-        : /*m_data_size(other.m_data_size),*/
-          m_timestamp(other.m_timestamp),
+        : m_timestamp(other.m_timestamp),
           m_rgb_frame(other.m_rgb_frame.clone())
     {}
 
     HikFrame(HikFrame&& other) noexcept
-        : /*m_data_size(other.m_data_size),*/
-          m_rgb_frame(std::move(other.m_rgb_frame)),
+        : m_rgb_frame(std::move(other.m_rgb_frame)),
           m_timestamp(other.m_timestamp)
-    {
-//        other.m_data_size = 0;
-//        other.m_timestamp = 0;
-    }
+    {}
 
     ~HikFrame() =default;
 
@@ -49,6 +40,14 @@ public:
         if (this != &other) {
             m_timestamp = other.m_timestamp;
             m_rgb_frame = other.m_rgb_frame.clone();
+        }
+        return *this;
+    }
+
+    HikFrame& operator=(HikFrame&& other) noexcept {
+        if (this != &other) {
+            m_timestamp = other.m_timestamp;
+            m_rgb_frame = std::move(other.m_rgb_frame);
         }
         return *this;
     }

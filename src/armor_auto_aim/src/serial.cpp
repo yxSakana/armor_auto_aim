@@ -6,11 +6,26 @@
  * @date 2023-12-24 18:17:18
  */
 
+#include <QTimer>
+
 #include <armor_auto_aim/serail.h>
 
 namespace armor_auto_aim {
 SerialWork::SerialWork(QObject* parent)
         : QObject(parent) {
+    qRegisterMetaType<uint8_t>("uint8_t");
+    qRegisterMetaType<uint16_t>("uint16_t");
+    qRegisterMetaType<ImuData>("ImuData");
+    qRegisterMetaType<AutoAimInfo>("AutoAimInfo");
+
+    m_timer = new QTimer(this);
+    m_timer->start(100);
+    connect(m_timer, &QTimer::timeout, [this](){
+        if ((!this->m_serial.isOpen()) || m_serial.error() != QSerialPort::NoError) {
+            LOG(WARNING) << "Serial close. try auto connect...";
+            this->m_serial.auto_connect();
+        }
+    });
     connect(&m_serial, &VCOMCOMM::receiveData, this, &SerialWork::selectFunction);
 }
 
@@ -32,13 +47,13 @@ void SerialWork::sendNowTimestamp() {
 void SerialWork::selectFunction(uint8_t code, uint16_t id, const QByteArray& data) {
     if (id == m_MicrocontrollerId) {
         switch (code) {
-            case m_ImuInfoCode: {
+            case m_RecvImuInfoCode: {
                 ImuData imu_data;
                 std::memcpy(&imu_data, data, sizeof(imu_data));
                 emit readyImuData(imu_data);
                 break;
             }
-            case m_SendTimestampCode: {
+            case m_RecvTimestampCode: {
                 sendNowTimestamp();
                 break;
             }

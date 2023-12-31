@@ -25,14 +25,16 @@ public:
 public slots:
     void showFrame(const cv::Mat& frame,
                    const std::vector<Armor>& armors, const Tracker& tracker,
-                   const double& fps, const uint64& timestamp, const float& dt);
+                   const double& fps, const uint64_t& timestamp, const float& dt);
 
     void viewEkf(const armor_auto_aim::Tracker& tracker,
                  const Eigen::Vector3d& predict_camera_coordinate,
                  const Eigen::Vector3d& shoot_camera_coordinate) const;
 
-    void viewTimestamp(const uint64& camera_timestamp,
-                       const uint64& imu_timestamp);
+    void viewTimestamp(const uint64_t& camera_timestamp,
+                       const uint64_t& imu_timestamp);
+
+    void showThreadId() const { LOG(INFO) << "view_work_thread: " << QThread::currentThreadId(); }
 private:
     view::View* m_view;
 };

@@ -18,7 +18,7 @@ target_link_libraries(armor_auto_aim PUBLIC
     solver
     safe_container
     thread_pool
-    serial_sort
+    serial_port
     google_logger
     spdlog_factory
     plot_client_http

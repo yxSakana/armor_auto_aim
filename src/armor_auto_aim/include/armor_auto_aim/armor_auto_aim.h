@@ -33,7 +33,8 @@
 #include <plot_client_http/pnp_view.h>
 #include <plot_client_http/yaw_pitch_view.h>
 #include <view/view.h>
-#include <safe_container/safe_stack.h>
+//#include <safe_container/safe_stack.h>
+#include <safe_container/safe_circular_buffer.h>
 
 namespace armor_auto_aim {
 struct AutoAimParams {
@@ -60,21 +61,15 @@ signals:
     void sendAimInfo(const AutoAimInfo& aim_info);
 
     void showFrame(const cv::Mat& frame,
-                   const std::vector<Armor>& armors, const Tracker& tracker,
-                   const double& fps, const uint64& timestamp, const float& dt);
+                   const std::vector<armor_auto_aim::Armor>& armors, const armor_auto_aim::Tracker& tracker,
+                   const double& fps, const uint64_t& timestamp, const float& dt);
 
     void viewEkfSign(const armor_auto_aim::Tracker& tracker,
                      const Eigen::Vector3d& predict_camera_coordinate,
                      const Eigen::Vector3d& shoot_camera_coordinate);
 
-    void viewTimestampSign(const uint64& camera_timestamp,
-                           const uint64& imu_timestamp);
-#ifdef DEBUG
-    void viewSign(const Eigen::Vector3d& world_predict_translation,
-                  const Eigen::Vector3d& predict_translation,
-                  const uint64_t& timestamp,
-                  const uint64_t& imu_timestamp);
-#endif
+    void viewTimestampSign(const uint64_t& camera_timestamp,
+                           const uint64_t& imu_timestamp);
 private:
     static constexpr double m_DeltaTime = 50.0;
     int q = 1, r = 1, p = 10000;
@@ -83,12 +78,10 @@ private:
     YAML::Node m_config;
     AutoAimParams m_params;
 
-//    ThreadPool m_thread_pool;
     std::unique_ptr<HikDriver> m_hik_driver;
     std::unique_ptr<HikReadThread> m_hik_read_thread;
 #ifdef DEBUG
     std::unique_ptr<HikDebugUi> m_hik_debug_ui;
-//    view::View m_view;
 #endif
     SolverBuilder m_solver_builder;
     Solver m_solver;
@@ -99,8 +92,8 @@ private:
     std::vector<Armor> m_armors;
     float dt = 0.0f;
     std::shared_ptr<ImuData> m_imu_data = std::make_shared<ImuData>();
-    ThreadSafeQueue<ImuData> m_imu_data_queue;  // FIXME: 不使用队列、会明显滞后、因为每次都是取得是之前的； 另外KF加入速度观测值
-    ThreadSafeQueue<HikFrame> m_camera_stack;
+    SafeCircularBuffer<ImuData, 10> m_imu_data_queue;  // FIXME: 不使用队列、会明显滞后、因为每次都是取得是之前的； 另外KF加入速度观测值
+    SafeCircularBuffer<HikFrame, 10> m_camera_stack;
     AutoAimInfo m_aim_info;
 
     void loadConfig();
@@ -118,6 +111,10 @@ private:
     inline static AutoAimInfo translation2YawPitch(const solver::Pose& pose);
 
     inline static AutoAimInfo translation2YawPitch(const Eigen::Vector3d& translation);
+
+    static int64_t diffFunction(const HikFrame& camera, const ImuData& imu) {
+        return std::abs(static_cast<int64_t>(imu.timestamp) - camera.getTimestamp());
+    }
 };
 }
 

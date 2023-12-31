@@ -12,7 +12,6 @@
 void HikReadThread::run() {
     if (m_data_size <= 0) {
         logger.error("Failed: data size {}", m_data_size);
-
         return;
     }
 
@@ -27,6 +26,7 @@ void HikReadThread::run() {
                 logger.error("Failed: frame empty!");
             m_frame_lock.unlock();
             m_frame.m_timestamp = m_frame_info.nHostTimeStamp;
+            emit readyData(m_frame);
         } else {
             logger.error("Failed: No data!");
         }

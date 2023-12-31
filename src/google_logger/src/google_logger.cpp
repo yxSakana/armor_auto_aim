@@ -46,13 +46,12 @@ void ConsoleLogSink::send(google::LogSeverity severity, const char *full_filenam
     const std::array<std::string, 4> level_info {"INFO", "WARNING", "ERROR", "FATAL"};
     fmt::print("({}:{})"
                "{}[{}]{}"
-               "{}[{:04d}-{:02d}-{:02d} {:02d}:{:02d}:{:02d}]{}"
+               "{}[{:04d}-{:02d}-{:02d} {:02d}:{:02d}:{:02d}]{} "
                "{}{}{}",
                base_filename, line,
                color[toascii(severity)], level_info[toascii(severity)], reset_color,
                time_color, y, m, d, h, min, s, reset_color,
-               color[toascii(severity)], message, reset_color
-    );
+               color[toascii(severity)], message, reset_color);
 //    std::cout << "(" << base_filename << ":" << line << ")"
 //              << color[toascii(severity)] << "[" << level_info[toascii(severity)] << "]" << reset_color
 //              << thread_id_color << "(thread: " << std::this_thread::get_id() << ")" << reset_color

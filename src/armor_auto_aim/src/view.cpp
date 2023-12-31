@@ -6,6 +6,10 @@
  * @date 2023-12-24 18:04:45
  */
 
+#include <glog/logging.h>
+
+#include <QThread>
+
 #include <armor_auto_aim/view.h>
 #include <debug_toolkit/draw_package.h>
 
@@ -15,19 +19,28 @@ ViewWork::ViewWork(QObject* parent)
           m_view(new view::View) {
     qRegisterMetaType<Eigen::Vector3d>("Eigen::Vector3d");
     qRegisterMetaType<uint64_t>("uint64_t");
+    qRegisterMetaType<cv::Mat>("cv::Mat");
+    qRegisterMetaType<std::vector<armor_auto_aim::Armor>>("std::vector<armor_auto_aim::Armor>");
+    qRegisterMetaType<armor_auto_aim::Tracker>("armor_auto_aim::Tracker");
+
+#ifdef DEBUG
+    cv::namedWindow("frame", cv::WINDOW_NORMAL);
+#endif
+
     for (const auto& k: {"x", "v_x", "y", "v_y"})
         m_view->m_ekf_view->get(k)->setShowNumber(300);
     m_view->m_timestamp_view->get("Camera-IMU timestamp")->setShowNumber(100);
 }
 
 void ViewWork::show() {
+    LOG(INFO) << "view imshow(): " << QThread::currentThreadId();
     m_view->m_ekf_view->show();
     m_view->m_timestamp_view->show();
 }
 
 void ViewWork::showFrame(const cv::Mat& frame,
                          const std::vector<Armor>& armors, const armor_auto_aim::Tracker& tracker,
-                         const double& fps, const uint64& timestamp, const float& dt) {
+                         const double& fps, const uint64_t& timestamp, const float& dt) {
     cv::Mat f = frame.clone();
     debug_toolkit::drawFrameInfo(f, armors, tracker, fps, timestamp, dt);
     cv::imshow("frame", f);
@@ -79,8 +92,8 @@ void ViewWork::viewEkf(
     m_view->m_ekf_view->insert("v_y", "predict", p.x()+1, predict_state[3]);
 }
 
-void ViewWork::viewTimestamp(const uint64& camera_timestamp,
-                             const uint64& imu_timestamp) {
+void ViewWork::viewTimestamp(const uint64_t& camera_timestamp,
+                             const uint64_t& imu_timestamp) {
     QPointF p;
     p = m_view->m_timestamp_view->getLastPoint("Camera-IMU timestamp", "timestamp");
     auto c = static_cast<int64_t>(camera_timestamp);

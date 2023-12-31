@@ -21,6 +21,16 @@
 
 #include <spdlog_factory/spdlogger.h>
 
+enum class TriggerSource {
+    Line0,
+    Line1,
+    Line2,
+    Line3,
+    Counter,
+    Software = 7,
+    FrequencyConverter
+};
+
 class HikDriver {
 public:
     template<typename T>
@@ -44,129 +54,99 @@ public:
         }
     };
 
-    HikDriver()
-        : logger(__FUNCTION__),
-          m_devices{}
-    {}
-
+    /**
+     * @brief 默认: 索引为0, 非触发式取流
+     */
+    HikDriver();
     /**
      * @param _index 相机索引
      */
-    explicit HikDriver(int _index)
-        : logger(__FUNCTION__),
-          m_devices{}
-    {
-        connectDriver(_index);
-    }
-
-    ~HikDriver() {
-        MV_CC_StopGrabbing(m_handle);
-        MV_CC_CloseDevice(m_handle);
-        MV_CC_DestroyHandle(m_handle);
-    }
+    explicit HikDriver(int _index);
+    ~HikDriver();
 
     /**
-     * 获取相机的所有参数
-     *
+     * @brief 获取相机的曝光、增益、曝光模式、增益模式参数
      * @return 参数组成的字符串
      */
     [[nodiscard]] std::string getParamInfo() const;
 
     /**
-     * 显示所有相机参数
+     * @brief 显示曝光、增益、曝光模式、增益模式参数
      */
     void showParamInfo() const;
 
     /**
-     * 枚举所有设备
-     *
-     * @param _mode
+     * @brief 枚举所有设备
+     * @param _mode Gige | USB
      * @return
      */
     bool enumDriver(int _mode=MV_GIGE_DEVICE | MV_USB_DEVICE);
 
     /**
-     * 重新加载帧信息
+     * @brief 重新加载帧信息
      */
     void reloadFrameInfo() {
         m_is_initialized_frame_info = false;
         this->initFrameInfo();
     }
 
+    bool connectDriver();
     /**
-     * 连接相机. 打开相机，并初始化帧信息
-     *
+     * @brief 连接相机. 打开相机，并初始化帧信息
      * @param _index 索引
-     * @return
+     * @return success | failed
      */
-    bool connectDriver(int _index=0) {
-        m_index = _index;
-        return reconnectDriver();
-    }
-
-    bool reconnectDriver() {
-        return this->enumDriver() && this->openDriver(m_index) && this->initFrameInfo();
-    }
+    bool connectDriver(int _index);
 
     /**
-     * 读取一帧图像
-     *
+     * @brief 读取一帧图像
      * @param _src
      */
     bool readImageData(unsigned char* _data_buffer, MV_FRAME_OUT_INFO_EX& _frame_info);
 
     /**
-     * 设置自动曝光时间的范围
-     *
+     * @brief 设置自动曝光时间的范围
      * @param lower
      * @param upper
      */
     void setExposureTimeRange(int lower, int upper);
 
     /**
-     * 设置自动增益时间的范围
-     *
+     * @brief 设置自动增益时间的范围
      * @param lower
      * @param upper
      */
     void setGainRange(int lower, int upper);
 
     /**
-     * 设置自动曝光、自动增益
+     * @brief 设置自动曝光、自动增益
      */
     void setAuto(int brightness=255);
 
     /**
-     * 自动曝光 type
-     * @return
+     * @brief 自动曝光 type
      */
      void setAutoExposureTime(int mode);
     [[nodiscard]] std::string getAutoExposureTime() const;
 
     /**
      * 自动增益 type
-     * @return
      */
      void setAutoGain(int mode);
-
     [[nodiscard]] std::string getAutoGain() const;
 
     /**
-     * 设置曝光时间(自动将自动曝光关闭)
-     *
+     * @brief 设置曝光时间(自动将自动曝光关闭)
      * @param timems
      */
     void setExposureTime(float timems);
-
     [[nodiscard]] ParamInfo<float> getExposureTime() const;
 
     /**
-     * 设置增益值(自动将自动增益关闭)
-     *
+     * @brief 设置增益值(自动将自动增益关闭)
      * @param val
      */
     void setGain(float val);
-
     [[nodiscard]] HikDriver::ParamInfo<float> getGain() const;
 
     [[nodiscard]] unsigned int getDadaSize() const { return m_data_size; }
@@ -174,8 +154,7 @@ public:
     [[nodiscard]] bool isConnected() const { return m_opened_status && m_is_initialized_frame_info; }
 
     /**
-     * 保存/加载配置
-     *
+     * @brief 保存/加载配置
      * @param user_file 用户文件
      * @param device_file 设备文件
      */
@@ -189,9 +168,9 @@ public:
     void infoToString();
 
 private:
-    int m_index;
+    int m_index = 0;
     void* m_handle = nullptr; // 设备句柄
-    QMutex m_handle_lock;
+    QMutex m_handle_mutex;
 
     MV_CC_DEVICE_INFO_LIST m_devices;  // 所有设备
     bool m_opened_status = false;  // 打开状态

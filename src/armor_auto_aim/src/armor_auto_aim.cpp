@@ -9,7 +9,7 @@
 #ifdef DEBUG
 #include <QPointF>
 #endif
-#include <stack>
+
 #include <google_logger/google_logger.h>
 #include <armor_auto_aim/armor_auto_aim.h>
 #include <solver/coordinate_solver.h>
@@ -32,12 +32,11 @@ ArmorAutoAim::ArmorAutoAim(const std::string& config_path, QObject* parent)
     m_detector = Detector(m_params.armor_model_path, m_solver.pnp_solver);
     initHikCamera();
     initEkf();
+    connect(m_hik_read_thread.get(), &HikReadThread::readyData, this, &ArmorAutoAim::pushCameraData);
 }
 
 void ArmorAutoAim::run() {
-#ifdef DEBUG
-    cv::namedWindow("frame", cv::WINDOW_NORMAL);
-#endif
+    LOG(INFO) << "auto_aim_thread: " << QThread::currentThreadId();
     cv::TickMeter tick_meter;
     float fps = 0.0f;
     int frame_count = 0;
@@ -49,7 +48,7 @@ void ArmorAutoAim::run() {
     Eigen::Quaterniond quaternion;
 
     while (true) {
-        bool is_have = m_imu_data_queue.tryPop(*m_imu_data);
+        bool is_have = m_imu_data_queue.tryTop(*m_imu_data);
 //        m_imu_data = m_imu_data_queue.waitPop();
 //        emit m_serial_port.CrossThreadTransmitSignal(5, 5, "");
 //        LOG_IF(INFO, is_have) << "HAVE!";
@@ -61,7 +60,6 @@ void ArmorAutoAim::run() {
 //            cv::waitKey(1);
             continue;
         }
-        m_imu_data_queue.clear();
         m_aim_info.reset();
         // start fps clock
         if (is_reset) {
@@ -71,6 +69,8 @@ void ArmorAutoAim::run() {
         }
         // -- main --
         // 获取当前时间点
+//        int64_t wait_time = m_camera_stack.waitPopRecent(m_hik_frame, *m_imu_data, diffFunction);
+//        LOG(INFO) << "wait time: " << wait_time;
         m_hik_frame = m_hik_read_thread->getFrame();
         m_frame = m_hik_frame.getRgbFrame();
         timestamp = m_hik_frame.getTimestamp();
@@ -98,19 +98,23 @@ void ArmorAutoAim::run() {
             const Eigen::VectorXd& predict_state = m_tracker.getTargetPredictSate();
             Eigen::Vector3d world_predict_translation(predict_state(0), predict_state(2), predict_state(4));
             Eigen::Vector3d  predict_translation = m_solver.worldToCamera(world_predict_translation, quaternion.matrix());
-            cv::circle(m_frame, m_solver.reproject(predict_translation), 6, cv::Scalar(59, 188, 235), -1);
-            predict_translation[0] -= predict_state[1] * (m_params.delta_time + std::abs(predict_translation.norm() / m_solver.getSpeed()));
-            cv::circle(m_frame, m_solver.reproject(predict_translation), 6, cv::Scalar(0, 0, 235), -1);
-            cv::circle(m_frame, m_solver.reproject({m_tracker.tracked_armor.pose.x,
-                                                    m_tracker.tracked_armor.pose.y,
-                                                    m_tracker.tracked_armor.pose.z}), 16, cv::Scalar(0, 255, 255), -1);
+            cv::circle(m_frame, m_solver.reproject(predict_translation), 16, cv::Scalar(59, 188, 235), 8);
+            double delay_time = m_params.delta_time + std::abs(predict_translation.norm() / m_solver.getSpeed());
+            predict_translation[0] -= predict_state[1] * delay_time;
+            predict_translation[1] -= predict_state[3] * delay_time;
+            cv::circle(m_frame, m_solver.reproject(predict_translation), 16, cv::Scalar(0, 0, 235), 8);
+//            cv::circle(m_frame, m_solver.reproject({m_tracker.tracked_armor.pose.x,
+//                                                    m_tracker.tracked_armor.pose.y,
+//                                                    m_tracker.tracked_armor.pose.z}), 16, cv::Scalar(0, 255, 255), -1);
 #ifdef DEBUG
-            emit viewSign(world_predict_translation, predict_translation, timestamp, m_imu_data->timestamp);
+//            LOG(INFO) << "imu data: " << m_imu_data->to_string();
+            emit viewEkfSign(m_tracker, predict_translation, predict_translation);
+            emit viewTimestampSign(timestamp, m_imu_data->timestamp);
 #endif
             double delta_pitch = m_solver.ballisticSolver(-predict_translation);
             m_aim_info = translation2YawPitch(predict_translation);
             if (!std::isnan(delta_pitch)) {
-                LOG(INFO) << "delta_pitch: " << delta_pitch;
+//                LOG(INFO) << "delta_pitch: " << delta_pitch;
                 m_aim_info.pitch -= static_cast<float>(delta_pitch);
             } else {
                 LOG(WARNING) << "delta_pitch is NaN";
@@ -124,10 +128,16 @@ void ArmorAutoAim::run() {
                              << "\ntarget_predict_state: " << m_tracker.getTargetPredictSate()
                              << "\ncommunicate info: " << m_aim_info.to_string();
                 LOG(WARNING) << "异常值!";
+            } else {
+                LOG(INFO) << "Send success";
             }
         }
         // -- Send --
         m_aim_info.tracker_status = static_cast<uint8_t>(m_tracker.state());
+        auto imu_euler = quaternion.toRotationMatrix().eulerAngles(2, 1, 0);
+        m_aim_info.data_id = m_imu_data->data_id;
+        m_aim_info.yaw += static_cast<float>(imu_euler[2]);
+        m_aim_info.pitch += static_cast<float>(imu_euler[1]);
         emit sendAimInfo(m_aim_info);
         // -- debug --
         // - append information to frame(fps, tracker_info, timestamp, armors) -
@@ -197,6 +207,7 @@ void ArmorAutoAim::initHikCamera() {
         m_hik_debug_ui->show();
 #endif
     } else {
+//        LOG(ERROR) << "Hik can't connected!";
         LOG(FATAL) << "Hik can't connected!";
     }
 }

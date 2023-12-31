@@ -20,7 +20,8 @@ struct AutoAimInfo {
     float pitch{};
     float distance{};
     uint8_t aim_shoot{};
-    uint8_t tracker_status;
+    uint8_t tracker_status{};
+    uint8_t data_id{};
 
     AutoAimInfo() =default;
 
@@ -46,6 +47,7 @@ struct AutoAimInfo {
 
 struct ImuData {
     uint64_t timestamp = std::chrono::steady_clock::now().time_since_epoch().count();
+    uint8_t data_id{};
     struct ImuQuaternion {
         float w{};
         float x{};

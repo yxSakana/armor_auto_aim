@@ -24,7 +24,9 @@ public:
     HikReadThread()
         : QThread(nullptr),
           logger(__FUNCTION__)
-    {}
+    {
+        qRegisterMetaType<HikFrame>("HikFrame");
+    }
 
     explicit HikReadThread(HikDriver* _driver)
             : QThread(nullptr),
@@ -33,6 +35,7 @@ public:
 //              m_frame(m_data_size),
               logger(__FUNCTION__)
     {
+        qRegisterMetaType<HikFrame>("HikFrame");
         m_driver = _driver;
     }
 

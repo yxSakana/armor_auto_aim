@@ -9,12 +9,11 @@ find_package(httplib REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(nlohmann_json REQUIRED)
 target_link_libraries(plot_client_http PUBLIC
-        armor_tracker
-        serial_sort
-        google_logger
-        thread_pool
+    armor_tracker
+    serial_port
+    google_logger
+    thread_pool
 
-        Eigen3::Eigen
-        httplib::httplib
-        nlohmann_json::nlohmann_json
-        )
+    Eigen3::Eigen
+    httplib::httplib
+    nlohmann_json::nlohmann_json)
