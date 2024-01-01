@@ -1,16 +1,14 @@
 /**
  * @projectName IntelligentHanding
- * @file HikDebugUi.cpp
+ * @file HikUi.cpp
  * @brief 
  * 
  * @author yx 
  * @date 2023-09-03 17:09
  */
 
-#ifndef INTELLIGENTHANDING_HIKDEBUGUI_H
-#define INTELLIGENTHANDING_HIKDEBUGUI_H
-
-#ifdef DEBUG
+#ifndef HIKDRIVER_HIKUI_H
+#define HIKDRIVER_HIKUI_H
 
 #include <QWidget>
 #include <QVBoxLayout>
@@ -18,12 +16,13 @@
 #include <QRadioButton>
 #include <QButtonGroup>
 #include <QCheckBox>
+
 #include <HikDriver/HikDriver.h>
 #include <vision_debug_widgets/slider.h>
 
-class HikDebugUi : public QWidget {
+class HikUi : public QWidget {
 public:
-    explicit HikDebugUi(HikDriver& driver)
+    explicit HikUi(HikDriver& driver)
       : m_driver(&driver),
         layout(new QVBoxLayout),
         d_exposure_time(new vision_debug_widgets::Slider("exposure time", &m_exposure_time,
@@ -40,7 +39,6 @@ public:
         auto auto_exposure_time_off = new QRadioButton("off");
         auto auto_exposure_time_once = new QRadioButton("once");
         auto auto_exposure_time_continuous = new QRadioButton("continuous");
-        // FIXME: 没有默认构造函数: 造成 CoreThread 线程在构造函数内部设置曝光和阈值之前就已经读取相机数据了
         auto_exposure_time_off->setChecked(true);
         this->m_driver->setAutoExposureTime(0);
         connect(d_exposure_time, &vision_debug_widgets::Slider::valChanged, [this](){
@@ -126,9 +124,5 @@ private:
     vision_debug_widgets::Slider* d_gain;  // 增益
 
     QVBoxLayout* layout;
-
 };
-
-#endif
-
-#endif //INTELLIGENTHANDING_HIKDEBUGUI_H
+#endif //HIKDRIVER_HIKUI_H

@@ -31,6 +31,8 @@ public slots:
                  const Eigen::Vector3d& predict_camera_coordinate,
                  const Eigen::Vector3d& shoot_camera_coordinate) const;
 
+    void viewEuler(const Eigen::Vector3d& imu, const Eigen::Vector3d& aim) const;
+
     void viewTimestamp(const uint64_t& camera_timestamp,
                        const uint64_t& imu_timestamp);
 

@@ -68,6 +68,7 @@ struct ImuData {
     std::string to_string() const {
         std::string info("[ImuData ");
         info += "timestamp: " + std::to_string(timestamp) + ", ";
+        info += "data_id: " + std::to_string(data_id) + ", ";
         info += quaternion.to_string();
         info += "]";
         return info;

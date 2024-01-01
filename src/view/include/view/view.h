@@ -29,7 +29,12 @@ public:
         this->setCentralWidget(m_widget);
     }
 
-    [[nodiscard]] ChartView* get(const std::string& key) const {
+    /**
+     * @brief 获取指定 DynamicChartView
+     * @param key
+     * @return
+     */
+    [[nodiscard]] ChartView* getView(const std::string& key) const {
         const QString& k = QString::fromStdString(key);
         if (m_chart_views.contains(k)) {
             return m_chart_views[k];
@@ -57,7 +62,7 @@ public:
         }
     }
 protected:
-    ChartViewMap m_chart_views;
+    ChartViewMap m_chart_views; // 所有 动态View 的Map
     QWidget* m_widget;
     QGridLayout* m_layout;
 };
@@ -66,7 +71,8 @@ class EkfView: public BaseView<QtCharts::QLineSeries> {
     Q_OBJECT
 public:
     explicit EkfView(QWidget* parent = nullptr) : BaseView(parent) {
-        m_chart_views["x"] = new ChartView(this);
+        setWindowTitle("Ekf View");
+        m_chart_views["x"] = new ChartView(false, this);
         m_chart_views["x"]->getChart()->setTitle("Ekf X(Camera)");
         m_chart_views["x"]->addSeries("measure");
         m_chart_views["x"]->addSeries("predict");
@@ -75,12 +81,12 @@ public:
         m_chart_views["x"]->addSeries("predict_world");
         m_layout->addWidget(m_chart_views["x"]->getChartView(), 0, 0);
 
-        m_chart_views["v_x"] = new ChartView(this);
+        m_chart_views["v_x"] = new ChartView(false, this);
         m_chart_views["v_x"]->getChart()->setTitle("Ekf Vx(World)");
         m_chart_views["v_x"]->addSeries("predict");
         m_layout->addWidget(m_chart_views["v_x"]->getChartView(), 1, 0);
 
-        m_chart_views["y"] = new ChartView(this);
+        m_chart_views["y"] = new ChartView(false, this);
         m_chart_views["y"]->getChart()->setTitle("Ekf Y(Camera)");
         m_chart_views["y"]->addSeries("measure");
         m_chart_views["y"]->addSeries("predict");
@@ -88,7 +94,7 @@ public:
         m_chart_views["y"]->addSeries("predict_world");
         m_layout->addWidget(m_chart_views["y"]->getChartView(), 0, 1);
 
-        m_chart_views["v_y"] = new ChartView(this);
+        m_chart_views["v_y"] = new ChartView(false, this);
         m_chart_views["v_y"]->getChart()->setTitle("Ekf Vy(World)");
         m_chart_views["v_y"]->addSeries("predict");
         m_layout->addWidget(m_chart_views["v_y"]->getChartView(), 1, 1);
@@ -100,10 +106,29 @@ class TimestampView: public BaseView<QtCharts::QLineSeries> {
 public:
     explicit TimestampView(QWidget* parent = nullptr)
         : BaseView(parent) {
-        m_chart_views["Camera-IMU timestamp"] = new ChartView;
+        setWindowTitle("Timestamp View");
+        m_chart_views["Camera-IMU timestamp"] = new ChartView(false, this);
         m_chart_views["Camera-IMU timestamp"]->getChart()->setTitle("Camera-IMU timestamp");
         m_chart_views["Camera-IMU timestamp"]->addSeries("timestamp");
         m_layout->addWidget(m_chart_views["Camera-IMU timestamp"]->getChartView(), 0, 0);
+    }
+};
+
+class EulerView: public BaseView<QtCharts::QScatterSeries> {
+    Q_OBJECT
+public:
+    explicit EulerView(QWidget* parent = nullptr)
+            : BaseView<QtCharts::QScatterSeries>(parent) {
+        setWindowTitle("Euler View");
+        m_chart_views["Euler"] = new ChartView(true, this);
+        m_chart_views["Euler"]->setXMin(-180);
+        m_chart_views["Euler"]->setXMax(180);
+        m_chart_views["Euler"]->setYMin(-180);
+        m_chart_views["Euler"]->setYMax(180);
+        m_chart_views["Euler"]->getChart()->setTitle("Euler(Yaw Pitch)");
+        m_chart_views["Euler"]->addSeries("receive imu");
+        m_chart_views["Euler"]->addSeries("aim");
+        m_layout->addWidget(m_chart_views["Euler"]->getChartView(), 0, 0);
     }
 };
 
@@ -113,10 +138,12 @@ public:
     View() {
         m_ekf_view = new EkfView;
         m_timestamp_view = new TimestampView;
+        m_imu_euler = new EulerView;
     }
 
     EkfView* m_ekf_view;
     TimestampView* m_timestamp_view;
+    EulerView* m_imu_euler;
 };
 }
 

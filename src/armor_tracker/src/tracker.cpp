@@ -82,7 +82,7 @@ void Tracker::updateTracker(const Armors& armors) {
         Eigen::Vector3d predicted_position_vec(m_target_predict_state(0),
                                                m_target_predict_state(2),
                                                m_target_predict_state(4));
-        for (const auto& armor: armors) { // FIXME: 优先级: 同id > 上次击打(距离最近) || 上次击打 > 同id ?
+        for (const auto& armor: armors) {
             if (armor.number == m_tracked_id) {
                 same_id_armor = &armor;
                 same_id_armor_count++;

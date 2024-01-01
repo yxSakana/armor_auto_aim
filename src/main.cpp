@@ -7,8 +7,8 @@
 
 #include <google_logger/google_logger.h>
 #include <armor_auto_aim/armor_auto_aim.h>
-#include <armor_auto_aim/view.h>
-#include <armor_auto_aim/serail.h>
+#include <armor_auto_aim/view_work.h>
+#include <armor_auto_aim/serail_work.h>
 
 int main(int argc, char* argv[]) {
     armor_auto_aim::google_log::initGoogleLogger(argc, argv);
@@ -22,6 +22,8 @@ int main(int argc, char* argv[]) {
     armor_auto_aim::ViewWork view_work;
     armor_auto_aim::SerialWork serial_work;
     armor_auto_aim::ArmorAutoAim auto_aim_thread("../config/config.yaml");
+    auto_aim_thread.setSerialWork(&serial_work);
+    auto_aim_thread.setViewWork(&view_work);
 
     QObject::connect(&auto_aim_thread, &armor_auto_aim::ArmorAutoAim::sendAimInfo,
                      &serial_work, &armor_auto_aim::SerialWork::sendAimInfo);

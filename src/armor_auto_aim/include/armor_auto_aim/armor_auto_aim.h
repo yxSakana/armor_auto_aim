@@ -22,19 +22,18 @@
 #include <solver/solver.h>
 #include <thread_pool/thread_pool.h>
 #include <HikDriver/HikDriver.h>
-#include <HikDriver/HikFrame.hpp>
-#include <HikDriver/HikReadThread.h>
-#include <HikDriver/HikDebugUi.h>
+#include <HikDriver/HikUi.h>
 #include <armor_detector/detector.h>
 #include <armor_tracker/tracker.h>
 #include <serial_port/communicate_protocol.h>
 #include <serial_port/VCOMCOMM.h>
-#include <plot_client_http/ekf_plot.h>
-#include <plot_client_http/pnp_view.h>
-#include <plot_client_http/yaw_pitch_view.h>
-#include <view/view.h>
 //#include <safe_container/safe_stack.h>
 #include <safe_container/safe_circular_buffer.h>
+#ifdef DEBUG
+#include <view/view.h>
+#include <armor_auto_aim/view_work.h>
+#include <armor_auto_aim/serail_work.h>
+#endif
 
 namespace armor_auto_aim {
 struct AutoAimParams {
@@ -53,6 +52,10 @@ public:
     explicit ArmorAutoAim(const std::string& config_path, QObject* parent = nullptr);
 
     void run() override;
+
+    void setSerialWork(SerialWork* sw);
+
+    void setViewWork(ViewWork* vw);
 public slots:
     void pushImuData(const ImuData& data) { m_imu_data_queue.push(data); }
 
@@ -79,9 +82,10 @@ private:
     AutoAimParams m_params;
 
     std::unique_ptr<HikDriver> m_hik_driver;
-    std::unique_ptr<HikReadThread> m_hik_read_thread;
 #ifdef DEBUG
-    std::unique_ptr<HikDebugUi> m_hik_debug_ui;
+    std::unique_ptr<HikUi> m_hik_ui;
+    ViewWork* m_view_work;
+    SerialWork* m_serial_work;
 #endif
     SolverBuilder m_solver_builder;
     Solver m_solver;
@@ -92,7 +96,8 @@ private:
     std::vector<Armor> m_armors;
     float dt = 0.0f;
     std::shared_ptr<ImuData> m_imu_data = std::make_shared<ImuData>();
-    SafeCircularBuffer<ImuData, 10> m_imu_data_queue;  // FIXME: 不使用队列、会明显滞后、因为每次都是取得是之前的； 另外KF加入速度观测值
+    SafeCircularBuffer<ImuData, 10> m_imu_data_queue;
+//    ThreadSafeQueue<ImuData> m_imu_data_queue;  // FIXME: 不使用队列、会明显滞后、因为每次都是取得是之前的； 另外KF加入速度观测值
     SafeCircularBuffer<HikFrame, 10> m_camera_stack;
     AutoAimInfo m_aim_info;
 

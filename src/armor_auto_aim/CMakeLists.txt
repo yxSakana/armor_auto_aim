@@ -13,6 +13,7 @@ target_include_directories(armor_auto_aim PUBLIC include)
 target_link_libraries(armor_auto_aim PUBLIC
     view
     hik_driver
+    hik_ui
     armor_detector
     armor_tracker
     solver

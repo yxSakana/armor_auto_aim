@@ -8,7 +8,7 @@
 
 #include <QTimer>
 
-#include <armor_auto_aim/serail.h>
+#include <armor_auto_aim/serail_work.h>
 
 namespace armor_auto_aim {
 SerialWork::SerialWork(QObject* parent)
@@ -19,7 +19,7 @@ SerialWork::SerialWork(QObject* parent)
     qRegisterMetaType<AutoAimInfo>("AutoAimInfo");
 
     m_timer = new QTimer(this);
-    m_timer->start(100);
+    m_timer->start(1000);
     connect(m_timer, &QTimer::timeout, [this](){
         if ((!this->m_serial.isOpen()) || m_serial.error() != QSerialPort::NoError) {
             LOG(WARNING) << "Serial close. try auto connect...";
@@ -49,7 +49,8 @@ void SerialWork::selectFunction(uint8_t code, uint16_t id, const QByteArray& dat
         switch (code) {
             case m_RecvImuInfoCode: {
                 ImuData imu_data;
-                std::memcpy(&imu_data, data, sizeof(imu_data));
+                std::memcpy(&imu_data, data.data(), sizeof(imu_data));
+//                LOG(INFO) << imu_data.to_string();
                 emit readyImuData(imu_data);
                 break;
             }

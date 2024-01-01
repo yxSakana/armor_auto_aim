@@ -378,7 +378,7 @@ SIP_SUPPORT            = NO
 
 # For Microsoft's IDL there are propget and propput attributes to indicate
 # getter and setter methods for a property. Setting this option to YES will make
-# doxygen to replace the get and set methods by a property in the documentation.
+# doxygen to replace the getView and set methods by a property in the documentation.
 # This will only work if the methods are indeed getting or setting a simple
 # type. If this is not the case, or you want to show the methods anyway, you
 # should set this option to NO.
@@ -721,7 +721,7 @@ SHOW_FILES             = YES
 SHOW_NAMESPACES        = YES
 
 # The FILE_VERSION_FILTER tag can be used to specify a program or script that
-# doxygen should invoke to get the current version for each file (typically from
+# doxygen should invoke to getView the current version for each file (typically from
 # the version control system). Doxygen will invoke the program by executing (via
 # popen()) the command command input-file, where command is the value of the
 # FILE_VERSION_FILTER tag, and input-file is the name of an input file provided
@@ -788,7 +788,7 @@ WARN_IF_UNDOCUMENTED   = YES
 
 WARN_IF_DOC_ERROR      = YES
 
-# This WARN_NO_PARAMDOC option can be enabled to get warnings for functions that
+# This WARN_NO_PARAMDOC option can be enabled to getView warnings for functions that
 # are documented, but have no documentation for their parameters or return
 # value. If set to NO, doxygen will only warn about wrong or incomplete
 # parameter documentation, but not about the absence of documentation. If
@@ -1035,7 +1035,7 @@ USE_MDFILE_AS_MAINPAGE =
 # If the SOURCE_BROWSER tag is set to YES then a list of source files will be
 # generated. Documented entities will be cross-referenced with these sources.
 #
-# Note: To get rid of all source code in the generated output, make sure that
+# Note: To getView rid of all source code in the generated output, make sure that
 # also VERBATIM_HEADERS is set to NO.
 # The default value is: NO.
 
@@ -1197,7 +1197,7 @@ HTML_FILE_EXTENSION    = .html
 # each generated HTML page. If the tag is left blank doxygen will generate a
 # standard header.
 #
-# To get valid HTML the header file that includes any scripts and style sheets
+# To getView valid HTML the header file that includes any scripts and style sheets
 # that doxygen needs, which is dependent on the configuration options used (e.g.
 # the setting GENERATE_TREEVIEW). It is highly recommended to start with a
 # default header using
@@ -1799,7 +1799,7 @@ PAPER_TYPE             = a4
 # The EXTRA_PACKAGES tag can be used to specify one or more LaTeX package names
 # that should be included in the LaTeX output. The package can be specified just
 # by its name or with the correct syntax as to be used with the LaTeX
-# \usepackage command. To get the times font for instance you can specify :
+# \usepackage command. To getView the times font for instance you can specify :
 # EXTRA_PACKAGES=times or EXTRA_PACKAGES={times}
 # To use the option intlimits with the amsmath package you can specify:
 # EXTRA_PACKAGES=[intlimits]{amsmath}
@@ -1864,7 +1864,7 @@ LATEX_EXTRA_FILES      =
 PDF_HYPERLINKS         = YES
 
 # If the USE_PDFLATEX tag is set to YES, doxygen will use pdflatex to generate
-# the PDF file directly from the LaTeX files. Set this option to YES, to get a
+# the PDF file directly from the LaTeX files. Set this option to YES, to getView a
 # higher quality PDF documentation.
 # The default value is: YES.
 # This tag requires that the tag GENERATE_LATEX is set to YES.
@@ -2304,7 +2304,7 @@ HAVE_DOT               = YES
 # The DOT_NUM_THREADS specifies the number of dot invocations doxygen is allowed
 # to run in parallel. When set to 0 doxygen will base this on the number of
 # processors available in the system. You can set it explicitly to a value
-# larger than 0 to get control over the balance between CPU load and processing
+# larger than 0 to getView control over the balance between CPU load and processing
 # speed.
 # Minimum value: 0, maximum value: 32, default value: 0.
 # This tag requires that the tag HAVE_DOT is set to YES.

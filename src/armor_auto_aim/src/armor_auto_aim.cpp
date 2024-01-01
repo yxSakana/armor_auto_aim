@@ -19,8 +19,7 @@
 namespace armor_auto_aim {
 ArmorAutoAim::ArmorAutoAim(const std::string& config_path, QObject* parent)
     : QThread(parent),
-      m_hik_driver(std::make_unique<HikDriver>(0)),
-      m_hik_read_thread(std::make_unique<HikReadThread>(m_hik_driver.get())),
+      m_hik_driver(std::make_unique<HikDriver>(0, TriggerSource::Software)),
       m_config_path(config_path)
        {
 #ifdef DEBUG
@@ -32,7 +31,15 @@ ArmorAutoAim::ArmorAutoAim(const std::string& config_path, QObject* parent)
     m_detector = Detector(m_params.armor_model_path, m_solver.pnp_solver);
     initHikCamera();
     initEkf();
-    connect(m_hik_read_thread.get(), &HikReadThread::readyData, this, &ArmorAutoAim::pushCameraData);
+//    connect(m_hik_read_thread.getView(), &HikReadThread::readyData, this, &ArmorAutoAim::pushCameraData);
+}
+
+void ArmorAutoAim::setViewWork(armor_auto_aim::ViewWork* vw) {
+    m_view_work = vw;
+}
+
+void ArmorAutoAim::setSerialWork(armor_auto_aim::SerialWork* sw) {
+    m_serial_work = sw;
 }
 
 void ArmorAutoAim::run() {
@@ -42,24 +49,25 @@ void ArmorAutoAim::run() {
     int frame_count = 0;
     constexpr int from_fps_frame_count = 10;
     bool is_reset = true;
-    uint64_t timestamp = 0;
-    uint64_t last_t = ProgramClock::now().time_since_epoch().count();
+    uint64_t timestamp = ProgramClock::now().time_since_epoch().count();
+    uint64_t last_t = timestamp;
     Eigen::Vector3d camera_point;
     Eigen::Quaterniond quaternion;
 
+//    unsigned int c;
     while (true) {
-        bool is_have = m_imu_data_queue.tryTop(*m_imu_data);
-//        m_imu_data = m_imu_data_queue.waitPop();
-//        emit m_serial_port.CrossThreadTransmitSignal(5, 5, "");
-//        LOG_IF(INFO, is_have) << "HAVE!";
-//        continue;
-        if (!is_have) {
+        m_imu_data_queue.waitTop(*m_imu_data);
+//        bool is_have = m_imu_data_queue.tryPop(*m_imu_data);
+//        if (!is_have) {
+//            ++c;
 //            m_hik_frame = m_hik_read_thread->getFrame();
 //            m_frame = m_hik_frame.getRgbFrame();
 //            cv::imshow("frame", m_frame);
 //            cv::waitKey(1);
-            continue;
-        }
+//            continue;
+//        }
+//        LOG(INFO) << "c: " << c; c = 0;
+//        LOG(INFO) << m_imu_data->to_string();
         m_aim_info.reset();
         // start fps clock
         if (is_reset) {
@@ -71,21 +79,23 @@ void ArmorAutoAim::run() {
         // 获取当前时间点
 //        int64_t wait_time = m_camera_stack.waitPopRecent(m_hik_frame, *m_imu_data, diffFunction);
 //        LOG(INFO) << "wait time: " << wait_time;
-        m_hik_frame = m_hik_read_thread->getFrame();
-        m_frame = m_hik_frame.getRgbFrame();
+        m_hik_driver->triggerImageData(m_hik_frame);
+        m_frame = *m_hik_frame.getRgbFrame();
         timestamp = m_hik_frame.getTimestamp();
-        // -- detect --
-        m_detector.detect(m_frame, &m_armors);
-        // get world coordinate
-        for (auto& armor: m_armors) {
-            camera_point = Eigen::Vector3d(armor.pose.x, armor.pose.y, armor.pose.z);
-            quaternion = Eigen::Quaterniond(m_imu_data->quaternion.w, m_imu_data->quaternion.x,
-                                            m_imu_data->quaternion.y, m_imu_data->quaternion.z);
-            armor.world_coordinate = m_solver.cameraToWorld(camera_point, quaternion.matrix());
-        }
         // dt
         dt = static_cast<float>(timestamp - last_t);
+        if (dt > 100)
+            LOG(WARNING) << "dt: " << dt;
         last_t = timestamp;
+        // -- detect --
+        m_detector.detect(m_frame, &m_armors);
+        // getView world coordinate
+        quaternion = Eigen::Quaterniond(m_imu_data->quaternion.w, m_imu_data->quaternion.x,
+                                        m_imu_data->quaternion.y, m_imu_data->quaternion.z);
+        for (auto& armor: m_armors) {
+            camera_point = Eigen::Vector3d(armor.pose.x, armor.pose.y, armor.pose.z);
+            armor.world_coordinate = m_solver.cameraToWorld(camera_point, quaternion.matrix());
+        }
         // -- tracker --
         if (m_tracker.state() == TrackerStateMachine::State::Lost) {
             m_tracker.initTracker(m_armors);
@@ -98,18 +108,18 @@ void ArmorAutoAim::run() {
             const Eigen::VectorXd& predict_state = m_tracker.getTargetPredictSate();
             Eigen::Vector3d world_predict_translation(predict_state(0), predict_state(2), predict_state(4));
             Eigen::Vector3d  predict_translation = m_solver.worldToCamera(world_predict_translation, quaternion.matrix());
-            cv::circle(m_frame, m_solver.reproject(predict_translation), 16, cv::Scalar(59, 188, 235), 8);
+            cv::circle(m_frame, m_solver.reproject(predict_translation), 36, cv::Scalar(59, 188, 235), 8);
             double delay_time = m_params.delta_time + std::abs(predict_translation.norm() / m_solver.getSpeed());
             predict_translation[0] -= predict_state[1] * delay_time;
-            predict_translation[1] -= predict_state[3] * delay_time;
-            cv::circle(m_frame, m_solver.reproject(predict_translation), 16, cv::Scalar(0, 0, 235), 8);
+//            predict_translation[1] -= predict_state[3];
+            cv::circle(m_frame, m_solver.reproject(predict_translation), 36, cv::Scalar(0, 0, 235), 8);
 //            cv::circle(m_frame, m_solver.reproject({m_tracker.tracked_armor.pose.x,
 //                                                    m_tracker.tracked_armor.pose.y,
 //                                                    m_tracker.tracked_armor.pose.z}), 16, cv::Scalar(0, 255, 255), -1);
 #ifdef DEBUG
 //            LOG(INFO) << "imu data: " << m_imu_data->to_string();
-            emit viewEkfSign(m_tracker, predict_translation, predict_translation);
-            emit viewTimestampSign(timestamp, m_imu_data->timestamp);
+//            emit viewEkfSign(m_tracker, predict_translation, predict_translation);
+//            emit viewTimestampSign(timestamp, m_imu_data->timestamp);
 #endif
             double delta_pitch = m_solver.ballisticSolver(-predict_translation);
             m_aim_info = translation2YawPitch(predict_translation);
@@ -128,16 +138,15 @@ void ArmorAutoAim::run() {
                              << "\ntarget_predict_state: " << m_tracker.getTargetPredictSate()
                              << "\ncommunicate info: " << m_aim_info.to_string();
                 LOG(WARNING) << "异常值!";
-            } else {
-                LOG(INFO) << "Send success";
             }
         }
         // -- Send --
         m_aim_info.tracker_status = static_cast<uint8_t>(m_tracker.state());
         auto imu_euler = quaternion.toRotationMatrix().eulerAngles(2, 1, 0);
         m_aim_info.data_id = m_imu_data->data_id;
-        m_aim_info.yaw += static_cast<float>(imu_euler[2]);
-        m_aim_info.pitch += static_cast<float>(imu_euler[1]);
+//        m_aim_info.yaw += static_cast<float>(imu_euler[2]);
+//        m_aim_info.pitch += static_cast<float>(imu_euler[1]);
+        emit m_view_work->viewEuler(imu_euler, {m_aim_info.yaw * M_PI / 180, m_aim_info.pitch * M_PI / 180, 0});
         emit sendAimInfo(m_aim_info);
         // -- debug --
         // - append information to frame(fps, tracker_info, timestamp, armors) -
@@ -195,16 +204,12 @@ void ArmorAutoAim::loadConfig() {
 
 void ArmorAutoAim::initHikCamera() {
     if (m_hik_driver->isConnected()) {
-        LOG(INFO) << "Hik Connected!";
         m_hik_driver->setExposureTime(m_params.exp_time);
         m_hik_driver->setGain(m_params.gain);
         m_hik_driver->showParamInfo();
-        m_hik_read_thread->start();
-        std::this_thread::sleep_for(std::chrono::seconds(2));
-
 #ifdef DEBUG
-        m_hik_debug_ui = std::make_unique<HikDebugUi>(*m_hik_driver);
-        m_hik_debug_ui->show();
+        m_hik_ui = std::make_unique<HikUi>(*m_hik_driver);
+        m_hik_ui->show();
 #endif
     } else {
 //        LOG(ERROR) << "Hik can't connected!";

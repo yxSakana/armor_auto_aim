@@ -10,7 +10,7 @@
 
 #include <QThread>
 
-#include <armor_auto_aim/view.h>
+#include <armor_auto_aim/view_work.h>
 #include <debug_toolkit/draw_package.h>
 
 namespace armor_auto_aim {
@@ -28,14 +28,16 @@ ViewWork::ViewWork(QObject* parent)
 #endif
 
     for (const auto& k: {"x", "v_x", "y", "v_y"})
-        m_view->m_ekf_view->get(k)->setShowNumber(300);
-    m_view->m_timestamp_view->get("Camera-IMU timestamp")->setShowNumber(100);
+        m_view->m_ekf_view->getView(k)->setShowNumber(300);
+    m_view->m_timestamp_view->getView("Camera-IMU timestamp")->setShowNumber(100);
+    m_view->m_imu_euler->getView("Euler")->setShowNumber(360);
 }
 
 void ViewWork::show() {
     LOG(INFO) << "view imshow(): " << QThread::currentThreadId();
-    m_view->m_ekf_view->show();
-    m_view->m_timestamp_view->show();
+    m_view->m_ekf_view->showMaximized();
+    m_view->m_timestamp_view->showMaximized();
+    m_view->m_imu_euler->showMaximized();
 }
 
 void ViewWork::showFrame(const cv::Mat& frame,
@@ -90,6 +92,23 @@ void ViewWork::viewEkf(
     // v_y-predict
     p = m_view->m_ekf_view->getLastPoint("v_y", "predict");
     m_view->m_ekf_view->insert("v_y", "predict", p.x()+1, predict_state[3]);
+}
+
+void ViewWork::viewEuler(const Eigen::Vector3d& imu, const Eigen::Vector3d& aim) const {
+    int count;
+    double yaw, pitch;
+    for (const auto& [key, value]: {std::make_pair("receive imu", imu),
+                                    std::make_pair("aim", aim)}) {
+        count = m_view->m_imu_euler->getView("Euler")->getSeries(key)->count();
+        yaw = value[0] * 180 / M_PI;
+        pitch = value[1] * 180 / M_PI;
+        if (count <= 0) {
+            m_view->m_imu_euler->getView("Euler")->getSeries(key)->append(yaw, pitch);
+        } else {
+            m_view->m_imu_euler->getView("Euler")->getSeries(key)->replace(0, yaw, pitch);
+        }
+
+    }
 }
 
 void ViewWork::viewTimestamp(const uint64_t& camera_timestamp,

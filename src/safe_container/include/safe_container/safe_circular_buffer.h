@@ -83,6 +83,14 @@ public:
         return value;
     }
 
+    void waitTop(T& value) {
+        std::unique_lock<std::mutex> lk(m_mutex);
+        m_condition.wait(lk, [this]()->bool { return m_n != 0; });
+        value = std::move(m_top->item);
+        m_top = m_bottom = nullptr;
+        m_n = 0;
+    }
+
     template <typename OtherType, typename DifferenceFunction>
     bool tryPopRecent(T& result, const OtherType& compare_val, DifferenceFunction diff_function) {
         std::lock_guard<std::mutex> lk(m_mutex);
