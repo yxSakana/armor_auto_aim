@@ -2,8 +2,8 @@ detector:
   armor_model_path: ../model/opt-0527-001.xml
   target_color: RED
   camera:
-    exposure_time: 16000
-    gain: 10
+    exposure_time: 8000
+    gain: 15
 solver:
   env:
     g: 9.781
@@ -26,17 +26,16 @@ solver:
 #             0.99945437,  -0.02310774,   0.02360054,  0.00058635,
 #             -0.02015029, -0.99273037,  -0.1186608,   0.00285011,
 #             0,          0,          0,         1.       ]
-    tvec_i2w: [0.0, 0.0, 0.0]
+    tvec_i2w: [0.0, 0.0, 0.0] # 往右-，下-调
     tvec_w2i: [0.0, 0.0, 0.0]
   ballistic:
-    speed: 12.0
+    speed: 20.0
 tracker: null
 predict:
-  delta_time: 100
+  delta_time: 20
   kf:
     q: 1
     r: 10000
-
 serial:
   pc:
     id: 0

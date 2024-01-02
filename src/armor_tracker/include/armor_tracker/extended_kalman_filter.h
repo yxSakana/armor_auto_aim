@@ -31,6 +31,11 @@ public:
 
     void setState(const Eigen::VectorXd& x0) { X_posterior = x0; }
 
+    void initEkf(const Eigen::VectorXd& x0, const Eigen::MatrixXd& p0) {
+        X_posterior = x0;
+        P_posterior = p0;
+    };
+
     [[nodiscard]] const Eigen::VectorXd& getX() const { return X_prior; }
     [[nodiscard]] const Eigen::MatrixXd& getF() const { return F; }
     [[nodiscard]] const Eigen::MatrixXd& getP() const { return P_posterior; };

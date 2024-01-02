@@ -1,5 +1,6 @@
 /**
  * @file VCOMCOMM.h
+ * @brief 虚拟串口通信
  * @author yao
  * @date 2021年1月13日
  */
@@ -20,6 +21,7 @@ namespace armor_auto_aim {
  * @details 可基于PID和VID或制造商名称自动搜索串口
  *          使用VCOMCOMM协议进行通信
  *          基于信号量可跨线程通信
+ *          在每次发送数据时都会检测串口连接状态, 在断开时自动尝试连接再发送
  * @class VCOMCOMM
  */
 class VCOMCOMM : public QSerialPort {
@@ -28,10 +30,7 @@ private:
     uint16_t pid, vid;
     QString manufacturer;
     Qt::HANDLE thread_id;
-//    spdlogger logger;
-
 public:
-
     /**
      * @brief 构造函数,构造时自动搜索对应PID和VID的USB串口设备
      * @param PID 产品ID
@@ -44,7 +43,6 @@ public:
      * @param manufacturer 制造商名称
      */
     VCOMCOMM(const QString& manufacturer, QObject* parent = nullptr);
-
 
     /**
      * @brief 自动连接对应制造商名称或PID和VID的USB串口设备
@@ -65,13 +63,11 @@ public:
      * @param manufacturer 制造商名称
      */
     void setManufacturer(const QString& manufacturer);
-
 protected slots:
 
     void portReadyRead();
 
     void portErrorOccurred(QSerialPort::SerialPortError error);
-
 public slots:
 
     /**
@@ -81,9 +77,7 @@ public slots:
      * @param data 数据
      */
     void Transmit(uint8_t fun_code, uint16_t id, const QByteArray& data);
-
 signals:
-
     /**
      * @brief 收到数据包信号量
      * @param fun_code 数据包功能码

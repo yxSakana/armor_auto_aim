@@ -85,7 +85,7 @@ namespace armor_auto_aim {
         std::vector<cv::Point2f> armor_apex;  // 装甲板的四个顶点(左上角开始逆时针)
         armor_auto_aim::solver::Pose pose{};
         Eigen::Vector3d world_coordinate;  // (imu参考的)惯性坐标系
-        float probability;
+        float probability{};
 
         Armor() =default;
 

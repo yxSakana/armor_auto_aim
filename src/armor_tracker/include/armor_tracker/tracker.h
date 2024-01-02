@@ -40,7 +40,7 @@ private:
     State m_state = State::Lost;
     int m_detect_count = 0;
     int m_lost_count = 0;
-    static constexpr int m_tracking_threshold = 30;
+    static constexpr int m_tracking_threshold = 10;
     static constexpr int m_lost_threshold = 40;
 
     std::map<State, std::string> m_state_map {

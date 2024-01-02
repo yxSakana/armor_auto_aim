@@ -4,7 +4,7 @@
   @file __init__.py
   @brief
   @author yx
-  @data 2023-11-15 21:50:23
+  @date 2023-11-15 21:50:23
 """
 
 from configure_logger.log_configure import init_logger_configure

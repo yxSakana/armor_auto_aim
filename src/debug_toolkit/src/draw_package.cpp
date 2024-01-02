@@ -93,7 +93,7 @@ void drawYawPitch(const cv::Mat& src, const float& yaw, const float& pitch) {
 }
 
 void drawFrameInfo(cv::Mat& src, const std::vector<Armor>& armors, const Tracker& tracker,
-                   const double& fps, const int64_t& timestamp, const float& dt) {
+                   const double& fps, const uint64_t& timestamp, const float& dt) {
     cv::HersheyFonts face = cv::FONT_HERSHEY_SIMPLEX;
     cv::Scalar text_color(255, 255, 255);
     double foot_scale = 0.75;

@@ -10,7 +10,6 @@ find_package(Eigen3 REQUIRED)
 find_package(yaml-cpp REQUIRED)
 
 target_link_libraries(solver PUBLIC
-        utils
         google_logger
         armor_detector
 

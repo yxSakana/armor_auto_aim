@@ -3,7 +3,7 @@
  * @file solver.h
  * @brief
  * @author yx
- * @data 2023-12-12 20:01:04
+ * @date 2023-12-12 20:01:04
  */
 
 #ifndef AUTO_AIM_SOLVER_H
@@ -93,7 +93,7 @@ public:
 
     double ballisticSolver(const Eigen::Vector3d& translation_vector) const {
         return solver::ballisticSolver(translation_vector,
-                                       m_params.ballistic_speed); // TODO: 通过配置文件修改默认参数
+                                       m_params.ballistic_speed);
     }
 
     cv::Point2d reproject(const Eigen::Vector3d& xyz) const {
@@ -116,6 +116,8 @@ public:
 //    Eigen::Vector3d deviationCorrect(const Eigen::Vector3d& o1c_point);
 
     double getSpeed() const { return m_params.ballistic_speed; }
+
+    void setParams(const SolverParams& params) { m_params = params; }
 
     std::shared_ptr<PnPSolver> pnp_solver;
 private:
