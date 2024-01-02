@@ -21,9 +21,6 @@ target_link_libraries(armor_auto_aim PUBLIC
     thread_pool
     serial_port
     google_logger
-    spdlog_factory
-    plot_client_http
-    vision_debug_widgets
     debug_toolkit)
 
 set(QT_PACKAGES
