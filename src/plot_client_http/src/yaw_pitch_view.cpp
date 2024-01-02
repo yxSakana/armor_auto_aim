@@ -3,7 +3,7 @@
  * @file yaw_pitch_view.cpp
  * @brief
  * @author yx
- * @data 2023-11-24 14:45:50
+ * @date 2023-11-24 14:45:50
  */
 
 #include <plot_client_http/yaw_pitch_view.h>
@@ -52,7 +52,7 @@ void yawPitchViewCreateWindowRequest(PlotClientHttp* plot_client_http) {
     plot_client_http->createWindowRequest(create_window_data);
 }
 
-void yawPitchViewUpdateDataRequest(PlotClientHttp* plot_client_http, const PredictData& communicate_protocol) {
+void yawPitchViewUpdateDataRequest(PlotClientHttp* plot_client_http, const AutoAimInfo& communicate_protocol) {
     nlohmann::json json_data = {
             { "window_name", "Yaw-Pitch-View" },
             { "row", 0 },

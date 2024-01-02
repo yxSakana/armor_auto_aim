@@ -55,15 +55,19 @@ bool VCOMCOMM::auto_connect() {
     }
     if (!selected_port.isNull()) {
         LOG(INFO) << fmt::format("find VCOMCOMM Driver, Port:'{}', Manufacturer:'{}'",
-                                 selected_port.portName().toStdString(), selected_port.manufacturer().toStdString());
+                                 selected_port.portName().toStdString(),
+                                 selected_port.manufacturer().toStdString());
         if (this->isOpen()) {
             LOG(INFO) << "close port and reopen";
             this->close();
-        } else LOG(INFO) << "open port";
+        } else {
+            LOG(INFO) << "open port";
+        }
         this->setPort(selected_port);
         if (this->open(ReadWrite) && (this->error() == SerialPortError::NoError))
             return true;
-        else LOG(ERROR) << fmt::format("can't open port {}", selected_port.portName().toStdString());
+        else
+            LOG(ERROR) << fmt::format("can't open port {}", selected_port.portName().toStdString());
     }
     return false;
 }
@@ -81,10 +85,10 @@ void VCOMCOMM::portReadyRead() {
         uint16_t crc = *((uint16_t*) (pdata + 6 + len));
         QByteArray array((const char*) (pdata + 6), len);
         uint16_t c = armor_auto_aim::Verify_CRC16_Check_Sum(array);
-        if (len == 0 || c == crc) {
-//            DLOG(INFO) << fmt::format("RX: fun=0x{:02X}, id=0x{:04X}, crc=0x{:04X}|0x{:04X}", fun, id, crc, c);
+        if (len == 0 || c == crc)
             emit receiveData(fun, id, array);
-        } else LOG(ERROR) << fmt::format("RX: fun=0x{:02X}, id=0x{:04X}, crc=0x{:04X}|0x{:04X} CRC Error", fun, id, crc, c);
+        else
+            LOG(ERROR) << fmt::format("RX: fun=0x{:02X}, id=0x{:04X}, crc=0x{:04X}|0x{:04X} CRC Error", fun, id, crc, c);
     }
 }
 
@@ -102,8 +106,9 @@ void VCOMCOMM::Transmit(uint8_t fun_code, uint16_t id, const QByteArray& data) {
     }
     /* 忽略读写错误 */
     SerialPortError port_err = this->error();
-    if (port_err == ReadError || port_err == WriteError)
+    if (port_err == ReadError || port_err == WriteError) {
         port_err = NoError;
+    }
     if (!(this->isOpen() && port_err == NoError) && !this->auto_connect()) {
         LOG_EVERY_T(ERROR, 10) << "Transmit Error, Port is closed or error";
         return;
@@ -117,10 +122,14 @@ void VCOMCOMM::Transmit(uint8_t fun_code, uint16_t id, const QByteArray& data) {
     *((uint16_t*) (buff + 2)) = id;
     *((uint16_t*) (buff + 4)) = len;
     memcpy(buff + 6, data.data(), len);
-    *((uint16_t*) (buff + 6 + len)) = (len == 0) ? 0 : armor_auto_aim::Verify_CRC16_Check_Sum(data);
-    this->writeData((const char*) buff, len + 8);
-    this->waitForBytesWritten(100);
-    this->clear(Output);
+    *((uint16_t*) (buff + 6 + len)) = (len == 0)? 0: armor_auto_aim::Verify_CRC16_Check_Sum(data);
+    auto wl = this->writeData((const char*) buff, len + 8);
+//    LOG_EVERY_T(INFO, 10) << "write len: " << wl;
+    // FIXME: 串口通信更改
+//    this->waitForBytesWritten(100);
+//    bool status = this->waitForBytesWritten(100);
+//    LOG_IF(WARNING, !status) << "Failed: serial";
+//    this->clear(Output);
 }
 
 void VCOMCOMM::setPidVid(uint16_t PID, uint16_t VID) {

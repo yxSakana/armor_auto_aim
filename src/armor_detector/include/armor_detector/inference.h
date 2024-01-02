@@ -23,7 +23,12 @@ class Inference {
 public:
     Inference() =default;
 
-    explicit Inference(const std::string& model_path) : m_inference_result_ptr(new float) { initModel(model_path); }
+    explicit Inference(const std::string& model_path, const std::string& driver="CPU")
+            : m_inference_result_ptr(new float),
+              m_MODEL_PATH(model_path),
+              m_DRIVER(driver) {
+        initModel(m_MODEL_PATH);
+    }
 
     void initModel(const std::string& model_path);
 

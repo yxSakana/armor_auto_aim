@@ -1,9 +1,9 @@
 /**
  * @project_name auto_aim
- * @file threadsafe_queue.h
+ * @file safe_container.h
  * @brief
  * @author yx
- * @data 2023-12-09 21:04:35
+ * @date 2023-12-09 21:04:35
  */
 
 #ifndef AUTO_AIM_THREADSAFE_QUEUE_H
@@ -20,8 +20,7 @@ public:
     ThreadSafeQueue() =default;
 
     void push(DataType new_data) {
-        std::shared_ptr<DataType> data(
-                std::make_shared<DataType>(std::move(new_data)));
+        std::shared_ptr<DataType> data(std::make_shared<DataType>(std::move(new_data)));
         {
             std::lock_guard<std::mutex> lk(m_queue_mutex);
             m_queue.push(data);
@@ -46,7 +45,7 @@ public:
 
     std::shared_ptr<DataType> tryPop() {
         std::lock_guard<std::mutex> lk(m_queue_mutex);
-        if (m_queue.empty()) return false;
+        if (m_queue.empty()) return nullptr;
 
         std::shared_ptr<DataType> data = m_queue.front();
         m_queue.pop();
@@ -71,6 +70,14 @@ public:
         std::lock_guard<std::mutex> lk(m_queue_mutex);
         return m_queue.size();
     }
+
+    void clear() {
+        std::lock_guard<std::mutex> lk(m_queue_mutex);
+        while (!m_queue.empty()) {
+            m_queue.pop();
+        }
+    }
+
 private:
     mutable std::mutex m_queue_mutex;
     std::condition_variable m_condition_variable;

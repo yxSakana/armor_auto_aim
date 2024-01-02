@@ -4,7 +4,7 @@
   @file figure_canvas_ui.py
   @brief
   @author yx
-  @data 2023-11-17 21:22:29
+  @date 2023-11-17 21:22:29
 """
 import random
 import sys

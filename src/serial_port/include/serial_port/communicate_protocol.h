@@ -3,7 +3,7 @@
  * @file communication_protocol.h
  * @brief
  * @author yx
- * @data 2023-11-14 19:56:22
+ * @date 2023-11-14 19:56:22
  */
 
 #ifndef ARMOR_AUTO_AIMING_COMMUNICATION_PROTOCOL_H
@@ -13,31 +13,41 @@
 
 #include <iostream>
 #include <string>
+#include <chrono>
 
-struct PredictData {
+struct AutoAimInfo {
     float yaw{};
     float pitch{};
     float distance{};
     uint8_t aim_shoot{};
+    uint8_t tracker_status{};
+    uint8_t data_id{};
 
-    PredictData() =default;
+    AutoAimInfo() =default;
 
-    PredictData(const float& y, const float& p, const float& d)
+    AutoAimInfo(const float& y, const float& p, const float& d)
         : yaw(y),
           pitch(p),
           distance(d) {}
 
     [[nodiscard]] std::string to_string() const {
-        std::string info("[PredictData ");
+        std::string info("[AutoAimInfo ");
         info += "yaw: " + std::to_string(yaw) + "; ";
         info += "pitch: " + std::to_string(pitch) + "; ";
         info += "distance: " + std::to_string(distance) + "; ";
-        info += "aim_shoot: " + std::to_string(aim_shoot) + ";]";
+        info += "aim_shoot: " + std::to_string(aim_shoot) + "; ";
+        info += "tracker_status: " + std::to_string(tracker_status) + ";]";
         return info;
+    }
+
+    void reset() {
+        yaw = pitch = distance = aim_shoot = tracker_status = 0;
     }
 };
 
 struct ImuData {
+    uint64_t timestamp = std::chrono::steady_clock::now().time_since_epoch().count();
+    uint8_t data_id{};
     struct ImuQuaternion {
         float w{};
         float x{};
@@ -57,6 +67,8 @@ struct ImuData {
 
     std::string to_string() const {
         std::string info("[ImuData ");
+        info += "timestamp: " + std::to_string(timestamp) + ", ";
+        info += "data_id: " + std::to_string(data_id) + ", ";
         info += quaternion.to_string();
         info += "]";
         return info;

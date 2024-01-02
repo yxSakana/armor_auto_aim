@@ -14,6 +14,8 @@
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
 
+#include <armor_detector/interface.h>
+
 namespace armor_auto_aim::inference_parser {
 struct GridAndStride {
     int grid0;
@@ -47,7 +49,8 @@ cv::Mat scaledResize(const cv::Mat& src, Eigen::Matrix<float, 3, 3>* transformat
  * @param transform_matrix[in] 变换矩阵
  * @param inference_armors[out] 装甲板对象
  */
-void decodeOutputs(const float* inference_result_ptr, const int& img_w, const int& img_h, const Eigen::Matrix<float, 3, 3>& transform_matrix,
+void decodeOutputs(const float* inference_result_ptr, const int& img_w, const int& img_h,
+                   const Eigen::Matrix<float, 3, 3>& transform_matrix,
                    std::vector<InferenceResult>* inference_armors);
 
 /**
@@ -74,7 +77,16 @@ void generateYoloxProposals(const float* inference_result_ptr, const std::vector
                             const Eigen::Matrix<float, 3, 3>& transform_matrix, const float& probability_confidence_threshold,
                             std::vector<InferenceResult>* inference_armors);
 
-void nonMaximumSuppression(std::vector<InferenceResult>& selected_armors, std::vector<InferenceResult>& inference_armors, const float& threshold);
+/**
+ * @brief 非极大值抑制
+ *
+ * @param selected_armors
+ * @param inference_armors
+ * @param threshold
+ */
+void nonMaximumSuppression(std::vector<InferenceResult>& selected_armors,
+                           std::vector<InferenceResult>& inference_armors,
+                           const float& threshold);
 
 /**
  * @brief 快速排序-降序
