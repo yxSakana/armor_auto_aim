@@ -33,7 +33,7 @@ void initGoogleLogger(const char* program) {
 void ConsoleLogSink::send(google::LogSeverity severity, const char *full_filename, const char *base_filename, int line,
                           const struct tm *tm_time, const char *message, size_t message_len) {
     int y = 1900 + tm_time->tm_year;
-    int m = tm_time->tm_mon;
+    int m = tm_time->tm_mon + 1;
     int d = tm_time->tm_mday;
     int h = tm_time->tm_hour;
     int min = tm_time->tm_min;
@@ -108,7 +108,7 @@ bool GoogleLogger::Timestamp::operator<(const armor_auto_aim::google_log::Google
 
 void GoogleLogger::CustomPrefix(std::ostream &os, const google::LogMessageInfo &log_info, void *) {
     int y = 1900 + log_info.time.year();
-    int m = log_info.time.month();
+    int m = log_info.time.month() + 1;
     int d = log_info.time.day();
     int h = log_info.time.hour();
     int min = log_info.time.min();

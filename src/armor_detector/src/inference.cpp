@@ -10,6 +10,7 @@
 #include <opencv2/core.hpp>
 #include <glog/logging.h>
 #include <fmt/format.h>
+#include <fmt/ranges.h>
 
 #include <armor_detector/inference.h>
 #include <armor_detector/parser.h>
@@ -18,10 +19,39 @@
 #endif
 
 namespace armor_auto_aim {
+Inference::Inference() {
+    auto available = m_core.get_available_devices();
+    LOG(INFO) << fmt::format("Inference devices: {}", available);
+    m_device = (std::find(available.begin(), available.end(), "GPU") != available.end()
+               ) ? "GPU" : "CPU";
+    LOG(INFO) << "Inference device: " << m_device;
+}
+
+Inference::Inference(const std::string& model_path)
+        : m_inference_result_ptr(new float),
+          m_MODEL_PATH(model_path) {
+    auto available = m_core.get_available_devices();
+    LOG(INFO) << fmt::format("Inference devices: {}", available);
+    m_device = (std::find(available.begin(), available.end(), "GPU") != available.end()
+               ) ? "GPU" : "CPU";
+    LOG(INFO) << "Inference device: " << m_device;
+    initModel(m_MODEL_PATH);
+}
+
+Inference::Inference(const std::string& model_path, const std::string& driver)
+        : m_inference_result_ptr(new float),
+          m_MODEL_PATH(model_path),
+          m_device(driver) {
+    auto available = m_core.get_available_devices();
+    LOG(INFO) << fmt::format("Inference available devices: {}", available);
+    LOG(INFO) << "Inference device: " << m_device;
+    initModel(m_MODEL_PATH);
+}
+
 void Inference::initModel(const std::string& model_path) {
     m_core.set_property(ov::cache_dir(m_CACHE_DIR));
     m_model = m_core.read_model(model_path);
-    m_compiled_model = m_core.compile_model(m_model, m_DRIVER);
+    m_compiled_model = m_core.compile_model(m_model, m_device);
     m_infer_request = m_compiled_model.create_infer_request();
 //    DLOG(INFO) << getInputAndOutputsInfo(*m_model);
     LOG(INFO) << fmt::format("({})Model loading completed!", model_path);

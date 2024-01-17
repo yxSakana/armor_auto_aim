@@ -123,9 +123,10 @@ void VCOMCOMM::Transmit(uint8_t fun_code, uint16_t id, const QByteArray& data) {
     *((uint16_t*) (buff + 4)) = len;
     memcpy(buff + 6, data.data(), len);
     *((uint16_t*) (buff + 6 + len)) = (len == 0)? 0: armor_auto_aim::Verify_CRC16_Check_Sum(data);
-    auto wl = this->writeData((const char*) buff, len + 8);
-//    LOG_EVERY_T(INFO, 10) << "write len: " << wl;
+    this->writeData((const char*) buff, len + 8);
     // FIXME: 串口通信更改
+//    auto wl = this->writeData((const char*) buff, len + 8);
+//    LOG_EVERY_T(INFO, 10) << "write len: " << wl;
 //    this->waitForBytesWritten(100);
 //    bool status = this->waitForBytesWritten(100);
 //    LOG_IF(WARNING, !status) << "Failed: serial";

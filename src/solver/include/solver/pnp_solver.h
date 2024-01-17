@@ -12,7 +12,6 @@
 
 #include <opencv2/opencv.hpp>
 
-#include <solver/coord_utils.h>
 #include <armor_detector/interface.h>
 #include <solver/solver_interface.h>
 

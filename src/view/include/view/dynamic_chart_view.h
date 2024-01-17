@@ -1,13 +1,13 @@
 /**
- * @project_name test_qcharts
+ * @project_name armor_auto_aim
  * @file dynamic_line_chart.h
  * @brief
  * @author yx
  * @date 2023-12-21 16:23:34
  */
 
-#ifndef ARMOR_AUTO_AIMING_DYNAMIC_CHART_VIEW_H
-#define ARMOR_AUTO_AIMING_DYNAMIC_CHART_VIEW_H
+#ifndef ARMOR_AUTO_AIMING_VIEW_DYNAMIC_CHART_VIEW_H
+#define ARMOR_AUTO_AIMING_VIEW_DYNAMIC_CHART_VIEW_H
 
 #include <QWidget>
 #include <QTimer>
@@ -72,6 +72,14 @@ public:
     double getYMax() const { return m_max_y; }
     void setYMax(double v) { m_max_y = v; }
 
+    void setShowNumber(const int& n) { m_show_number = n; };
+
+    void setRightSide(const int& n) { m_right_side = n; };
+
+    [[nodiscard]] QtCharts::QChartView* getChartView() const { return m_chart_view; }
+
+    [[nodiscard]] QtCharts::QChart* getChart() const { return m_chart; }
+
     void insert(const std::string& name, const float& x, const float& y) {
         const QString&& k = QString::fromStdString(name);
         if (m_table->contains(k))
@@ -96,14 +104,6 @@ public:
         else
             return {};
     }
-
-    void setShowNumber(const int& n) { m_show_number = n; };
-
-    void setRightSide(const int& n) { m_right_side = n; };
-
-    [[nodiscard]] QtCharts::QChartView* getChartView() const { return m_chart_view; }
-
-    [[nodiscard]] QtCharts::QChart* getChart() const { return m_chart; }
 
     void updateView() {
         // 减小数据.
@@ -196,4 +196,4 @@ private Q_SLOT:
 };
 }
 
-#endif //ARMOR_AUTO_AIMING_DYNAMIC_CHART_VIEW_H
+#endif //ARMOR_AUTO_AIMING_VIEW_DYNAMIC_CHART_VIEW_H

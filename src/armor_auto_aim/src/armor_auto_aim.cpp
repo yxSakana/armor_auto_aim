@@ -54,20 +54,8 @@ void ArmorAutoAim::run() {
     Eigen::Vector3d camera_point;
     Eigen::Quaterniond quaternion;
 
-//    unsigned int c;
     while (true) {
         m_imu_data_queue.waitTop(*m_imu_data);
-//        bool is_have = m_imu_data_queue.tryPop(*m_imu_data);
-//        if (!is_have) {
-//            ++c;
-//            m_hik_frame = m_hik_read_thread->getFrame();
-//            m_frame = m_hik_frame.getRgbFrame();
-//            cv::imshow("frame", m_frame);
-//            cv::waitKey(1);
-//            continue;
-//        }
-//        LOG(INFO) << "c: " << c; c = 0;
-//        LOG(INFO) << m_imu_data->to_string();
         m_aim_info.reset();
         // start fps clock
         if (is_reset) {
@@ -76,16 +64,13 @@ void ArmorAutoAim::run() {
             is_reset = false;
         }
         // -- main --
-        // 获取当前时间点
-//        int64_t wait_time = m_camera_stack.waitPopRecent(m_hik_frame, *m_imu_data, diffFunction);
-//        LOG(INFO) << "wait time: " << wait_time;
+        // frame && timestamp
         m_hik_driver->triggerImageData(m_hik_frame);
         m_frame = *m_hik_frame.getRgbFrame();
         timestamp = m_hik_frame.getTimestamp();
         // dt
         dt = static_cast<float>(timestamp - last_t);
-        if (dt > 100)
-            LOG(WARNING) << "dt: " << dt;
+        LOG_IF(WARNING, dt > 100) << "dt: " << dt;
         last_t = timestamp;
         // -- detect --
         m_detector.detect(m_frame, &m_armors);
@@ -109,22 +94,19 @@ void ArmorAutoAim::run() {
             Eigen::Vector3d world_predict_translation(predict_state(0), predict_state(2), predict_state(4));
             Eigen::Vector3d  predict_translation = m_solver.worldToCamera(world_predict_translation, quaternion.matrix());
             cv::circle(m_frame, m_solver.reproject(predict_translation), 36, cv::Scalar(59, 188, 235), 8);
-            double delay_time = m_params.delta_time + std::abs(predict_translation.norm() / m_solver.getSpeed());
-            predict_translation[0] -= predict_state[1] * delay_time;
-//            predict_translation[1] -= predict_state[3];
+            double delay_time = m_params.delta_time + std::abs(world_predict_translation.norm() / m_solver.getSpeed());
+            world_predict_translation[0] += predict_state[1] * delay_time;
+            world_predict_translation[1] += predict_state[3] * delay_time;
+            predict_translation = m_solver.worldToCamera(world_predict_translation, quaternion.matrix());
             cv::circle(m_frame, m_solver.reproject(predict_translation), 36, cv::Scalar(0, 0, 235), 8);
-//            cv::circle(m_frame, m_solver.reproject({m_tracker.tracked_armor.pose.x,
-//                                                    m_tracker.tracked_armor.pose.y,
-//                                                    m_tracker.tracked_armor.pose.z}), 16, cv::Scalar(0, 255, 255), -1);
 #ifdef DEBUG
-//            LOG(INFO) << "imu data: " << m_imu_data->to_string();
+//         LOG(INFO) << "imu data: " << m_imu_data->to_string();
 //            emit viewEkfSign(m_tracker, predict_translation, predict_translation);
 //            emit viewTimestampSign(timestamp, m_imu_data->timestamp);
 #endif
             double delta_pitch = m_solver.ballisticSolver(-predict_translation);
             m_aim_info = translation2YawPitch(predict_translation);
             if (!std::isnan(delta_pitch)) {
-//                LOG(INFO) << "delta_pitch: " << delta_pitch;
                 m_aim_info.pitch -= static_cast<float>(delta_pitch);
             } else {
                 LOG(WARNING) << "delta_pitch is NaN";
@@ -144,9 +126,11 @@ void ArmorAutoAim::run() {
         m_aim_info.tracker_status = static_cast<uint8_t>(m_tracker.state());
         auto imu_euler = quaternion.toRotationMatrix().eulerAngles(2, 1, 0);
         m_aim_info.data_id = m_imu_data->data_id;
-//        m_aim_info.yaw += static_cast<float>(imu_euler[2]);
-//        m_aim_info.pitch += static_cast<float>(imu_euler[1]);
-        emit m_view_work->viewEuler(imu_euler, {m_aim_info.yaw * M_PI / 180, m_aim_info.pitch * M_PI / 180, 0});
+        m_aim_info.yaw += m_params.compensate_yaw;
+        m_aim_info.pitch += m_params.compensate_pitch;
+#ifdef DEBUG
+//        emit m_view_work->viewEuler(imu_euler, {m_aim_info.yaw * M_PI / 180, m_aim_info.pitch * M_PI / 180, 0});
+#endif
         emit sendAimInfo(m_aim_info);
         // -- debug --
         // - append information to frame(fps, tracker_info, timestamp, armors) -
@@ -200,6 +184,10 @@ void ArmorAutoAim::loadConfig() {
     m_params.delta_time = predict_config["delta_time"].as<float>();
     q = predict_config["kf"]["q"].as<int>();
     r = predict_config["kf"]["r"].as<int>();
+    // compensate 补偿
+    const YAML::Node&& compensate_config = m_config["compensate"];
+    m_params.compensate_yaw = compensate_config["yaw"].as<float>();
+    m_params.compensate_pitch = compensate_config["pitch"].as<float>();
 }
 
 void ArmorAutoAim::initHikCamera() {

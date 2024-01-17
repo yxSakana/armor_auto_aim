@@ -46,7 +46,9 @@ int main(int argc, char* argv[]) {
     serial_thread.start();
     view_thread.start();
     auto_aim_thread.start();
-    view_work.show();
+#ifdef DEBUG
+//    view_work.show();
+#endif
     LOG(INFO) << fmt::format("main_thread: {};", QThread::currentThreadId());
     emit serial_work.showThreadIdSignal();
 
