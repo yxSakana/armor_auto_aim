@@ -7,6 +7,9 @@
  * @date 2023-10-22 16:39
  */
 
+#include <Eigen/Dense>
+#include <opencv2/core/eigen.hpp>
+
 #include <solver/pnp_solver.h>
 
 namespace armor_auto_aim {
@@ -55,7 +58,11 @@ bool PnPSolver::obtain3dPose(Armor& armor) {
                 euler_angles(1) = -M_PI - euler_angles(1);
             }
         };  // 范围
-        Eigen::Vector3d euler_angles = rotationVectorToEulerAngles(rvec);
+        cv::Mat rmat_cv;
+        cv::Rodrigues(rvec, rmat_cv);
+        Eigen::Matrix3d rmat_eigen;
+        cv::cv2eigen(rmat_cv, rmat_eigen);
+        Eigen::Vector3d euler_angles =rmat_eigen.eulerAngles(2, 1, 0);
 
         armor.pose.pitch = static_cast<float>(euler_angles(1));
         armor.pose.yaw = static_cast<float>(euler_angles(2));

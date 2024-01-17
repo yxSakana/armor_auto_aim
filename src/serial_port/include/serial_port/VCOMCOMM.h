@@ -13,7 +13,6 @@
 #include <QSerialPort>
 
 #include <serial_port/CRC.h>
-//#include <spdlogger.h>
 
 namespace armor_auto_aim {
 /**

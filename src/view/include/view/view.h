@@ -1,19 +1,19 @@
 /**
- * @project_name test_qcharts
+ * @project_name armor_auto_aim
  * @file view.h
  * @brief
  * @author yx
  * @date 2023-12-21 17:08:08
  */
 
-#ifndef TEST_QCHARTS_VIEW_H
-#define TEST_QCHARTS_VIEW_H
+#ifndef ARMOR_AUTO_AIM_VIEW_VIEW_H
+#define ARMOR_AUTO_AIM_VIEW_VIEW_H
 
 #include <QMap>
 #include <QMainWindow>
 #include <QGridLayout>
 
-#include <dynamic_chart_view/dynamic_chart_view.h>
+#include <view/dynamic_chart_view.h>
 
 namespace view {
 template <typename T>
@@ -106,10 +106,15 @@ class TimestampView: public BaseView<QtCharts::QLineSeries> {
 public:
     explicit TimestampView(QWidget* parent = nullptr)
         : BaseView(parent) {
+        // Window
         setWindowTitle("Timestamp View");
+        // Chart View
         m_chart_views["Camera-IMU timestamp"] = new ChartView(false, this);
         m_chart_views["Camera-IMU timestamp"]->getChart()->setTitle("Camera-IMU timestamp");
+        // Series
         m_chart_views["Camera-IMU timestamp"]->addSeries("timestamp");
+        m_chart_views["Camera-IMU timestamp"]->addSeries("now-camera");
+        m_chart_views["Camera-IMU timestamp"]->addSeries("now-imu");
         m_layout->addWidget(m_chart_views["Camera-IMU timestamp"]->getChartView(), 0, 0);
     }
 };
@@ -147,4 +152,4 @@ public:
 };
 }
 
-#endif //TEST_QCHARTS_VIEW_H
+#endif //ARMOR_AUTO_AIM_VIEW_VIEW_H

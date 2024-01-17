@@ -159,7 +159,7 @@ bool HikDriver::findDriver(int mode) {
         LOG(WARNING) << "No hik camera devices";
         return false;
     }
-    LOG(INFO) << fmt::format("Number of available devices: {}", m_devices.nDeviceNum);
+    LOG(INFO) << fmt::format("Number of available Hik-devices: {}", m_devices.nDeviceNum);
     return true;
 }
 

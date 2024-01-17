@@ -42,6 +42,8 @@ struct AutoAimParams {
     ArmorColor target_color;
     std::string armor_model_path;
     float delta_time;
+    float compensate_yaw;
+    float compensate_pitch;
 };
 
 class ArmorAutoAim: public QThread {
@@ -58,8 +60,6 @@ public:
     void setViewWork(ViewWork* vw);
 public slots:
     void pushImuData(const ImuData& data) { m_imu_data_queue.push(data); }
-
-    void pushCameraData(const HikFrame& frame) { m_camera_stack.push(frame); }
 signals:
     void sendAimInfo(const AutoAimInfo& aim_info);
 
@@ -74,7 +74,6 @@ signals:
     void viewTimestampSign(const uint64_t& camera_timestamp,
                            const uint64_t& imu_timestamp);
 private:
-    static constexpr double m_DeltaTime = 50.0;
     int q = 1, r = 1, p = 10000;
 
     std::string m_config_path;
@@ -98,7 +97,6 @@ private:
     std::shared_ptr<ImuData> m_imu_data = std::make_shared<ImuData>();
     SafeCircularBuffer<ImuData, 10> m_imu_data_queue;
 //    ThreadSafeQueue<ImuData> m_imu_data_queue;  // FIXME: 不使用队列、会明显滞后、因为每次都是取得是之前的； 另外KF加入速度观测值
-    SafeCircularBuffer<HikFrame, 10> m_camera_stack;
     AutoAimInfo m_aim_info;
 
     void loadConfig();

@@ -50,7 +50,6 @@ void SerialWork::selectFunction(uint8_t code, uint16_t id, const QByteArray& dat
             case m_RecvImuInfoCode: {
                 ImuData imu_data;
                 std::memcpy(&imu_data, data.data(), sizeof(imu_data));
-//                LOG(INFO) << imu_data.to_string();
                 emit readyImuData(imu_data);
                 break;
             }

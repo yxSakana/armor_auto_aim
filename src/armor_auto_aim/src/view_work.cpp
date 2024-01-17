@@ -28,9 +28,9 @@ ViewWork::ViewWork(QObject* parent)
 #endif
 
     for (const auto& k: {"x", "v_x", "y", "v_y"})
-        m_view->m_ekf_view->getView(k)->setShowNumber(300);
+        m_view->m_ekf_view->getView(k)->setShowNumber(100);
     m_view->m_timestamp_view->getView("Camera-IMU timestamp")->setShowNumber(100);
-    m_view->m_imu_euler->getView("Euler")->setShowNumber(360);
+    m_view->m_imu_euler->getView("Euler")->setShowNumber(100);
 }
 
 void ViewWork::show() {
@@ -107,7 +107,6 @@ void ViewWork::viewEuler(const Eigen::Vector3d& imu, const Eigen::Vector3d& aim)
         } else {
             m_view->m_imu_euler->getView("Euler")->getSeries(key)->replace(0, yaw, pitch);
         }
-
     }
 }
 
@@ -117,7 +116,16 @@ void ViewWork::viewTimestamp(const uint64_t& camera_timestamp,
     p = m_view->m_timestamp_view->getLastPoint("Camera-IMU timestamp", "timestamp");
     auto c = static_cast<int64_t>(camera_timestamp);
     auto i = static_cast<int64_t>(imu_timestamp);
+    auto now = static_cast<int64_t>(
+            std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count()
+            );
     m_view->m_timestamp_view->insert(
             "Camera-IMU timestamp", "timestamp", p.x()+1, static_cast<double>(c - i));
+    m_view->m_timestamp_view->insert(
+            "Camera-IMU timestamp", "now-camera", p.x(), static_cast<double>(now - c)
+            );
+    m_view->m_timestamp_view->insert(
+            "Camera-IMU timestamp", "now-imu", p.x(), static_cast<double>(now - i)
+    );
 }
 }
