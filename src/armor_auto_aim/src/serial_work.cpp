@@ -18,14 +18,6 @@ SerialWork::SerialWork(QObject* parent)
     qRegisterMetaType<ImuData>("ImuData");
     qRegisterMetaType<AutoAimInfo>("AutoAimInfo");
 
-    m_timer = new QTimer(this);
-    m_timer->start(1000);
-    connect(m_timer, &QTimer::timeout, [this](){
-        if ((!this->m_serial.isOpen()) || m_serial.error() != QSerialPort::NoError) {
-            LOG(WARNING) << "Serial close. try auto connect...";
-            this->m_serial.auto_connect();
-        }
-    });
     connect(&m_serial, &VCOMCOMM::receiveData, this, &SerialWork::selectFunction);
 }
 

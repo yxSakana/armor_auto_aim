@@ -1,6 +1,6 @@
 /**
  * @project_name armor_auto_aiming
- * @file armor_auto_aim.h.cpp
+ * @file armor_auto_aim.cpp
  * @brief
  * @author yx
  * @date 2023-11-14 21:13:26
@@ -19,7 +19,7 @@
 namespace armor_auto_aim {
 ArmorAutoAim::ArmorAutoAim(const std::string& config_path, QObject* parent)
     : QThread(parent),
-      m_hik_driver(std::make_unique<HikDriver>(0, TriggerSource::Software)),
+      m_hik_driver(std::make_unique<HikDriver>(0)),
       m_config_path(config_path)
        {
 #ifdef DEBUG
@@ -34,9 +34,11 @@ ArmorAutoAim::ArmorAutoAim(const std::string& config_path, QObject* parent)
 //    connect(m_hik_read_thread.getView(), &HikReadThread::readyData, this, &ArmorAutoAim::pushCameraData);
 }
 
+#ifdef DEBUG
 void ArmorAutoAim::setViewWork(armor_auto_aim::ViewWork* vw) {
     m_view_work = vw;
 }
+#endif
 
 void ArmorAutoAim::setSerialWork(armor_auto_aim::SerialWork* sw) {
     m_serial_work = sw;
@@ -65,7 +67,17 @@ void ArmorAutoAim::run() {
         }
         // -- main --
         // frame && timestamp
-        m_hik_driver->triggerImageData(m_hik_frame);
+        m_hik_frame = m_hik_driver->getFrame();
+//        if (frame_count < from_fps_frame_count) {
+//            frame_count++;
+//        } else {
+//            tick_meter.stop();
+//            fps = static_cast<float>(++frame_count) / static_cast<float>(tick_meter.getTimeSec());
+//            frame_count = 0;
+//            is_reset = true;
+//            LOG_EVERY_T(INFO, 2) << "fps: " << fps;
+//        }
+//        continue;
         m_frame = *m_hik_frame.getRgbFrame();
         timestamp = m_hik_frame.getTimestamp();
         // dt
@@ -100,7 +112,8 @@ void ArmorAutoAim::run() {
             predict_translation = m_solver.worldToCamera(world_predict_translation, quaternion.matrix());
             cv::circle(m_frame, m_solver.reproject(predict_translation), 36, cv::Scalar(0, 0, 235), 8);
 #ifdef DEBUG
-//         LOG(INFO) << "imu data: " << m_imu_data->to_string();
+//            float yaw = m_tracker.tracked_armor.pose.yaw;
+//            emit m_view_work->viewFaceAngleSign(yaw * 180 / M_PI, predict_state[6] * 180 / M_PI);
 //            emit viewEkfSign(m_tracker, predict_translation, predict_translation);
 //            emit viewTimestampSign(timestamp, m_imu_data->timestamp);
 #endif
@@ -120,6 +133,9 @@ void ArmorAutoAim::run() {
                              << "\ntarget_predict_state: " << m_tracker.getTargetPredictSate()
                              << "\ncommunicate info: " << m_aim_info.to_string();
                 LOG(WARNING) << "异常值!";
+            } else {
+                auto pre_yaw = predict_state[6] * 180 / M_PI;
+                if (150 < pre_yaw && pre_yaw < 220) m_aim_info.is_shoot = true;
             }
         }
         // -- Send --
@@ -131,6 +147,7 @@ void ArmorAutoAim::run() {
 #ifdef DEBUG
 //        emit m_view_work->viewEuler(imu_euler, {m_aim_info.yaw * M_PI / 180, m_aim_info.pitch * M_PI / 180, 0});
 #endif
+//        LOG(INFO) << m_aim_info.to_string();
         emit sendAimInfo(m_aim_info);
         // -- debug --
         // - append information to frame(fps, tracker_info, timestamp, armors) -
@@ -182,8 +199,10 @@ void ArmorAutoAim::loadConfig() {
     // predict
     const YAML::Node&& predict_config = m_config["predict"];
     m_params.delta_time = predict_config["delta_time"].as<float>();
-    q = predict_config["kf"]["q"].as<int>();
-    r = predict_config["kf"]["r"].as<int>();
+    auto q_dio = predict_config["kf"]["q"].as<std::array<double, 8>>();
+    m_q_diagonal = Eigen::Map<Eigen::Matrix<double, 8, 1>>(q_dio.data(), 8, 1);
+    auto r_dio = predict_config["kf"]["r"].as<std::array<double, 4>>();
+    m_r_diagonal = Eigen::Map<Eigen::Vector4d>(r_dio.data(), 4, 1);
     // compensate 补偿
     const YAML::Node&& compensate_config = m_config["compensate"];
     m_params.compensate_yaw = compensate_config["yaw"].as<float>();
@@ -195,6 +214,7 @@ void ArmorAutoAim::initHikCamera() {
         m_hik_driver->setExposureTime(m_params.exp_time);
         m_hik_driver->setGain(m_params.gain);
         m_hik_driver->showParamInfo();
+        m_hik_driver->startReadThread();
 #ifdef DEBUG
         m_hik_ui = std::make_unique<HikUi>(*m_hik_driver);
         m_hik_ui->show();
@@ -206,22 +226,26 @@ void ArmorAutoAim::initHikCamera() {
 }
 
 void ArmorAutoAim::initEkf() {
-    //  xa  vxa  ya  vya  za  vza  yaw v_yaw
-    Q << q,  0,   0,  0,  0,   0,   0,  0, // xa
-         0,  q,   0,  0,  0,   0,   0,  0,// vxa
-         0,  0,   q,  0,  0,   0,   0,  0,// ya
-         0,  0,   0,  q,  0,   0,   0,  0,// vya
-         0,  0,   0,  0,  q,   0,   0,  0,// za
-         0,  0,   0,  0,  0,   q,   0,  0,// vza
-         0,  0,   0,  0,  0,   0,   q,  0,// yaw
-         0,  0,   0,  0,  0,   0,   0,  q;// v_yaw
-    //  xa   ya  za  yaw
-    R << r,  0,   0,  0, // xa
-         0,  r,   0,  0, // vxa
-         0,  0,   r,  0, // ya
-         0,  0,   0,  r; // vya
-//    Q.setIdentity();
-//    R.setIdentity();
+    Q.diagonal() = m_q_diagonal;
+    R.diagonal() = m_r_diagonal;
+//    LOG(INFO) << "Q: " << Q.toDenseMatrix();
+//    LOG(INFO) << "R: " << R.toDenseMatrix();
+      //  xa  vxa  ya  vya  za  vza  yaw v_yaw
+//    Q << q,  0,   0,  0,  0,   0,   0,  0, // xa
+//         0,  q,   0,  0,  0,   0,   0,  0, // vxa
+//         0,  0,   q,  0,  0,   0,   0,  0, // ya
+//         0,  0,   0,  q,  0,   0,   0,  0, // vya
+//         0,  0,   0,  0,  q,   0,   0,  0, // za
+//         0,  0,   0,  0,  0,   q,   0,  0, // vza
+//         0,  0,   0,  0,  0,   0,   q,  0, // yaw
+//         0,  0,   0,  0,  0,   0,   0,  q; // v_yaw
+      //  xa   ya  za  yaw
+//    R << r,  0,   0,  0, // xa
+//         0,  r,   0,  0, // vxa
+//         0,  0,   r,  0, // ya
+//         0,  0,   0,  r; // vya
+
+    int p = 10000;
     Eigen::Matrix<double, 8, 8> p0;
     //  xa  vxa  ya  vya  za  vza  yaw v_yaw
     p0 << p,  0,   0,  0,  0,   0,   0,  0, // xa

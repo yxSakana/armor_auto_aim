@@ -35,6 +35,8 @@ private:
     cv::Mat m_distortion_vector;
     std::vector<cv::Point3f> m_small_armor_point3d;
     std::vector<cv::Point3f> m_large_armor_point3d;
+
+    inline double adjust(double angle) { return (angle < 0) ? (angle + 2 * M_PI) : angle; }
 };
 
 } // armor_auto_aim

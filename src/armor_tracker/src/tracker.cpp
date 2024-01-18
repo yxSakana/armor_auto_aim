@@ -20,25 +20,20 @@ void TrackerStateMachine::update(bool detector_result) {
         }
     } else if (m_state == State::Detecting) {
         if (detector_result) {
-            ++m_detect_count;
-            if (m_detect_count > m_tracking_threshold) {
-                m_state = State::Tracking;
-            }
+            if (++m_detect_count > m_tracking_threshold) m_state = State::Tracking;
         } else {
             m_detect_count = 0;
             m_state = State::Lost;
         }
     } else if (m_state == State::Tracking) {
-        if (!detector_result) {
-            m_state = State::TempLost;
-        }
+        if (!detector_result) m_state = State::TempLost;
+
     } else if (m_state == State::TempLost) {
         if (detector_result) {
             m_lost_count = 0;
             m_state = State::Tracking;
         } else {
-            ++m_lost_count;
-            if (m_lost_count > m_lost_threshold) {
+            if (++m_lost_count > m_lost_threshold) {
                 m_lost_count = 0;
                 m_state = State::Lost;
             }
@@ -50,7 +45,6 @@ void Tracker::initTracker(const Armors& armors) {
     LOG_IF(ERROR, ekf == nullptr) << "ekf is nullptr";
     if (armors.empty() || ekf == nullptr)
         return;
-
     // 选择要跟踪的装甲板(优先选择距离最近的)(en: Select tracked armor)
     double min_distance = DBL_MAX;
     tracked_armor = armors[0];
@@ -83,22 +77,21 @@ void Tracker::updateTracker(const Armors& armors) {
                                                m_target_predict_state(2),
                                                m_target_predict_state(4));
         for (const auto& armor: armors) {
-            // if (armor.number == m_tracked_id) {
-                same_id_armor = &armor;
-                same_id_armor_count++;
-                // LOG(INFO) << "armor_world: " << armor.world_coordinate;
-                measurement_position_vec = Eigen::Vector3d(armor.world_coordinate[0],
-                                                           armor.world_coordinate[1],
-                                                           armor.world_coordinate[2]);
-                double position_difference = (predicted_position_vec - measurement_position_vec).norm();
-                if (position_difference < min_position_difference) {
-                    min_position_difference = position_difference;
-                    tracked_armor = armor;
-                }
-            // }
+            if (armor.number == m_tracked_id) {
+               same_id_armor = &armor;
+               same_id_armor_count++;
+            }
+            measurement_position_vec = armor.world_coordinate;
+            double position_difference = (predicted_position_vec - measurement_position_vec).norm();
+            if (position_difference < min_position_difference) {
+                min_position_difference = position_difference;
+                yaw_difference = std::abs(m_target_predict_state[6] - armor.pose.yaw);
+                tracked_armor = armor;
+            }
         }
         // 后验及装甲板跳变处理
-        if (min_position_difference < m_MaxMatchDistance) {
+        if (min_position_difference < m_MaxMatchDistance &&
+            yaw_difference < m_MaxMatchYaw) {
 //             TODO: 是否需要使用shortestAngularDistance 对 yaw 进行处理
             is_matched = true;
             measurement = Eigen::Vector4d(tracked_armor.world_coordinate[0], tracked_armor.world_coordinate[1],
@@ -146,7 +139,6 @@ void Tracker::initEkf(const Armor& armor) {
           0,  0,   0,  0,  0,   p,   0,  0, // vza
           0,  0,   0,  0,  0,   0,   p,  0, // yaw
           0,  0,   0,  0,  0,   0,   0,  p; // v_yaw
-
     ekf->initEkf(m_target_predict_state, p0);
 }
 

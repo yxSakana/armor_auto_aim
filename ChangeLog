@@ -24,7 +24,7 @@
         float yaw{};
         float pitch{};
         float distance{};
-        uint8_t aim_shoot{};
+        uint8_t is_shoot{};
         uint8_t tracker_status{};
         uint8_t data_id{};
     }
@@ -80,3 +80,13 @@
 1. 因识别器识别数字会误识别所以暂时取消的跟踪器的id优先级
 2. 更改了卡尔曼滤波器的r参数
 --------------------------------------------------------------------------
+2024-1-18 14:00 星期四(Thursday)
+
+@New Features:
+1. 添加了射击逻辑, 将yaw转换到[0-360], 简单的判断朝向角yaw是否在一定范围内
+2. 添加了朝向角yaw的可视化
+
+@Changes
+1. 将检测串口是否断开, 并尝试自动连接功能放到 VCOMCOMM 模块
+2. 相机取流改为非触发式
+3. DEBUG宏

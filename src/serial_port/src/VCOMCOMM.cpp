@@ -18,6 +18,14 @@ VCOMCOMM::VCOMCOMM(uint16_t PID, uint16_t VID, QObject* parent)
     pid = PID;
     vid = VID;
     thread_id = QThread::currentThreadId();
+    m_timer = new QTimer(this);
+    m_timer->start(1000);
+    connect(m_timer, &QTimer::timeout, [this]()->void {
+        if ((!isOpen()) || error() != QSerialPort::NoError) {
+            LOG(WARNING) << "Serial close. try auto connect...";
+            this->auto_connect();
+        }
+    });
     connect(this, &QSerialPort::readyRead, this, &VCOMCOMM::portReadyRead);
     connect(this, &QSerialPort::errorOccurred, this, &VCOMCOMM::portErrorOccurred);
     connect(this, &VCOMCOMM::CrossThreadTransmitSignal, this, &VCOMCOMM::Transmit, Qt::QueuedConnection);
@@ -95,7 +103,7 @@ void VCOMCOMM::portReadyRead() {
 void VCOMCOMM::portErrorOccurred(SerialPortError error) {
     if (error != NoError) {
         QMetaEnum metaEnum = QMetaEnum::fromType<SerialPortError>();
-        LOG(ERROR) << fmt::format("{}", metaEnum.valueToKey(error));
+        LOG_EVERY_T(ERROR, 2) << fmt::format("{}", metaEnum.valueToKey(error));
     }
 }
 

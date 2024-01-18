@@ -45,27 +45,14 @@ bool PnPSolver::pnpSolver(const Armor& armor, cv::Mat& rvec, cv::Mat& tvec) {
 bool PnPSolver::obtain3dPose(Armor& armor) {
     cv::Mat rvec, tvec;
     if (pnpSolver(armor, rvec, tvec)) {
-        auto correctEulerAngles = [](Eigen::Vector3d& euler_angles) {
-//            euler_angles(2) = euler_angles(2) > 0? euler_angles(2) - M_PI: euler_angles(2) + M_PI;
-            if (euler_angles(2) > M_PI_2) {
-                euler_angles(2) = M_PI - euler_angles(2);
-            } else if (euler_angles(2) < -M_PI_2) {
-                euler_angles(2) = -M_PI - euler_angles(2);
-            }
-            if (euler_angles(1) > M_PI_2) {
-                euler_angles(1) = M_PI - euler_angles(1);
-            } else if (euler_angles(1) < -M_PI_2) {
-                euler_angles(1) = -M_PI - euler_angles(1);
-            }
-        };  // 范围
         cv::Mat rmat_cv;
         cv::Rodrigues(rvec, rmat_cv);
         Eigen::Matrix3d rmat_eigen;
         cv::cv2eigen(rmat_cv, rmat_eigen);
-        Eigen::Vector3d euler_angles =rmat_eigen.eulerAngles(2, 1, 0);
+        Eigen::Vector3d euler_angles = rmat_eigen.eulerAngles(2, 1, 0);
 
         armor.pose.pitch = static_cast<float>(euler_angles(1));
-        armor.pose.yaw = static_cast<float>(euler_angles(2));
+        armor.pose.yaw = static_cast<float>(adjust(euler_angles(2)));
         armor.pose.roll = static_cast<float>(euler_angles(0));
         armor.pose.x = static_cast<float>(tvec.at<double>(0, 0));
         armor.pose.y = static_cast<float>(tvec.at<double>(1, 0));

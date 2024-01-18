@@ -9,8 +9,6 @@
 #ifndef TEST_QTANDMAT_DSLIDER_H
 #define TEST_QTANDMAT_DSLIDER_H
 
-#ifdef DEBUG
-
 #include <utility>
 
 #include <qdebug.h>
@@ -158,7 +156,4 @@ private slots:
     }
 };
 } // QtMatTest
-
-#endif
-
 #endif //TEST_QTANDMAT_DSLIDER_H

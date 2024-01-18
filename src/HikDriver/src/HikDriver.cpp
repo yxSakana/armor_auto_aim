@@ -41,6 +41,7 @@ void HikDriver::reloadFrameInfo() {
     m_initialized_frame_info = false;
     this->initFrameInfo();
 }
+
 std::string HikDriver::getParamInfo() const {
     using namespace fmt::literals;
     auto v_et = getExposureTime();
@@ -298,7 +299,7 @@ void HikDriver::triggerImageData(HikFrame& frame) {
     unsigned int error_code;
     error_code = MV_CC_SetCommandValue(m_handle, "TriggerSoftware");
     checkErrorCode(error_code, "triggerImageData()");
-    getFrame(frame, 0);
+    getFrame(frame, 1);
 }
 
 void HikDriver::setTriggerMode(bool mode) {

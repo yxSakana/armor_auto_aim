@@ -70,6 +70,7 @@ public:
     Eigen::VectorXd measurement;
 private:
     static constexpr double m_MaxMatchDistance = 6.0;
+    static constexpr double m_MaxMatchYaw = 4.0;  // FIXME: 修改为合理值
 
     Eigen::VectorXd m_target_predict_state;
     TrackerStateMachine m_tracker_state_machine;

@@ -27,12 +27,11 @@
 #include <armor_tracker/tracker.h>
 #include <serial_port/communicate_protocol.h>
 #include <serial_port/VCOMCOMM.h>
-//#include <safe_container/safe_stack.h>
 #include <safe_container/safe_circular_buffer.h>
+#include <armor_auto_aim/serail_work.h>
 #ifdef DEBUG
 #include <view/view.h>
 #include <armor_auto_aim/view_work.h>
-#include <armor_auto_aim/serail_work.h>
 #endif
 
 namespace armor_auto_aim {
@@ -56,8 +55,9 @@ public:
     void run() override;
 
     void setSerialWork(SerialWork* sw);
-
+#ifdef DEBUG
     void setViewWork(ViewWork* vw);
+#endif
 public slots:
     void pushImuData(const ImuData& data) { m_imu_data_queue.push(data); }
 signals:
@@ -74,8 +74,6 @@ signals:
     void viewTimestampSign(const uint64_t& camera_timestamp,
                            const uint64_t& imu_timestamp);
 private:
-    int q = 1, r = 1, p = 10000;
-
     std::string m_config_path;
     YAML::Node m_config;
     AutoAimParams m_params;
@@ -84,8 +82,8 @@ private:
 #ifdef DEBUG
     std::unique_ptr<HikUi> m_hik_ui;
     ViewWork* m_view_work;
-    SerialWork* m_serial_work;
 #endif
+    SerialWork* m_serial_work;
     SolverBuilder m_solver_builder;
     Solver m_solver;
     Detector m_detector;
@@ -106,10 +104,14 @@ private:
     void initEkf();
     Eigen::Matrix<double, 8, 8> F;
     Eigen::Matrix<double, 4, 8> H;
-    Eigen::Matrix<double, 8, 8> Q;
-    Eigen::Matrix<double, 4, 4> R;
+//    Eigen::Matrix<double, 8, 8> Q;
+//    Eigen::Matrix<double, 4, 4> R;
+    Eigen::DiagonalMatrix<double, 8> Q;
+    Eigen::DiagonalMatrix<double, 4> R;
     Eigen::VectorXd X;
     Eigen::VectorXd Z;
+    Eigen::Vector4d m_r_diagonal;
+    Eigen::Matrix<double, 8, 1> m_q_diagonal;
 
     inline static AutoAimInfo translation2YawPitch(const solver::Pose& pose);
 
