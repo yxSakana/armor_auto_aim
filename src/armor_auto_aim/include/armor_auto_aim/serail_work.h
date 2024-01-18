@@ -22,6 +22,10 @@ class SerialWork: public QObject {
     using ClockUnit = std::chrono::milliseconds;
 public:
     explicit SerialWork(QObject* parent = nullptr);
+
+    bool isConnect() const { return m_serial.isOpen() && m_serial.error() == QSerialPort::NoError; }
+
+    void autoConnect() { m_serial.auto_connect(); }
 public slots:
     void sendAimInfo(const AutoAimInfo& aim_info);
 
@@ -39,7 +43,6 @@ private:
     static constexpr uint8_t m_RecvImuInfoCode = 1;  // code: IMU数据
 
     VCOMCOMM m_serial;
-    QTimer* m_timer;
 
     void sendNowTimestamp();
 private:

@@ -74,7 +74,7 @@ signals:
     void viewTimestampSign(const uint64_t& camera_timestamp,
                            const uint64_t& imu_timestamp);
 private:
-    int q = 1, r = 1, p = 10000;
+    int p = 10000;
 
     std::string m_config_path;
     YAML::Node m_config;
@@ -106,10 +106,14 @@ private:
     void initEkf();
     Eigen::Matrix<double, 8, 8> F;
     Eigen::Matrix<double, 4, 8> H;
-    Eigen::Matrix<double, 8, 8> Q;
-    Eigen::Matrix<double, 4, 4> R;
+//    Eigen::Matrix<double, 8, 8> Q;
+//    Eigen::Matrix<double, 4, 4> R;
+    Eigen::DiagonalMatrix<double, 8> Q;
+    Eigen::DiagonalMatrix<double, 4> R;
     Eigen::VectorXd X;
     Eigen::VectorXd Z;
+    Eigen::Vector4d m_r_diagonal;
+    Eigen::Matrix<double, 8, 1> m_q_diagonal;
 
     inline static AutoAimInfo translation2YawPitch(const solver::Pose& pose);
 

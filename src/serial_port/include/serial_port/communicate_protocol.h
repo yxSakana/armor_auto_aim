@@ -19,7 +19,7 @@ struct AutoAimInfo {
     float yaw{};
     float pitch{};
     float distance{};
-    uint8_t aim_shoot{};
+    uint8_t is_shoot{};
     uint8_t tracker_status{};
     uint8_t data_id{};
 
@@ -35,13 +35,13 @@ struct AutoAimInfo {
         info += "yaw: " + std::to_string(yaw) + "; ";
         info += "pitch: " + std::to_string(pitch) + "; ";
         info += "distance: " + std::to_string(distance) + "; ";
-        info += "aim_shoot: " + std::to_string(aim_shoot) + "; ";
+        info += "is_shoot: " + std::to_string(is_shoot) + "; ";
         info += "tracker_status: " + std::to_string(tracker_status) + ";]";
         return info;
     }
 
     void reset() {
-        yaw = pitch = distance = aim_shoot = tracker_status = 0;
+        yaw = pitch = distance = is_shoot = tracker_status = 0;
     }
 };
 

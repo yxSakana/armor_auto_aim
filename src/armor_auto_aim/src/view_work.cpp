@@ -23,9 +23,9 @@ ViewWork::ViewWork(QObject* parent)
     qRegisterMetaType<std::vector<armor_auto_aim::Armor>>("std::vector<armor_auto_aim::Armor>");
     qRegisterMetaType<armor_auto_aim::Tracker>("armor_auto_aim::Tracker");
 
-#ifdef DEBUG
     cv::namedWindow("frame", cv::WINDOW_NORMAL);
-#endif
+
+    connect(this, &ViewWork::viewFaceAngleSign, this, &ViewWork::viewFaceAngle);
 
     for (const auto& k: {"x", "v_x", "y", "v_y"})
         m_view->m_ekf_view->getView(k)->setShowNumber(100);
@@ -35,9 +35,10 @@ ViewWork::ViewWork(QObject* parent)
 
 void ViewWork::show() {
     LOG(INFO) << "view imshow(): " << QThread::currentThreadId();
-    m_view->m_ekf_view->showMaximized();
-    m_view->m_timestamp_view->showMaximized();
-    m_view->m_imu_euler->showMaximized();
+//    m_view->m_ekf_view->showMaximized();
+//    m_view->m_timestamp_view->showMaximized();
+//    m_view->m_imu_euler->showMaximized();
+    m_view->m_face_angle_view->showMaximized();
 }
 
 void ViewWork::showFrame(const cv::Mat& frame,
@@ -127,5 +128,13 @@ void ViewWork::viewTimestamp(const uint64_t& camera_timestamp,
     m_view->m_timestamp_view->insert(
             "Camera-IMU timestamp", "now-imu", p.x(), static_cast<double>(now - i)
     );
+}
+
+void ViewWork::viewFaceAngle(float yaw, float pre_yaw) {
+    QPointF p;
+    p = m_view->m_face_angle_view->getLastPoint("yaw", "pose");
+    m_view->m_face_angle_view->insert("yaw", "pose", p.x()+1, yaw);
+    p = m_view->m_face_angle_view->getLastPoint("yaw", "predict");
+    m_view->m_face_angle_view->insert("yaw", "predict", p.x()+1, pre_yaw);
 }
 }

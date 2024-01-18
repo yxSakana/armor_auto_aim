@@ -9,6 +9,7 @@
 #define KDROBOTCPPLIBS_VCOMCOMM_PC_H
 
 #include <QMetaEnum>
+#include <QTimer>
 #include <QThread>
 #include <QSerialPort>
 
@@ -25,10 +26,6 @@ namespace armor_auto_aim {
  */
 class VCOMCOMM : public QSerialPort {
 Q_OBJECT
-private:
-    uint16_t pid, vid;
-    QString manufacturer;
-    Qt::HANDLE thread_id;
 public:
     /**
      * @brief 构造函数,构造时自动搜索对应PID和VID的USB串口设备
@@ -92,6 +89,11 @@ signals:
      * @param data 数据
      */
     void CrossThreadTransmitSignal(uint8_t fun_code, uint16_t id, const QByteArray& data);
+private:
+    uint16_t pid, vid;
+    QString manufacturer;
+    Qt::HANDLE thread_id;
+    QTimer* m_timer;
 };
 }
 #endif

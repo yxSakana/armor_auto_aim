@@ -20,25 +20,20 @@ void TrackerStateMachine::update(bool detector_result) {
         }
     } else if (m_state == State::Detecting) {
         if (detector_result) {
-            ++m_detect_count;
-            if (m_detect_count > m_tracking_threshold) {
-                m_state = State::Tracking;
-            }
+            if (++m_detect_count > m_tracking_threshold) m_state = State::Tracking;
         } else {
             m_detect_count = 0;
             m_state = State::Lost;
         }
     } else if (m_state == State::Tracking) {
-        if (!detector_result) {
-            m_state = State::TempLost;
-        }
+        if (!detector_result) m_state = State::TempLost;
+
     } else if (m_state == State::TempLost) {
         if (detector_result) {
             m_lost_count = 0;
             m_state = State::Tracking;
         } else {
-            ++m_lost_count;
-            if (m_lost_count > m_lost_threshold) {
+            if (++m_lost_count > m_lost_threshold) {
                 m_lost_count = 0;
                 m_state = State::Lost;
             }
@@ -50,7 +45,6 @@ void Tracker::initTracker(const Armors& armors) {
     LOG_IF(ERROR, ekf == nullptr) << "ekf is nullptr";
     if (armors.empty() || ekf == nullptr)
         return;
-
     // 选择要跟踪的装甲板(优先选择距离最近的)(en: Select tracked armor)
     double min_distance = DBL_MAX;
     tracked_armor = armors[0];
@@ -146,7 +140,6 @@ void Tracker::initEkf(const Armor& armor) {
           0,  0,   0,  0,  0,   p,   0,  0, // vza
           0,  0,   0,  0,  0,   0,   p,  0, // yaw
           0,  0,   0,  0,  0,   0,   0,  p; // v_yaw
-
     ekf->initEkf(m_target_predict_state, p0);
 }
 

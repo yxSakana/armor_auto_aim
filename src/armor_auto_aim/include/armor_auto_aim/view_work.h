@@ -37,6 +37,10 @@ public slots:
                        const uint64_t& imu_timestamp);
 
     void showThreadId() const { LOG(INFO) << "view_work_thread: " << QThread::currentThreadId(); }
+
+    void viewFaceAngle(float yaw, float pre_yaw);
+signals:
+    void viewFaceAngleSign(float yaw, float pre_yaw);
 private:
     view::View* m_view;
 };
