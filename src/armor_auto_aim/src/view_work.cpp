@@ -35,9 +35,9 @@ ViewWork::ViewWork(QObject* parent)
 
 void ViewWork::show() {
     LOG(INFO) << "view imshow(): " << QThread::currentThreadId();
-//    m_view->m_ekf_view->showMaximized();
-//    m_view->m_timestamp_view->showMaximized();
-//    m_view->m_imu_euler->showMaximized();
+    m_view->m_ekf_view->showMaximized();
+    m_view->m_timestamp_view->showMaximized();
+    m_view->m_imu_euler->showMaximized();
     m_view->m_face_angle_view->showMaximized();
 }
 
@@ -103,31 +103,29 @@ void ViewWork::viewEuler(const Eigen::Vector3d& imu, const Eigen::Vector3d& aim)
         count = m_view->m_imu_euler->getView("Euler")->getSeries(key)->count();
         yaw = value[0] * 180 / M_PI;
         pitch = value[1] * 180 / M_PI;
-        if (count <= 0) {
+        if (count <= 0)
             m_view->m_imu_euler->getView("Euler")->getSeries(key)->append(yaw, pitch);
-        } else {
+        else
             m_view->m_imu_euler->getView("Euler")->getSeries(key)->replace(0, yaw, pitch);
-        }
     }
 }
 
 void ViewWork::viewTimestamp(const uint64_t& camera_timestamp,
                              const uint64_t& imu_timestamp) {
+    using Unit = std::chrono::milliseconds;
+    using Clock = std::chrono::system_clock;
     QPointF p;
     p = m_view->m_timestamp_view->getLastPoint("Camera-IMU timestamp", "timestamp");
     auto c = static_cast<int64_t>(camera_timestamp);
     auto i = static_cast<int64_t>(imu_timestamp);
     auto now = static_cast<int64_t>(
-            std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count()
-            );
+            std::chrono::duration_cast<Unit>(Clock::now().time_since_epoch()).count());
     m_view->m_timestamp_view->insert(
             "Camera-IMU timestamp", "timestamp", p.x()+1, static_cast<double>(c - i));
     m_view->m_timestamp_view->insert(
-            "Camera-IMU timestamp", "now-camera", p.x(), static_cast<double>(now - c)
-            );
+            "Camera-IMU timestamp", "now-camera", p.x(), static_cast<double>(now - c));
     m_view->m_timestamp_view->insert(
-            "Camera-IMU timestamp", "now-imu", p.x(), static_cast<double>(now - i)
-    );
+            "Camera-IMU timestamp", "now-imu", p.x(), static_cast<double>(now - i));
 }
 
 void ViewWork::viewFaceAngle(float yaw, float pre_yaw) {

@@ -1,6 +1,6 @@
 /**
  * @project_name armor_auto_aiming
- * @file armor_auto_aim.h.cpp
+ * @file armor_auto_aim.cpp
  * @brief
  * @author yx
  * @date 2023-11-14 21:13:26
@@ -34,9 +34,11 @@ ArmorAutoAim::ArmorAutoAim(const std::string& config_path, QObject* parent)
 //    connect(m_hik_read_thread.getView(), &HikReadThread::readyData, this, &ArmorAutoAim::pushCameraData);
 }
 
+#ifdef DEBUG
 void ArmorAutoAim::setViewWork(armor_auto_aim::ViewWork* vw) {
     m_view_work = vw;
 }
+#endif
 
 void ArmorAutoAim::setSerialWork(armor_auto_aim::SerialWork* sw) {
     m_serial_work = sw;
@@ -55,11 +57,7 @@ void ArmorAutoAim::run() {
     Eigen::Quaterniond quaternion;
 
     while (true) {
-//        m_hik_driver->triggerImageData(m_hik_frame);
         m_imu_data_queue.waitTop(*m_imu_data);
-//        bool ok = m_imu_data_queue.tryTop(*m_imu_data);
-//        if (!ok) continue;
-//        LOG(INFO) << m_imu_data->to_string();
         m_aim_info.reset();
         // start fps clock
         if (is_reset) {
@@ -69,7 +67,6 @@ void ArmorAutoAim::run() {
         }
         // -- main --
         // frame && timestamp
-//        m_hik_driver->triggerImageData(m_hik_frame);
         m_hik_frame = m_hik_driver->getFrame();
 //        if (frame_count < from_fps_frame_count) {
 //            frame_count++;

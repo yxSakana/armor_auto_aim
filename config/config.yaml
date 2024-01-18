@@ -40,12 +40,11 @@ solver:
 tracker: null
 # 预测器
 predict:
-  delta_time: 400
+  delta_time: 390
   kf:
     q: [1, 1, 1, 1, 1, 1, 1, 1]  # xa vxa ya vya za vza yaw vyaw
     r: [100000, 100000, 100000, 100000]  # x y z yaw
 # 补偿
 compensate:
-  yaw:   -1.8
-  # 单位: °; 左 <---- -0+ ---> 右
-  pitch: -2.8    # 单位: °; 上 <---- -0+ ---> 下
+  yaw:   -3.5  # 单位: °; 左 <---- -0+ ---> 右
+  pitch: -3.6  # 单位: °; 上 <---- -0+ ---> 下

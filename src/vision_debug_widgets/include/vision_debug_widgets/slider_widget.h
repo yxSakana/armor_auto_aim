@@ -9,8 +9,6 @@
 #ifndef TEST_QTANDMAT_DSLIDERWIDGET_H
 #define TEST_QTANDMAT_DSLIDERWIDGET_H
 
-#ifdef DEBUG
-
 #include <QMainWindow>
 #include <vision_debug_widgets/slider.h>
 
@@ -42,5 +40,4 @@ private:
 
 } // vision_debug_widgets
 
-#endif
 #endif //TEST_QTANDMAT_DSLIDERWIDGET_H

@@ -27,12 +27,11 @@
 #include <armor_tracker/tracker.h>
 #include <serial_port/communicate_protocol.h>
 #include <serial_port/VCOMCOMM.h>
-//#include <safe_container/safe_stack.h>
 #include <safe_container/safe_circular_buffer.h>
+#include <armor_auto_aim/serail_work.h>
 #ifdef DEBUG
 #include <view/view.h>
 #include <armor_auto_aim/view_work.h>
-#include <armor_auto_aim/serail_work.h>
 #endif
 
 namespace armor_auto_aim {
@@ -56,8 +55,9 @@ public:
     void run() override;
 
     void setSerialWork(SerialWork* sw);
-
+#ifdef DEBUG
     void setViewWork(ViewWork* vw);
+#endif
 public slots:
     void pushImuData(const ImuData& data) { m_imu_data_queue.push(data); }
 signals:
@@ -82,8 +82,8 @@ private:
 #ifdef DEBUG
     std::unique_ptr<HikUi> m_hik_ui;
     ViewWork* m_view_work;
-    SerialWork* m_serial_work;
 #endif
+    SerialWork* m_serial_work;
     SolverBuilder m_solver_builder;
     Solver m_solver;
     Detector m_detector;
