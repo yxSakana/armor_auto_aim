@@ -77,22 +77,21 @@ void Tracker::updateTracker(const Armors& armors) {
                                                m_target_predict_state(2),
                                                m_target_predict_state(4));
         for (const auto& armor: armors) {
-            // if (armor.number == m_tracked_id) {
-                same_id_armor = &armor;
-                same_id_armor_count++;
-                // LOG(INFO) << "armor_world: " << armor.world_coordinate;
-                measurement_position_vec = Eigen::Vector3d(armor.world_coordinate[0],
-                                                           armor.world_coordinate[1],
-                                                           armor.world_coordinate[2]);
-                double position_difference = (predicted_position_vec - measurement_position_vec).norm();
-                if (position_difference < min_position_difference) {
-                    min_position_difference = position_difference;
-                    tracked_armor = armor;
-                }
-            // }
+            if (armor.number == m_tracked_id) {
+               same_id_armor = &armor;
+               same_id_armor_count++;
+            }
+            measurement_position_vec = armor.world_coordinate;
+            double position_difference = (predicted_position_vec - measurement_position_vec).norm();
+            if (position_difference < min_position_difference) {
+                min_position_difference = position_difference;
+                yaw_difference = std::abs(m_target_predict_state[6] - armor.pose.yaw);
+                tracked_armor = armor;
+            }
         }
         // 后验及装甲板跳变处理
-        if (min_position_difference < m_MaxMatchDistance) {
+        if (min_position_difference < m_MaxMatchDistance &&
+            yaw_difference < m_MaxMatchYaw) {
 //             TODO: 是否需要使用shortestAngularDistance 对 yaw 进行处理
             is_matched = true;
             measurement = Eigen::Vector4d(tracked_armor.world_coordinate[0], tracked_armor.world_coordinate[1],

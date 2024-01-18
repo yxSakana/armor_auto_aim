@@ -74,8 +74,6 @@ signals:
     void viewTimestampSign(const uint64_t& camera_timestamp,
                            const uint64_t& imu_timestamp);
 private:
-    int p = 10000;
-
     std::string m_config_path;
     YAML::Node m_config;
     AutoAimParams m_params;

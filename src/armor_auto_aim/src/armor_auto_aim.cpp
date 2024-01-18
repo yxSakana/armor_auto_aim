@@ -19,7 +19,7 @@
 namespace armor_auto_aim {
 ArmorAutoAim::ArmorAutoAim(const std::string& config_path, QObject* parent)
     : QThread(parent),
-      m_hik_driver(std::make_unique<HikDriver>(0, TriggerSource::Software)),
+      m_hik_driver(std::make_unique<HikDriver>(0)),
       m_config_path(config_path)
        {
 #ifdef DEBUG
@@ -69,7 +69,8 @@ void ArmorAutoAim::run() {
         }
         // -- main --
         // frame && timestamp
-        m_hik_driver->triggerImageData(m_hik_frame);
+//        m_hik_driver->triggerImageData(m_hik_frame);
+        m_hik_frame = m_hik_driver->getFrame();
 //        if (frame_count < from_fps_frame_count) {
 //            frame_count++;
 //        } else {
@@ -216,6 +217,7 @@ void ArmorAutoAim::initHikCamera() {
         m_hik_driver->setExposureTime(m_params.exp_time);
         m_hik_driver->setGain(m_params.gain);
         m_hik_driver->showParamInfo();
+        m_hik_driver->startReadThread();
 #ifdef DEBUG
         m_hik_ui = std::make_unique<HikUi>(*m_hik_driver);
         m_hik_ui->show();
@@ -245,6 +247,8 @@ void ArmorAutoAim::initEkf() {
 //         0,  r,   0,  0, // vxa
 //         0,  0,   r,  0, // ya
 //         0,  0,   0,  r; // vya
+
+    int p = 10000;
     Eigen::Matrix<double, 8, 8> p0;
     //  xa  vxa  ya  vya  za  vza  yaw v_yaw
     p0 << p,  0,   0,  0,  0,   0,   0,  0, // xa
