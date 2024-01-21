@@ -30,9 +30,18 @@ int main(int argc, char* argv[]) {
     QThread view_thread;
     armor_auto_aim::ViewWork view_work;
 #endif
+    std::string cfg_filename = argc == 2? argv[1]: "../config/infantry.yaml";
     armor_auto_aim::SerialWork serial_work;
-    armor_auto_aim::ArmorAutoAim auto_aim_thread("../config/infantry.yaml");
+    armor_auto_aim::ArmorAutoAim auto_aim_thread(cfg_filename);
     auto_aim_thread.setSerialWork(&serial_work);
+    std::unique_ptr<armor_auto_aim::ArmorAutoAim> auto_aim_thread_2;
+    if (argc == 3) {
+        auto_aim_thread_2 = std::make_unique<armor_auto_aim::ArmorAutoAim>(argv[2]);
+        QObject::connect(auto_aim_thread_2.get(), &armor_auto_aim::ArmorAutoAim::sendAimInfo,
+                         &serial_work, &armor_auto_aim::SerialWork::sendAimInfo);
+        QObject::connect(&serial_work, &armor_auto_aim::SerialWork::readyImuData,
+                         auto_aim_thread_2.get(), &armor_auto_aim::ArmorAutoAim::pushImuData);
+    }
 #ifdef DEBUG
     auto_aim_thread.setViewWork(&view_work);
 #endif
@@ -60,6 +69,7 @@ int main(int argc, char* argv[]) {
     serial_work.moveToThread(&serial_thread);
     serial_thread.start();
     auto_aim_thread.start();
+    if (auto_aim_thread_2 != nullptr) auto_aim_thread_2->start();
 #ifdef DEBUG
 //    view_work.show();
 #endif

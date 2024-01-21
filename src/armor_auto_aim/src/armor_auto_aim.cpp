@@ -216,6 +216,13 @@ void ArmorAutoAim::loadConfig() {
 }
 
 void ArmorAutoAim::initHikCamera() {
+    int c = 0;
+    while (!m_hik_driver->isConnected()) {
+        if (++c > 10) break;
+        LOG(WARNING) << fmt::format("try reconnect hik-camera...[{}]", c);
+        m_hik_driver->connectDriver(m_params.hik_index);
+        std::this_thread::sleep_for(std::chrono::seconds(2));
+    }
     if (m_hik_driver->isConnected()) {
         m_hik_driver->setExposureTime(m_params.exp_time);
         m_hik_driver->setGain(m_params.gain);
@@ -226,7 +233,6 @@ void ArmorAutoAim::initHikCamera() {
         m_hik_ui->show();
 #endif
     } else {
-//        LOG(ERROR) << "Hik can't connected!";
         LOG(FATAL) << "Hik can't connected!";
     }
 }

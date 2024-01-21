@@ -31,7 +31,7 @@ Inference::Inference(const std::string& model_path)
         : m_inference_result_ptr(new float),
           m_MODEL_PATH(model_path) {
     auto available = m_core.get_available_devices();
-    LOG(INFO) << fmt::format("Inference devices: {}", available);
+    LOG(INFO) << fmt::format("Inference available devices: {}", available);
     m_device = (std::find(available.begin(), available.end(), "GPU") != available.end()
                ) ? "GPU" : "CPU";
     LOG(INFO) << "Inference device: " << m_device;
