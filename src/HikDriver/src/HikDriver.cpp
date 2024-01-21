@@ -121,14 +121,10 @@ DriverInfo HikDriver::getDriverInfo(const int& index) const {
         unsigned int nIp4 = (driver_info->SpecialInfo.stGigEInfo.nCurrentIp & 0x000000ff);
         info.ip = fmt::format("{}.{}.{}.{}", nIp1, nIp2, nIp3, nIp4);
         info.type = "Gige";
-        info.name = reinterpret_cast<char*>(
-                driver_info->SpecialInfo.stGigEInfo.chModelName),
-                sizeof(driver_info->SpecialInfo.stGigEInfo.chModelName);
+        info.name = reinterpret_cast<char*>(driver_info->SpecialInfo.stGigEInfo.chModelName);
     } else if (driver_info->nTLayerType == MV_USB_DEVICE) {
         info.type = "USB";
-        info.name = reinterpret_cast<char*>(
-                driver_info->SpecialInfo.stUsb3VInfo.chModelName),
-                sizeof(driver_info->SpecialInfo.stUsb3VInfo.chModelName);
+        info.name = reinterpret_cast<char*>(driver_info->SpecialInfo.stUsb3VInfo.chModelName);
     } else {
         info.type = "Unknown";
     }

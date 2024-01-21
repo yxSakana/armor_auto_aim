@@ -6,8 +6,8 @@
  * @date 2023-07-28 20:12
  */
 
-#ifndef TEST_QTANDMAT_DSLIDERWIDGET_H
-#define TEST_QTANDMAT_DSLIDERWIDGET_H
+#ifndef VISION_DEBUG_WIDGETS_SLIDER_WIDGET_H
+#define VISION_DEBUG_WIDGETS_SLIDER_WIDGET_H
 
 #include <QMainWindow>
 #include <vision_debug_widgets/slider.h>
@@ -37,7 +37,5 @@ private:
     QWidget* central_widget;
     QVBoxLayout* layout;
 };
-
 } // vision_debug_widgets
-
-#endif //TEST_QTANDMAT_DSLIDERWIDGET_H
+#endif //VISION_DEBUG_WIDGETS_SLIDER_WIDGET_H

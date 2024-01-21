@@ -19,7 +19,6 @@
 namespace armor_auto_aim {
 ArmorAutoAim::ArmorAutoAim(const std::string& config_path, QObject* parent)
     : QThread(parent),
-      m_hik_driver(std::make_unique<HikDriver>(0)),
       m_config_path(config_path)
        {
 #ifdef DEBUG
@@ -27,6 +26,7 @@ ArmorAutoAim::ArmorAutoAim(const std::string& config_path, QObject* parent)
     qRegisterMetaType<uint64_t>("uint64_t");
 #endif
     loadConfig();
+    m_hik_driver = std::make_unique<HikDriver>(m_params.hik_index);
     m_solver = Solver(m_solver_builder.build());
     m_detector = Detector(m_params.armor_model_path, m_solver.pnp_solver);
     initHikCamera();
@@ -144,6 +144,9 @@ void ArmorAutoAim::run() {
         m_aim_info.data_id = m_imu_data->data_id;
         m_aim_info.yaw += m_params.compensate_yaw;
         m_aim_info.pitch += m_params.compensate_pitch;
+#ifdef SENTRY
+        m_aim_info.id = m_params.microcontroller_id;
+#endif
 #ifdef DEBUG
 //        emit m_view_work->viewEuler(imu_euler, {m_aim_info.yaw * M_PI / 180, m_aim_info.pitch * M_PI / 180, 0});
 #endif
@@ -174,6 +177,7 @@ void ArmorAutoAim::loadConfig() {
     if (!m_config)
         LOG(FATAL) << fmt::format("Failed: Invalid configuration file: {}!", m_config_path);
     const YAML::Node&& detector_config = m_config["detector"];
+    m_params.hik_index = detector_config["camera"]["index"].as<int>();
     m_params.exp_time = detector_config["camera"]["exposure_time"].as<float>();
     m_params.gain = detector_config["camera"]["gain"].as<float>();
     m_params.armor_model_path = detector_config["armor_model_path"].as<std::string>();
@@ -207,6 +211,8 @@ void ArmorAutoAim::loadConfig() {
     const YAML::Node&& compensate_config = m_config["compensate"];
     m_params.compensate_yaw = compensate_config["yaw"].as<float>();
     m_params.compensate_pitch = compensate_config["pitch"].as<float>();
+
+    m_params.microcontroller_id = m_config["microcontroller_id"].as<int>();
 }
 
 void ArmorAutoAim::initHikCamera() {

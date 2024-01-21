@@ -14,9 +14,13 @@ set(QT_PACKAGES
     Core
     SerialPort)
 
+find_package(glog REQUIRED)
+target_link_libraries(serial_port PUBLIC
+    glog::glog)
+
 foreach (QT_PACKAGE ${QT_PACKAGES})
     find_package(Qt${QT_VERSION} COMPONENTS ${QT_PACKAGE} REQUIRED)
 endforeach ()
 foreach (QT_PACKAGE ${QT_PACKAGES})
-    target_link_libraries(serial_port Qt${QT_VERSION}::${QT_PACKAGE})
+    target_link_libraries(serial_port PUBLIC Qt${QT_VERSION}::${QT_PACKAGE})
 endforeach ()

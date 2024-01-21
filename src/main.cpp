@@ -31,7 +31,7 @@ int main(int argc, char* argv[]) {
     armor_auto_aim::ViewWork view_work;
 #endif
     armor_auto_aim::SerialWork serial_work;
-    armor_auto_aim::ArmorAutoAim auto_aim_thread("../config/config.yaml");
+    armor_auto_aim::ArmorAutoAim auto_aim_thread("../config/infantry.yaml");
     auto_aim_thread.setSerialWork(&serial_work);
 #ifdef DEBUG
     auto_aim_thread.setViewWork(&view_work);
