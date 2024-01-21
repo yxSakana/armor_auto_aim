@@ -36,6 +36,8 @@
 
 namespace armor_auto_aim {
 struct AutoAimParams {
+    int microcontroller_id;
+    int hik_index;
     float exp_time;
     float gain;
     ArmorColor target_color;

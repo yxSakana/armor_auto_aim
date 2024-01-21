@@ -6,8 +6,8 @@
  * @date 2023-07-26 16:29
  */
 
-#ifndef TEST_QTANDMAT_DSLIDER_H
-#define TEST_QTANDMAT_DSLIDER_H
+#ifndef VISION_DEBUG_WIDGETS_SLIDER_H
+#define VISION_DEBUG_WIDGETS_SLIDER_H
 
 #include <utility>
 
@@ -155,5 +155,5 @@ private slots:
         emit valChanged();
     }
 };
-} // QtMatTest
-#endif //TEST_QTANDMAT_DSLIDER_H
+}
+#endif //VISION_DEBUG_WIDGETS_SLIDER_H

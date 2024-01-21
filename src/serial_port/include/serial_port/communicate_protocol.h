@@ -22,6 +22,9 @@ struct AutoAimInfo {
     uint8_t is_shoot{};
     uint8_t tracker_status{};
     uint8_t data_id{};
+#ifdef SERIAL
+    uint8_t id{};
+#endif
 
     AutoAimInfo() =default;
 
@@ -32,6 +35,9 @@ struct AutoAimInfo {
 
     [[nodiscard]] std::string to_string() const {
         std::string info("[AutoAimInfo ");
+#ifdef SENTRY
+        info += "id: " + std::to_string(id) + "; ";
+#endif
         info += "yaw: " + std::to_string(yaw) + "; ";
         info += "pitch: " + std::to_string(pitch) + "; ";
         info += "distance: " + std::to_string(distance) + "; ";
