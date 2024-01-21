@@ -1,0 +1,9 @@
+[Uint]
+Description=RM2024-CV-auto_aim
+After=network.target
+
+[Service]
+ExecStart=/home/pc3/Object/armor_auto_aiming/run
+
+[Install]
+WantedBy=multi-user.target

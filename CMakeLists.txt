@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.25)
 project(auto_aim LANGUAGES CXX)
 
 # C++ Version && C++ Include Directory Settings
+set(CMAKE_INSTALL_PREFIX ${CMAKE_SOURCE_DIR}/install)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -45,13 +46,15 @@ endif ()
 add_executable(${PROJECT_NAME} ${sources})
 
 target_link_libraries(${PROJECT_NAME} PUBLIC
-        armor_auto_aim
-        )
+    armor_auto_aim)
 if (IS_ENABLE_GTEST STREQUAL "ON")
     target_include_directories(${PROJECT_NAME} PUBLIC
-            test/test_utils/include
-            )
+        test/test_utils/include)
     target_link_libraries(${PROJECT_NAME} PUBLIC GTest::gtest_main)
     include(GoogleTest)
     gtest_discover_tests(${PROJECT_NAME})
 endif ()
+
+install(TARGETS auto_aim
+    CONFIGURATIONS ${CMAKE_BUILD_TYPE}
+    RUNTIME DESTINATION .)

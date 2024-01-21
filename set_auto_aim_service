@@ -1,0 +1,5 @@
+#!/bin/bash
+
+sudo systemctl daemon-reload
+sudo systemctl start auto_aim
+sudo systemctl enable auto_aim
