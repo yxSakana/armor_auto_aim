@@ -42,6 +42,14 @@ VCOMCOMM::VCOMCOMM(const QString& manufacturer, QObject* parent)
 {
     pid = vid = 0;
     thread_id = QThread::currentThreadId();
+    m_timer = new QTimer(this);
+    m_timer->start(1000);
+    connect(m_timer, &QTimer::timeout, [this]()->void {
+        if ((!isOpen()) || error() != QSerialPort::NoError) {
+            LOG(WARNING) << "Serial close. try auto connect...";
+            this->auto_connect();
+        }
+    });
     connect(this, &QSerialPort::readyRead, this, &VCOMCOMM::portReadyRead);
     connect(this, &QSerialPort::errorOccurred, this, &VCOMCOMM::portErrorOccurred);
     connect(this, &VCOMCOMM::CrossThreadTransmitSignal, this, &VCOMCOMM::Transmit, Qt::QueuedConnection);

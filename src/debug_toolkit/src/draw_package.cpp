@@ -7,6 +7,8 @@
  * @date 2023-10-28 18:33
  */
 
+#define CS_016
+
 #include <debug_toolkit/draw_package.h>
 
 namespace armor_auto_aim::debug_toolkit {
@@ -96,19 +98,34 @@ void drawFrameInfo(cv::Mat& src, const std::vector<Armor>& armors, const Tracker
                    const double& fps, const uint64_t& timestamp, const float& dt) {
     cv::HersheyFonts face = cv::FONT_HERSHEY_SIMPLEX;
     cv::Scalar text_color(255, 255, 255);
+#ifdef CS_016
+    double foot_scale = 0.75;
+    int thickness = 2;
+#endif
+#ifdef CS_004
     double foot_scale = 0.55;
     int thickness = 1;
+#endif
     int y = 30;
     // fps && timestamp  && state of tracker
     auto putText = [&src, face, foot_scale, text_color, thickness](
-            const std::string& text, const int& x, const int& y)-> void {
+            const std::string& text, const int& x, const int& y
+            )-> void {
         cv::putText(src, text, cv::Point(x, y), face, foot_scale, text_color, thickness);
     };
     putText("fps: " + std::to_string(static_cast<int>(fps)), 20, y);
+#ifdef CS_016
+    putText(std::to_string(timestamp), 150, y);
+    putText(tracker.stateString(), 400, y);
+    putText("armors: " + std::to_string(armors.size()), 550, y);
+    putText("dt: " + std::to_string(dt), 700, y);
+#endif
+#ifdef CS_004
     putText(std::to_string(timestamp), 100, y);
-    putText(tracker.stateString(), 250, y);
-    putText("armors: " + std::to_string(armors.size()), 300, y);
-    putText("dt: " + std::to_string(dt), 450, y);
+    putText(tracker.stateString(), 300, y);
+    putText("armors: " + std::to_string(armors.size()), 360, y);
+    putText("dt: " + std::to_string(dt), 420, y);
+#endif
 
     // armor
     for (const auto& armor: armors) {
@@ -120,10 +137,18 @@ void drawFrameInfo(cv::Mat& src, const std::vector<Armor>& armors, const Tracker
     // tracker
     if (tracker.state() == armor_auto_aim::TrackerStateMachine::State::Tracking ||
         tracker.state() == armor_auto_aim::TrackerStateMachine::State::TempLost) {
+#ifdef CS_016
+        putText("p: " + std::to_string(tracker.tracked_armor.probability), 900, y);
+        putText("color: " + to_string(tracker.tracked_armor.color), 20, 60);
+        putText("number: " + std::to_string(tracker.tracked_armor.number), 200, 60);
+        putText("type: " + to_string(tracker.tracked_armor.type), 400, 60);
+#endif
+#ifdef CS_004
         putText("p: " + std::to_string(tracker.tracked_armor.probability), 600, y);
         putText("color: " + to_string(tracker.tracked_armor.color), 20, 60);
         putText("number: " + std::to_string(tracker.tracked_armor.number), 130, 60);
         putText("type: " + to_string(tracker.tracked_armor.type), 230, 60);
+#endif
 //        cv::Point2d predict_point(tracker.getTargetPredictSate()(0), tracker.getTargetPredictSate()(2));
 //        cv::Scalar predict_point_color(0, 0, 255);
 //        cv::circle(src, predict_point, 6, predict_point_color, -1);

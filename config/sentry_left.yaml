@@ -31,12 +31,12 @@ solver:
     speed: 20.0
 # 预测器
 predict:
-  delta_time: 390
+  delta_time: 20
   kf:
     q: [1, 1, 1, 1, 1, 1, 1, 1]  # xa vxa ya vya za vza yaw vyaw
     r: [100000, 100000, 100000, 100000]  # x y z yaw
 # 补偿
 compensate:
-  yaw:   -3.5  # 单位: °; 左 <---- -0+ ---> 右
-  pitch: -3.6  # 单位: °; 上 <---- -0+ ---> 下
+  yaw:   -0  # 单位: °; 左 <---- -0+ ---> 右
+  pitch: -0  # 单位: °; 上 <---- -0+ ---> 下
 microcontroller_id: 1

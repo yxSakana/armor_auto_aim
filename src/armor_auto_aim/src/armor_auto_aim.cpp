@@ -56,9 +56,22 @@ void ArmorAutoAim::run() {
     Eigen::Vector3d camera_point;
     Eigen::Quaterniond quaternion;
 
+    if (!m_hik_driver->isConnected()) {
+        unsigned int c = 0;
+        int t = 2;
+        while (!m_hik_driver->isConnected()) {
+            LOG(WARNING) << fmt::format("try reconnect hik-camera...[{}]", c++);
+            m_hik_driver->connectDriver(m_params.hik_index);
+            std::this_thread::sleep_for(std::chrono::seconds(t));
+            if (c > 10) t = 5;
+        }
+        initHikCamera();
+    }
+
     while (true) {
         m_imu_data_queue.waitTop(*m_imu_data);
         m_aim_info.reset();
+//        LOG(INFO) << m_imu_data->to_string();
         // start fps clock
         if (is_reset) {
             tick_meter.reset();
@@ -126,7 +139,7 @@ void ArmorAutoAim::run() {
             }
             if (!((-40.0 < m_aim_info.yaw && m_aim_info.yaw < 40.0) &&
                   (-40.0 < m_aim_info.pitch && m_aim_info.pitch < 40.0))) {
-                LOG(WARNING) << fmt::format("\narmors_size: {};\ntracked_armor-pose: {}; ",
+                LOG(WARNING) << fmt::format("\narmors_size: {};\ntracked_armor-pose: {}",
                                             m_armors.size(),
                                             m_tracker.tracked_armor.pose.to_string())
                              << "\npredict: " << predict_translation << "; "
@@ -216,13 +229,6 @@ void ArmorAutoAim::loadConfig() {
 }
 
 void ArmorAutoAim::initHikCamera() {
-    int c = 0;
-    while (!m_hik_driver->isConnected()) {
-        if (++c > 10) break;
-        LOG(WARNING) << fmt::format("try reconnect hik-camera...[{}]", c);
-        m_hik_driver->connectDriver(m_params.hik_index);
-        std::this_thread::sleep_for(std::chrono::seconds(2));
-    }
     if (m_hik_driver->isConnected()) {
         m_hik_driver->setExposureTime(m_params.exp_time);
         m_hik_driver->setGain(m_params.gain);
@@ -232,8 +238,6 @@ void ArmorAutoAim::initHikCamera() {
         m_hik_ui = std::make_unique<HikUi>(*m_hik_driver);
         m_hik_ui->show();
 #endif
-    } else {
-        LOG(FATAL) << "Hik can't connected!";
     }
 }
 

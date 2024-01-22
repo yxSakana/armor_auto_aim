@@ -93,8 +93,7 @@ namespace armor_auto_aim {
             : number(inference_result.classification),
               color(static_cast<ArmorColor>(inference_result.color)),
               armor_apex(inference_result.armor_apex, inference_result.armor_apex + 4),
-              probability(inference_result.probability)
-        {
+              probability(inference_result.probability) {
             // TODO: 平衡步兵装甲板类型
             cv::RotatedRect r_rect = cv::minAreaRect(armor_apex);
             auto apex_wh_ratio = std::max(r_rect.size.height, r_rect.size.width) /

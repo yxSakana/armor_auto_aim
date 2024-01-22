@@ -1,4 +1,4 @@
-[Uint]
+[Unit]
 Description=RM2024-CV-auto_aim
 After=network.target
 
