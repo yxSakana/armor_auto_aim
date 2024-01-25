@@ -6,6 +6,8 @@
  * @date 2023-11-14 21:13:26
  */
 
+#define USE_COS
+
 #ifdef DEBUG
 #include <QPointF>
 #endif
@@ -45,6 +47,8 @@ void ArmorAutoAim::setSerialWork(armor_auto_aim::SerialWork* sw) {
 }
 
 void ArmorAutoAim::run() {
+    using Clock = std::chrono::system_clock;
+    using Unit = std::chrono::milliseconds;
     LOG(INFO) << "auto_aim_thread: " << QThread::currentThreadId();
     cv::TickMeter tick_meter;
     float fps = 0.0f;
@@ -71,6 +75,7 @@ void ArmorAutoAim::run() {
     while (true) {
         m_imu_data_queue.waitTop(*m_imu_data);
         m_aim_info.reset();
+        auto ss = Clock::now();
 //        LOG(INFO) << m_imu_data->to_string();
         // start fps clock
         if (is_reset) {
@@ -98,7 +103,10 @@ void ArmorAutoAim::run() {
         LOG_IF(WARNING, dt > 100) << "dt: " << dt;
         last_t = timestamp;
         // -- detect --
+        auto s = Clock::now();
         m_detector.detect(m_frame, &m_armors);
+        auto e = Clock::now();
+        LOG(INFO) << fmt::format("detect latency: {} ms", std::chrono::duration_cast<Unit>(e - s).count());
         // getView world coordinate
         quaternion = Eigen::Quaterniond(m_imu_data->quaternion.w, m_imu_data->quaternion.x,
                                         m_imu_data->quaternion.y, m_imu_data->quaternion.z);
@@ -113,21 +121,39 @@ void ArmorAutoAim::run() {
             m_tracker.updateTracker(m_armors);
         }
         // -- predict --
-        if (m_tracker.state() == TrackerStateMachine::State::Tracking ||
-            m_tracker.state() == TrackerStateMachine::State::TempLost) {
+        if (m_tracker.isTracking()) {
             const Eigen::VectorXd& predict_state = m_tracker.getTargetPredictSate();
+            LOG(INFO) << "\npredict_state: \n" << predict_state;
+            LOG(INFO) << "\nmeasure: \n" << m_tracker.measurement;
             Eigen::Vector3d world_predict_translation(predict_state(0), predict_state(2), predict_state(4));
-            Eigen::Vector3d  predict_translation = m_solver.worldToCamera(world_predict_translation, quaternion.matrix());
+            Eigen::Vector3d predict_translation = m_solver.worldToCamera(world_predict_translation, quaternion.matrix());
             cv::circle(m_frame, m_solver.reproject(predict_translation), 36, cv::Scalar(59, 188, 235), 8);
             double delay_time = m_params.delta_time + std::abs(world_predict_translation.norm() / m_solver.getSpeed());
             world_predict_translation[0] += predict_state[1] * delay_time;
             world_predict_translation[1] += predict_state[3] * delay_time;
             predict_translation = m_solver.worldToCamera(world_predict_translation, quaternion.matrix());
             cv::circle(m_frame, m_solver.reproject(predict_translation), 36, cv::Scalar(0, 0, 235), 8);
+            double xc  = predict_state[0],
+                   yc  = predict_state[2],
+                   zc  = predict_state[4],
+                   yaw = predict_state[6],
+                   r   = predict_state[8];
+            for (int i = 0; i < 4; ++i) {
+                double tmp_yaw = yaw + i * M_PI_2;
+#ifdef USE_SIN
+                Eigen::Vector3d p(xc - r*sin(tmp_yaw), yc - r*cos(tmp_yaw), zc);
+#endif
+#ifdef USE_COS
+                Eigen::Vector3d p(xc - r*cos(tmp_yaw), yc - r*sin(tmp_yaw), zc);
+#endif
+                auto p2 = m_solver.reproject(m_solver.worldToCamera(p, quaternion.matrix()));
+                LOG(INFO) << "p2: " << p2;
+                cv::circle(m_frame, p2, 20, cv::Scalar(0, 0, 255), -1);
+            }
 #ifdef DEBUG
-//            float yaw = m_tracker.tracked_armor.pose.yaw;
-//            emit m_view_work->viewFaceAngleSign(yaw * 180 / M_PI, predict_state[6] * 180 / M_PI);
-//            emit viewEkfSign(m_tracker, predict_translation, predict_translation);
+            float yaw_ = m_tracker.tracked_armor.pose.yaw;
+            emit m_view_work->viewFaceAngleSign(yaw_ * 180 / M_PI, predict_state[6] * 180 / M_PI);
+            emit viewEkfSign(m_tracker, predict_translation, predict_translation);
 //            emit viewTimestampSign(timestamp, m_imu_data->timestamp);
 #endif
             double delta_pitch = m_solver.ballisticSolver(-predict_translation);
@@ -181,6 +207,9 @@ void ArmorAutoAim::run() {
         LOG_EVERY_N(INFO, 10) << fmt::format("fps: {}", fps);
         LOG_EVERY_T(INFO, 10) << m_imu_data->to_string();
 #endif
+        auto ee = Clock::now();
+        LOG(INFO) << fmt::format("latency: {} ms", std::chrono::duration_cast<Unit>(ee - ss).count());
+
     }
 }
 
@@ -216,8 +245,8 @@ void ArmorAutoAim::loadConfig() {
     // predict
     const YAML::Node&& predict_config = m_config["predict"];
     m_params.delta_time = predict_config["delta_time"].as<float>();
-    auto q_dio = predict_config["kf"]["q"].as<std::array<double, 8>>();
-    m_q_diagonal = Eigen::Map<Eigen::Matrix<double, 8, 1>>(q_dio.data(), 8, 1);
+    auto q_dio = predict_config["kf"]["q"].as<std::array<double, 9>>();
+    m_q_diagonal = Eigen::Map<Eigen::Matrix<double, 9, 1>>(q_dio.data(), 9, 1);
     auto r_dio = predict_config["kf"]["r"].as<std::array<double, 4>>();
     m_r_diagonal = Eigen::Map<Eigen::Vector4d>(r_dio.data(), 4, 1);
     // compensate 补偿
@@ -244,69 +273,75 @@ void ArmorAutoAim::initHikCamera() {
 void ArmorAutoAim::initEkf() {
     Q.diagonal() = m_q_diagonal;
     R.diagonal() = m_r_diagonal;
-//    LOG(INFO) << "Q: " << Q.toDenseMatrix();
-//    LOG(INFO) << "R: " << R.toDenseMatrix();
-      //  xa  vxa  ya  vya  za  vza  yaw v_yaw
-//    Q << q,  0,   0,  0,  0,   0,   0,  0, // xa
-//         0,  q,   0,  0,  0,   0,   0,  0, // vxa
-//         0,  0,   q,  0,  0,   0,   0,  0, // ya
-//         0,  0,   0,  q,  0,   0,   0,  0, // vya
-//         0,  0,   0,  0,  q,   0,   0,  0, // za
-//         0,  0,   0,  0,  0,   q,   0,  0, // vza
-//         0,  0,   0,  0,  0,   0,   q,  0, // yaw
-//         0,  0,   0,  0,  0,   0,   0,  q; // v_yaw
-      //  xa   ya  za  yaw
-//    R << r,  0,   0,  0, // xa
-//         0,  r,   0,  0, // vxa
-//         0,  0,   r,  0, // ya
-//         0,  0,   0,  r; // vya
-
-    int p = 10000;
-    Eigen::Matrix<double, 8, 8> p0;
-    //  xa  vxa  ya  vya  za  vza  yaw v_yaw
-    p0 << p,  0,   0,  0,  0,   0,   0,  0, // xa
-          0,  p,   0,  0,  0,   0,   0,  0, // vxa
-          0,  0,   p,  0,  0,   0,   0,  0, // ya
-          0,  0,   0,  p,  0,   0,   0,  0, // vya
-          0,  0,   0,  0,  p,   0,   0,  0, // za
-          0,  0,   0,  0,  0,   p,   0,  0, // vza
-          0,  0,   0,  0,  0,   0,   p,  0, // yaw
-          0,  0,   0,  0,  0,   0,   0,  p; // v_yaw
-    //   x  vx  y  vy   z   yz  yaw v_yaw
-    F << 1, dt, 0,  0,  0,  0,   0,  0,  // x
-         0, 1,  0,  0,  0,  0,   0,  0,  // vx
-         0, 0,  1,  dt, 0,  0,   0,  0,  // y
-         0, 0,  0,  1,  0,  0,   0,  0,  // vy
-         0, 0,  0,  0,  1,  dt,  0,  0,  // z
-         0, 0,  0,  0,  0,  1,   0,  0,  // vz
-         0, 0,  0,  0,  0,  0,   1,  dt, // yaw
-         0, 0,  0,  0,  0,  0,   0,  1;  // v_yaw
-    //    x  vx  y  vy  z  yz yaw  v_yaw
-    H <<  1, 0,  0, 0,  0, 0,   0,  0, // x
-          0, 0,  1, 0,  0, 0,   0,  0, // y
-          0, 0,  0, 0,  1, 0,   0,  0, // z
-          0, 0,  0, 0,  0, 0,   1,  0; // yaw
+    int p = 100;
+    Eigen::Matrix<double, 9, 9> p0;
+    //  xa  vxa  ya  vya  za  vza  yaw v_yaw  r
+    p0 << p,  0,   0,  0,  0,   0,   0,  0,   0, // xa
+          0,  p,   0,  0,  0,   0,   0,  0,   0, // vxa
+          0,  0,   p,  0,  0,   0,   0,  0,   0, // ya
+          0,  0,   0,  p,  0,   0,   0,  0,   0, // vya
+          0,  0,   0,  0,  p,   0,   0,  0,   0, // za
+          0,  0,   0,  0,  0,   p,   0,  0,   0, // vza
+          0,  0,   0,  0,  0,   0,   p,  0,   0, // yaw
+          0,  0,   0,  0,  0,   0,   0,  p,   0, // v_yaw
+          0,  0,   0,  0,  0,   0,   0,  0,   p; // r
     auto f = [this](const Eigen::MatrixXd& x)->Eigen::MatrixXd {
-        return m_tracker.ekf->getF() * x;
-    };
-    auto h = [this](const Eigen::MatrixXd& x)->Eigen::MatrixXd {
-        return m_tracker.ekf->getH() * x;
+//        LOG(INFO) << "\nx: " << x;
+        Eigen::VectorXd x_new = x;
+        x_new(0) += x(1) * dt;
+        x_new(2) += x(3) * dt;
+        x_new(4) += x(5) * dt;
+        x_new(6) += x(7) * dt;
+        return x_new;
     };
     auto j_f = [this](const Eigen::MatrixXd&)->Eigen::MatrixXd {
-        Eigen::Matrix<double, 8, 8> F;
-        //   x  vx  y  vy   z   yz  yaw v_yaw
-        F << 1, dt, 0,  0,  0,  0,   0,  0,   // x
-             0, 1,  0,  0,  0,  0,   0,  0,   // vx
-             0, 0,  1,  dt, 0,  0,   0,  0,   // y
-             0, 0,  0,  1,  0,  0,   0,  0,   // vy
-             0, 0,  0,  0,  1,  dt,  0,  0,   // z
-             0, 0,  0,  0,  0,  1,   0,  0,   // vz
-             0, 0,  0,  0,  0,  0,   1,  dt,  // yaw
-             0, 0,  0,  0,  0,  0,   0,  1;   // v_yaw
+        Eigen::Matrix<double, 9, 9> F;
+        //   x  vx  y  vy   z   yz  yaw v_yaw  r
+        F << 1, dt, 0,  0,  0,  0,   0,  0,    0, // x
+             0, 1,  0,  0,  0,  0,   0,  0,    0, // vx
+             0, 0,  1,  dt, 0,  0,   0,  0,    0, // y
+             0, 0,  0,  1,  0,  0,   0,  0,    0, // vy
+             0, 0,  0,  0,  1,  dt,  0,  0,    0, // z
+             0, 0,  0,  0,  0,  1,   0,  0,    0, // vz
+             0, 0,  0,  0,  0,  0,   1,  dt,   0, // yaw
+             0, 0,  0,  0,  0,  0,   0,  1,    0, // v_yaw
+             0, 0,  0,  0,  0,  0,   0,  0,    1; // r
         return F;
     };
-    auto j_h = [this](const Eigen::MatrixXd&)->Eigen::MatrixXd {
-        return H;
+
+    auto h = [](const Eigen::VectorXd& x)->Eigen::MatrixXd {
+        Eigen::VectorXd z(4);
+        double xc = x[0], yc = x[2], yaw = x[6], r = x[8];
+#ifdef USE_SIN
+        z[0] = xc - r*sin(yaw);
+        z[1] = yc - r*cos(yaw);
+#endif
+#ifdef USE_COS
+        z[0] = xc - r*cos(yaw);
+        z[1] = yc - r*sin(yaw);
+#endif
+        z[2] = x[4];
+        z[3] = x[6];
+        return z;
+    };
+    auto j_h = [](const Eigen::VectorXd& x)->Eigen::MatrixXd {
+        Eigen::MatrixXd h(4, 9);
+        double yaw = x[6], r = x[8];
+#ifdef USE_SIN
+        //   x  vx  y  vy   z yz     yaw       v_yaw     r
+        h << 1, 0,  0,  0,  0, 0,  -r*cos(yaw),   0,   -sin(yaw), // x
+             0, 0,  1,  0,  0, 0,   r*sin(yaw),   0,   -cos(yaw), // y
+             0, 0,  0,  0,  1, 0,     0      ,   0,      0,       // z
+             0, 0,  0,  0,  0, 0,     1      ,   0,      0;       // yaw
+#endif
+#ifdef USE_COS
+        //   x  vx  y  vy   z yz     yaw       v_yaw     r
+        h << 1, 0,  0,  0,  0, 0,  r*sin(yaw),   0,   -cos(yaw), // x
+             0, 0,  1,  0,  0, 0, -r*cos(yaw),   0,   -sin(yaw), // y
+             0, 0,  0,  0,  1, 0,     0      ,   0,      0,      // z
+             0, 0,  0,  0,  0, 0,     1      ,   0,      0;      // yaw
+#endif
+        return h;
     };
     auto update_Q = [this]()->Eigen::MatrixXd {
         if (m_tracker.ekf->getQ().size() == 0) {
@@ -314,6 +349,32 @@ void ArmorAutoAim::initEkf() {
         } else {
             return m_tracker.ekf->getQ();
         }
+        double s2qxyz = 20.0,
+               s2qyaw = 100.0,
+               s2qr   = 800.0;
+        Eigen::MatrixXd q(9, 9);
+        double t       = dt,
+               x       = s2qxyz,
+               yaw     = s2qyaw,
+               r       = s2qr,
+               q_x_x   = pow(t, 4) / 4 * x,
+               q_x_vx  = pow(t, 3) / 2 * x,
+               q_vx_vx = pow(t, 2) * x,
+               q_y_y   = pow(t, 4) / 4 * yaw,
+               q_y_vy  = pow(t, 3) / 2 * x,
+               q_vy_vy = pow(t, 2) * yaw,
+               q_r     = pow(t, 4) / 4 * r;
+        //    xc      v_xc    yc      v_yc    za      v_za    yaw     v_yaw   r
+        q << q_x_x,  q_x_vx, 0,      0,      0,      0,      0,      0,      0,
+             q_x_vx, q_vx_vx,0,      0,      0,      0,      0,      0,      0,
+             0,      0,      q_x_x,  q_x_vx, 0,      0,      0,      0,      0,
+             0,      0,      q_x_vx, q_vx_vx,0,      0,      0,      0,      0,
+             0,      0,      0,      0,      q_x_x,  q_x_vx, 0,      0,      0,
+             0,      0,      0,      0,      q_x_vx, q_vx_vx,0,      0,      0,
+             0,      0,      0,      0,      0,      0,      q_y_y,  q_y_vy, 0,
+             0,      0,      0,      0,      0,      0,      q_y_vy, q_vy_vy,0,
+             0,      0,      0,      0,      0,      0,      0,      0,      q_r;
+        return q;
     };
     auto update_R = [this](const Eigen::MatrixXd&)->Eigen::MatrixXd {
         if (m_tracker.ekf->getR().size() == 0) {

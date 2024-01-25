@@ -105,7 +105,7 @@ public:
     QPointF getLastPoint(const std::string& name) const {
         const QString&& k = QString::fromStdString(name);
         if (m_table->contains(k))
-            return (*m_table)[k]->at((*m_table)[k]->count() - 1);
+            return (*m_table)[k]->count() != 0? (*m_table)[k]->at((*m_table)[k]->count() - 1): QPointF(-1, 0);
         else
             return {};
     }

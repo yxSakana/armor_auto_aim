@@ -4,7 +4,7 @@ detector:
   target_color: BLUE
   camera:
     index: 0
-    exposure_time: 8000
+    exposure_time: 12000
     gain: 15
 # 解算器
 solver:
@@ -34,7 +34,7 @@ tracker: null
 predict:
   delta_time: 390
   kf:
-    q: [1, 1, 1, 1, 1, 1, 1, 1]  # xa vxa ya vya za vza yaw vyaw
+    q: [1, 1, 1, 1, 1, 1, 1, 1, 1]  # xa vxa ya vya za vza yaw vyaw
     r: [100000, 100000, 100000, 100000]  # x y z yaw
 # 补偿
 compensate:

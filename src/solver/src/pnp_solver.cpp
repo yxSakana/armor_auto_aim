@@ -52,12 +52,12 @@ bool PnPSolver::obtain3dPose(Armor& armor) {
         Eigen::Vector3d euler_angles = rmat_eigen.eulerAngles(2, 1, 0);
 
         armor.pose.pitch = static_cast<float>(euler_angles(1));
-        armor.pose.yaw = static_cast<float>(adjust(euler_angles(2)));
+//        armor.pose.yaw = static_cast<float>(adjust(euler_angles(2)));
+        armor.pose.yaw = static_cast<float>(euler_angles(2));
         armor.pose.roll = static_cast<float>(euler_angles(0));
         armor.pose.x = static_cast<float>(tvec.at<double>(0, 0));
         armor.pose.y = static_cast<float>(tvec.at<double>(1, 0));
         armor.pose.z = static_cast<float>(tvec.at<double>(2, 0));
-
         return true;
     } else {
         return false;

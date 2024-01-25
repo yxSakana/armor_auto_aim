@@ -7,6 +7,8 @@
  * @date 2023-11-03 19:29
  */
 
+#define USE_COS
+
 #include <armor_tracker/tracker.h>
 
 #include <glog/logging.h>
@@ -97,7 +99,7 @@ void Tracker::updateTracker(const Armors& armors) {
             measurement = Eigen::Vector4d(tracked_armor.world_coordinate[0], tracked_armor.world_coordinate[1],
                                           tracked_armor.world_coordinate[2], tracked_armor.pose.yaw);
             m_target_predict_state = ekf->predict(measurement);
-        } else if (same_id_armor_count == 1) {
+        } else if (same_id_armor_count == 1 && yaw_difference > m_MaxMatchYaw) {
             LOG_IF(WARNING, min_position_difference > m_MaxMatchDistance)
                     << min_position_difference
                     << "\n predicted_position_vec: " << predicted_position_vec
@@ -111,9 +113,16 @@ void Tracker::updateTracker(const Armors& armors) {
                     << "\n measurement_position_vec: " << measurement_position_vec
                     << "\n size: " << armors.size()
                     << "\n armor: " << armors[0].world_coordinate
-                    << "\n id: " << m_tracked_id << " ?= " << armors[0].number;                  
+                    << "\n id: " << m_tracked_id << " ?= " << armors[0].number;
             LOG(WARNING) << "No matched armor!";
         }
+    }
+    if (m_target_predict_state(8) < 0.12) {
+        m_target_predict_state(8) = 0.12;
+        ekf->setState(m_target_predict_state);
+    } else if (m_target_predict_state(8) > 0.4) {
+        m_target_predict_state(8) = 0.4;
+        ekf->setState(m_target_predict_state);
     }
     // update
     m_tracker_state_machine.update(is_matched);
@@ -124,32 +133,42 @@ void Tracker::initEkf(const Armor& armor) {
     double ya = armor.world_coordinate[1];
     double za = armor.world_coordinate[2];
     double yaw = armor.pose.yaw;
-
-    m_target_predict_state = Eigen::VectorXd::Zero(8);
-    m_target_predict_state << xa, 0, ya, 0, za, 0, yaw, 0;
-
-    Eigen::Matrix<double, 8, 8> p0;
-    double p = 10000;
-    //  xa  vxa  ya  vya  za  vza  yaw v_yaw
-    p0 << p,  0,   0,  0,  0,   0,   0,  0, // xa
-          0,  p,   0,  0,  0,   0,   0,  0, // vxa
-          0,  0,   p,  0,  0,   0,   0,  0, // ya
-          0,  0,   0,  p,  0,   0,   0,  0, // vya
-          0,  0,   0,  0,  p,   0,   0,  0, // za
-          0,  0,   0,  0,  0,   p,   0,  0, // vza
-          0,  0,   0,  0,  0,   0,   p,  0, // yaw
-          0,  0,   0,  0,  0,   0,   0,  p; // v_yaw
+    double r = 0.2;
+    m_target_predict_state = Eigen::VectorXd::Zero(9);
+#ifdef USE_SIN
+    m_target_predict_state << xa + r*sin(yaw), 0, ya + r*cos(yaw), 0, za, 0, yaw, 0, r;
+#endif
+#ifdef USE_COS
+    m_target_predict_state << xa + r*cos(yaw), 0, ya + r*sin(yaw), 0, za, 0, yaw, 0, r;
+#endif
+    Eigen::Matrix<double, 9, 9> p0;
+    double p = 1000;
+    //  xa  vxa  ya  vya  za  vza  yaw v_yaw  r
+    p0 << p,  0,   0,  0,  0,   0,   0,  0,   0, // xa
+          0,  p,   0,  0,  0,   0,   0,  0,   0, // vxa
+          0,  0,   p,  0,  0,   0,   0,  0,   0, // ya
+          0,  0,   0,  p,  0,   0,   0,  0,   0, // vya
+          0,  0,   0,  0,  p,   0,   0,  0,   0, // za
+          0,  0,   0,  0,  0,   p,   0,  0,   0, // vza
+          0,  0,   0,  0,  0,   0,   p,  0,   0, // yaw
+          0,  0,   0,  0,  0,   0,   0,  p,   0, // v_yaw
+          0,  0,   0,  0,  0,   0,   0,  0,   p; // r
     ekf->initEkf(m_target_predict_state, p0);
 }
 
 void Tracker::handleArmorJump(const armor_auto_aim::Armor& same_id_armor) {
-    m_target_predict_state[0] = same_id_armor.world_coordinate[0];
-    m_target_predict_state[1] = 0;
-    m_target_predict_state[2] = same_id_armor.world_coordinate[1];
-    m_target_predict_state[3] = 0;
-    m_target_predict_state[4] = same_id_armor.world_coordinate[2];
-    m_target_predict_state[5] = 0;
-    m_target_predict_state[6] = same_id_armor.pose.yaw;
-    m_target_predict_state[7] = 0;
+    // FIXME
+    double x   = same_id_armor.world_coordinate[0],
+           y   = same_id_armor.world_coordinate[1],
+           z   = same_id_armor.world_coordinate[2],
+           yaw = same_id_armor.pose.yaw,
+           r   = m_target_predict_state[8];
+#ifdef USE_SIN
+    m_target_predict_state << x + r*sin(yaw), 0, y + r*cos(yaw), 0, z, 0, yaw, 0, r;
+#endif
+#ifdef USE_COS
+    m_target_predict_state << x + r*cos(yaw), 0, y + r*sin(yaw), 0, z, 0, yaw, 0, r;
+#endif
+    ekf->setState(m_target_predict_state);
 }
 } // armor_auto_aim

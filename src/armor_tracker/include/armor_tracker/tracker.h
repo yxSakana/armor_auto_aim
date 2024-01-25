@@ -63,6 +63,11 @@ public:
 
     [[nodiscard]] inline std::string stateString() const { return m_tracker_state_machine.stateString(); }
 
+    inline bool isTracking() const {
+        return m_tracker_state_machine.state() == TrackerStateMachine::State::Tracking ||
+               m_tracker_state_machine.state() == TrackerStateMachine::State::TempLost;
+    }
+
     [[nodiscard]] const Eigen::VectorXd& getTargetPredictSate() const { return m_target_predict_state; }
 
     std::shared_ptr<ExtendedKalmanFilter> ekf = nullptr;

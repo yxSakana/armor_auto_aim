@@ -71,7 +71,7 @@ int main(int argc, char* argv[]) {
     auto_aim_thread.start();
     if (auto_aim_thread_2 != nullptr) auto_aim_thread_2->start();
 #ifdef DEBUG
-//    view_work.show();
+    view_work.show();
 #endif
     LOG(INFO) << fmt::format("main_thread: {};", QThread::currentThreadId());
     emit serial_work.showThreadIdSignal();

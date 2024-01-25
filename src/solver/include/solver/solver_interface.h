@@ -28,7 +28,7 @@ namespace armor_auto_aim::solver {
         {}
 
         std::string to_string() const {
-            return fmt::format("[Pose => x: {}; y: {}; z: {}; yaw: {}; pitch: {}; roll: {};]",
+            return fmt::format("[Pose(xyz,ypr) => {}, {}, {}; {}, {}, {};]",
                                x, y, z, yaw, pitch, roll);
         }
 

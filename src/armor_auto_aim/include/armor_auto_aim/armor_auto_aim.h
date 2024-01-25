@@ -104,16 +104,15 @@ private:
     void initHikCamera();
 
     void initEkf();
-    Eigen::Matrix<double, 8, 8> F;
-    Eigen::Matrix<double, 4, 8> H;
+    Eigen::Matrix<double, 4, 9> H;
 //    Eigen::Matrix<double, 8, 8> Q;
 //    Eigen::Matrix<double, 4, 4> R;
-    Eigen::DiagonalMatrix<double, 8> Q;
+    Eigen::DiagonalMatrix<double, 9> Q;
     Eigen::DiagonalMatrix<double, 4> R;
     Eigen::VectorXd X;
     Eigen::VectorXd Z;
     Eigen::Vector4d m_r_diagonal;
-    Eigen::Matrix<double, 8, 1> m_q_diagonal;
+    Eigen::Matrix<double, 9, 1> m_q_diagonal;
 
     inline static AutoAimInfo translation2YawPitch(const solver::Pose& pose);
 
