@@ -69,7 +69,10 @@ void ArmorAutoAim::run() {
     }
 
     while (true) {
+        using Clock = std::chrono::system_clock;
+        using Unit = std::chrono::milliseconds;
         m_imu_data_queue.waitTop(*m_imu_data);
+        auto ss = Clock::now();
         m_aim_info.reset();
 //        LOG(INFO) << m_imu_data->to_string();
         // start fps clock
@@ -98,7 +101,12 @@ void ArmorAutoAim::run() {
         LOG_IF(WARNING, dt > 100) << "dt: " << dt;
         last_t = timestamp;
         // -- detect --
+        auto s = std::chrono::system_clock::now();
         m_detector.detect(m_frame, &m_armors);
+        auto e = std::chrono::system_clock::now();
+        LOG(INFO) << "detect latency: "
+                  << std::chrono::duration_cast<std::chrono::milliseconds>(e - s).count()
+                  << "ms";
         // getView world coordinate
         quaternion = Eigen::Quaterniond(m_imu_data->quaternion.w, m_imu_data->quaternion.x,
                                         m_imu_data->quaternion.y, m_imu_data->quaternion.z);
@@ -107,11 +115,16 @@ void ArmorAutoAim::run() {
             armor.world_coordinate = m_solver.cameraToWorld(camera_point, quaternion.matrix());
         }
         // -- tracker --
+//        s = std::chrono::system_clock::now();
         if (m_tracker.state() == TrackerStateMachine::State::Lost) {
             m_tracker.initTracker(m_armors);
         } else {
             m_tracker.updateTracker(m_armors);
         }
+//        e = std::chrono::system_clock::now();
+//        LOG(INFO) << "tracker latency: "
+//                  << std::chrono::duration_cast<std::chrono::milliseconds>(e - s).count()
+//                  << "ms";
         // -- predict --
         if (m_tracker.state() == TrackerStateMachine::State::Tracking ||
             m_tracker.state() == TrackerStateMachine::State::TempLost) {
@@ -181,6 +194,8 @@ void ArmorAutoAim::run() {
         LOG_EVERY_N(INFO, 10) << fmt::format("fps: {}", fps);
         LOG_EVERY_T(INFO, 10) << m_imu_data->to_string();
 #endif
+        auto ee = Clock::now();
+        LOG(INFO) << "latency: " << std::chrono::duration_cast<Unit>(ee - ss).count() << "ms";
     }
 }
 
@@ -261,7 +276,7 @@ void ArmorAutoAim::initEkf() {
 //         0,  0,   r,  0, // ya
 //         0,  0,   0,  r; // vya
 
-    int p = 10000;
+    int p = 1;
     Eigen::Matrix<double, 8, 8> p0;
     //  xa  vxa  ya  vya  za  vza  yaw v_yaw
     p0 << p,  0,   0,  0,  0,   0,   0,  0, // xa

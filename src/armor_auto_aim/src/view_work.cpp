@@ -36,8 +36,8 @@ ViewWork::ViewWork(QObject* parent)
 void ViewWork::show() {
     LOG(INFO) << "view imshow(): " << QThread::currentThreadId();
     m_view->m_ekf_view->showMaximized();
-    m_view->m_timestamp_view->showMaximized();
-    m_view->m_imu_euler->showMaximized();
+//    m_view->m_timestamp_view->showMaximized();
+//    m_view->m_imu_euler->showMaximized();
     m_view->m_face_angle_view->showMaximized();
 }
 
