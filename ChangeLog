@@ -105,3 +105,9 @@
 
 @New Feature
 1. 尚不完整的整车观测
+----------------------------------------------------------------------------
+2024-03-02 19：50 星期六(Saturday)
+
+@Fix
+1. 修改延迟计算逻辑 delay = fixed delay + flight delay + delay by program execution
+2. 整车观测使用sin
