@@ -6,7 +6,8 @@
  * @date 2023-11-14 21:13:26
  */
 
-#define USE_COS
+//#define USE_COS
+#define USE_SIN
 
 #ifdef DEBUG
 #include <QPointF>
@@ -103,10 +104,10 @@ void ArmorAutoAim::run() {
         LOG_IF(WARNING, dt > 100) << "dt: " << dt;
         last_t = timestamp;
         // -- detect --
-        auto s = Clock::now();
+//        auto s = Clock::now();
         m_detector.detect(m_frame, &m_armors);
-        auto e = Clock::now();
-        LOG(INFO) << fmt::format("detect latency: {} ms", std::chrono::duration_cast<Unit>(e - s).count());
+//        auto e = Clock::now();
+//        LOG(INFO) << fmt::format("detect latency: {} ms", std::chrono::duration_cast<Unit>(e - s).count());
         // getView world coordinate
         quaternion = Eigen::Quaterniond(m_imu_data->quaternion.w, m_imu_data->quaternion.x,
                                         m_imu_data->quaternion.y, m_imu_data->quaternion.z);
@@ -123,21 +124,34 @@ void ArmorAutoAim::run() {
         // -- predict --
         if (m_tracker.isTracking()) {
             const Eigen::VectorXd& predict_state = m_tracker.getTargetPredictSate();
-            LOG(INFO) << "\npredict_state: \n" << predict_state;
-            LOG(INFO) << "\nmeasure: \n" << m_tracker.measurement;
-            Eigen::Vector3d world_predict_translation(predict_state(0), predict_state(2), predict_state(4));
-            Eigen::Vector3d predict_translation = m_solver.worldToCamera(world_predict_translation, quaternion.matrix());
-            cv::circle(m_frame, m_solver.reproject(predict_translation), 36, cv::Scalar(59, 188, 235), 8);
-            double delay_time = m_params.delta_time + std::abs(world_predict_translation.norm() / m_solver.getSpeed());
-            world_predict_translation[0] += predict_state[1] * delay_time;
-            world_predict_translation[1] += predict_state[3] * delay_time;
-            predict_translation = m_solver.worldToCamera(world_predict_translation, quaternion.matrix());
-            cv::circle(m_frame, m_solver.reproject(predict_translation), 36, cv::Scalar(0, 0, 235), 8);
+//            LOG(INFO) << "\npredict_state: \n" << predict_state;
+//            LOG(INFO) << "\nmeasure: \n" << m_tracker.measurement;
             double xc  = predict_state[0],
                    yc  = predict_state[2],
                    zc  = predict_state[4],
                    yaw = predict_state[6],
                    r   = predict_state[8];
+
+#ifdef USE_SIN
+            Eigen::Vector3d world_predict_translation(xc - r*sin(yaw), yc - r*cos(yaw), zc);
+#endif
+#ifdef USE_COS
+            Eigen::Vector3d world_predict_translation(xc - r*cos(yaw), yc - r*sin(yaw), zc);
+#endif
+            Eigen::Vector3d predict_translation = m_solver.worldToCamera(world_predict_translation, quaternion.matrix());
+            cv::circle(m_frame, m_solver.reproject(predict_translation), 36, cv::Scalar(59, 188, 235), 8);
+            double flight_time = std::abs(world_predict_translation.norm() / m_solver.getSpeed()) * 1000;
+            double program_run_time = static_cast<double>(
+                    std::chrono::duration_cast<Unit>(
+                            Clock::now().time_since_epoch()).count() - timestamp);
+            double delay_time = m_params.delta_time + flight_time + program_run_time;
+            world_predict_translation[0] += predict_state[1] * delay_time;
+            world_predict_translation[1] += predict_state[3] * delay_time;
+            predict_translation = m_solver.worldToCamera(world_predict_translation, quaternion.matrix());
+            cv::circle(m_frame, m_solver.reproject(predict_translation), 36, cv::Scalar(0, 0, 235), 8);
+            cv::circle(m_frame, m_solver.reproject(
+                    m_solver.worldToCamera(Eigen::Vector3d(xc, yc, zc), quaternion.matrix())),
+                       40, cv::Scalar(0, 255, 255), -1);
             for (int i = 0; i < 4; ++i) {
                 double tmp_yaw = yaw + i * M_PI_2;
 #ifdef USE_SIN
@@ -147,13 +161,15 @@ void ArmorAutoAim::run() {
                 Eigen::Vector3d p(xc - r*cos(tmp_yaw), yc - r*sin(tmp_yaw), zc);
 #endif
                 auto p2 = m_solver.reproject(m_solver.worldToCamera(p, quaternion.matrix()));
-                LOG(INFO) << "p2: " << p2;
+//                LOG(INFO) << "p2: " << p2;
                 cv::circle(m_frame, p2, 20, cv::Scalar(0, 0, 255), -1);
+                cv::putText(m_frame, std::to_string(i), p2+cv::Point2d(0, -30), 1, 2, cv::Scalar(0, 255, 55), 2);
             }
 #ifdef DEBUG
-            float yaw_ = m_tracker.tracked_armor.pose.yaw;
-            emit m_view_work->viewFaceAngleSign(yaw_ * 180 / M_PI, predict_state[6] * 180 / M_PI);
-            emit viewEkfSign(m_tracker, predict_translation, predict_translation);
+//            float yaw_ = m_tracker.tracked_armor.pose.yaw;
+//            LOG(INFO) << "face yaw: " << yaw_ * 180 / M_PI;
+//            emit m_view_work->viewFaceAngleSign(yaw_ * 180 / M_PI, predict_state[6] * 180 / M_PI);
+//            emit viewEkfSign(m_tracker, predict_translation, predict_translation);
 //            emit viewTimestampSign(timestamp, m_imu_data->timestamp);
 #endif
             double delta_pitch = m_solver.ballisticSolver(-predict_translation);
@@ -207,8 +223,8 @@ void ArmorAutoAim::run() {
         LOG_EVERY_N(INFO, 10) << fmt::format("fps: {}", fps);
         LOG_EVERY_T(INFO, 10) << m_imu_data->to_string();
 #endif
-        auto ee = Clock::now();
-        LOG(INFO) << fmt::format("latency: {} ms", std::chrono::duration_cast<Unit>(ee - ss).count());
+//        auto ee = Clock::now();
+//        LOG(INFO) << fmt::format("latency: {} ms", std::chrono::duration_cast<Unit>(ee - ss).count());
 
     }
 }

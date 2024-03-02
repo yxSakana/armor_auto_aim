@@ -66,8 +66,11 @@ signals:
     void sendAimInfo(const AutoAimInfo& aim_info);
 
     void showFrame(const cv::Mat& frame,
-                   const std::vector<armor_auto_aim::Armor>& armors, const armor_auto_aim::Tracker& tracker,
-                   const double& fps, const uint64_t& timestamp, const float& dt);
+                   const std::vector<armor_auto_aim::Armor>& armors,
+                   const armor_auto_aim::Tracker& tracker,
+                   const double& fps,
+                   const uint64_t& timestamp,
+                   const float& dt);
 
     void viewEkfSign(const armor_auto_aim::Tracker& tracker,
                      const Eigen::Vector3d& predict_camera_coordinate,

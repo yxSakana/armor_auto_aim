@@ -55,8 +55,8 @@ namespace armor_auto_aim {
             case ArmorColor::RED: return "RED";
             case ArmorColor::GREY: return "GREY";
             case ArmorColor::UNKNOWN: return "UNKNOWN";
+            default: return "NULL";
         }
-        return "UNKNOWN";
     }
 
     static std::string to_string(const ArmorType& armor_type) {
@@ -64,8 +64,8 @@ namespace armor_auto_aim {
             case ArmorType::LARGE: return "LARGE";
             case ArmorType::SMALL: return "SMALL";
             case ArmorType::UNKNOWN: return "UNKNOWN";
+            default: return "NULL";
         }
-        return "UNKNOWN";
     }
 
     static std::string to_string(const std::vector<cv::Point2f>& point2f) {
