@@ -80,10 +80,15 @@ private:
     Eigen::VectorXd m_target_predict_state;
     TrackerStateMachine m_tracker_state_machine;
     int m_tracked_id{};  // armor number
+    double m_last_yaw = .0;
 
     void initEkf(const Armor& armor);
 
     void handleArmorJump(const Armor& same_id_armor);
+
+    static double shortest_angular_distance(double from, double to);
+
+    double correctYaw(const double yaw);
 };
 } // armor_auto_aim
 

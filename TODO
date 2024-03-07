@@ -1,2 +1,5 @@
 打击逻辑
-整车观测
+
+A universal serial I/O library that is detached from Qt.
+
+Simultaneous video capture.

@@ -7,7 +7,8 @@
  * @date 2023-11-03 19:29
  */
 
-#define USE_COS
+//#define USE_COS
+#define USE_SIN
 
 #include <armor_tracker/tracker.h>
 
@@ -87,7 +88,7 @@ void Tracker::updateTracker(const Armors& armors) {
             double position_difference = (predicted_position_vec - measurement_position_vec).norm();
             if (position_difference < min_position_difference) {
                 min_position_difference = position_difference;
-                yaw_difference = std::abs(m_target_predict_state[6] - armor.pose.yaw);
+                yaw_difference = std::abs(m_target_predict_state[6] - correctYaw(armor.pose.yaw));
                 tracked_armor = armor;
             }
         }
@@ -97,7 +98,7 @@ void Tracker::updateTracker(const Armors& armors) {
 //             TODO: 是否需要使用shortestAngularDistance 对 yaw 进行处理
             is_matched = true;
             measurement = Eigen::Vector4d(tracked_armor.world_coordinate[0], tracked_armor.world_coordinate[1],
-                                          tracked_armor.world_coordinate[2], tracked_armor.pose.yaw);
+                                          tracked_armor.world_coordinate[2], correctYaw(tracked_armor.pose.yaw));
             m_target_predict_state = ekf->predict(measurement);
         } else if (same_id_armor_count == 1 && yaw_difference > m_MaxMatchYaw) {
             LOG_IF(WARNING, min_position_difference > m_MaxMatchDistance)
@@ -132,7 +133,8 @@ void Tracker::initEkf(const Armor& armor) {
     double xa = armor.world_coordinate[0];
     double ya = armor.world_coordinate[1];
     double za = armor.world_coordinate[2];
-    double yaw = armor.pose.yaw;
+    m_last_yaw = 0.0;
+    double yaw = correctYaw(armor.pose.yaw);
     double r = 0.2;
     m_target_predict_state = Eigen::VectorXd::Zero(9);
 #ifdef USE_SIN
@@ -170,5 +172,17 @@ void Tracker::handleArmorJump(const armor_auto_aim::Armor& same_id_armor) {
     m_target_predict_state << x + r*cos(yaw), 0, y + r*sin(yaw), 0, z, 0, yaw, 0, r;
 #endif
     ekf->setState(m_target_predict_state);
+}
+
+double Tracker::shortest_angular_distance(double from, double to) {
+    double angle = to - from;
+    const double result = fmod(angle + M_PI, 2.0*M_PI);
+    return (result <= 0.0)? result + M_PI: result - M_PI;
+}
+
+double Tracker::correctYaw(const double yaw) {
+//    return yaw;
+    m_last_yaw = m_last_yaw + shortest_angular_distance(m_last_yaw, yaw);
+    return m_last_yaw;
 }
 } // armor_auto_aim

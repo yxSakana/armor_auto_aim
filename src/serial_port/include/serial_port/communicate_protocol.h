@@ -15,11 +15,18 @@
 #include <string>
 #include <chrono>
 
+#include <fmt/format.h>
+
 struct AutoAimInfo {
-    float yaw{};
+/*    float yaw{};
     float pitch{};
-    float distance{};
-    uint8_t is_shoot{};
+    float distance{};*/
+    float x = .0f, y = .0f, z = 0.0f;
+    float v_x = .0f, v_y = .0f, v_z = .0f;
+    float theta = .0f;
+    float omega = .0f;
+    float r = .0f;
+    float delay = .0f;  // 视觉程序延迟
     uint8_t tracker_status{};
     uint8_t data_id{};
 #ifdef SERIAL
@@ -28,26 +35,41 @@ struct AutoAimInfo {
 
     AutoAimInfo() =default;
 
-    AutoAimInfo(const float& y, const float& p, const float& d)
-        : yaw(y),
-          pitch(p),
-          distance(d) {}
+    AutoAimInfo(const float x, const float y, const float z,
+                const float v_x, const float v_y, const float v_z,
+                const float theta, const float w, const float r,
+                const float delay, const uint8_t status, const uint8_t data_id)
+        : x(x), y(y), z(z), v_x(v_x), v_y(v_y), v_z(v_z),
+          theta(theta), omega(w), r(r), delay(delay),
+          tracker_status(status), data_id(data_id) {}
+//    AutoAimInfo(const float& y, const float& p, const float& d)
+//        : yaw(y),
+//          pitch(p),
+//          distance(d) {}
 
     [[nodiscard]] std::string to_string() const {
-        std::string info("[AutoAimInfo ");
+        return fmt::format(
+                "[AutoAimInfo => d: ({}, {}, {}); v: ({}, {}, {}); "
+                "theta: {}; omega: {}; r: {}; delay: {}; "
+                "tracker_status: {}; data_id: {}]",
+                x, y, z, v_x, v_y, v_z,
+                theta, omega, r,
+                delay, tracker_status, data_id);
 #ifdef SENTRY
-        info += "id: " + std::to_string(id) + "; ";
+        return fmt::format(
+                "[AutoAimInfo => d: ({}, {}, {}); v: ({}, {}, {}); "
+                "r: {}; w: {}; delay: {}; "
+                "is_shoot: {}; tracker_status: {}; data_id: {}; id: {}]",
+                x, y, z, v_x, v_y, v_z, r, w, delay,
+                is_shoot, tracker_status, data_id, id);
 #endif
-        info += "yaw: " + std::to_string(yaw) + "; ";
-        info += "pitch: " + std::to_string(pitch) + "; ";
-        info += "distance: " + std::to_string(distance) + "; ";
-        info += "is_shoot: " + std::to_string(is_shoot) + "; ";
-        info += "tracker_status: " + std::to_string(tracker_status) + ";]";
-        return info;
     }
 
     void reset() {
-        yaw = pitch = distance = is_shoot = tracker_status = 0;
+        x = y = z =
+        v_x = v_y = v_z =
+        theta = omega = r = delay =
+        tracker_status = data_id = 0;
     }
 };
 

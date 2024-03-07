@@ -1,7 +1,7 @@
 # 检测器
 detector:
   armor_model_path: ../model/opt-0527-001.onnx
-  target_color: BLUE
+  detect_color: BLUE
   camera:
     index: 0
     exposure_time: 4000

@@ -117,10 +117,6 @@ private:
     Eigen::Vector4d m_r_diagonal;
     Eigen::Matrix<double, 9, 1> m_q_diagonal;
 
-    inline static AutoAimInfo translation2YawPitch(const solver::Pose& pose);
-
-    inline static AutoAimInfo translation2YawPitch(const Eigen::Vector3d& translation);
-
     static int64_t diffFunction(const HikFrame& camera, const ImuData& imu) {
         return std::abs(static_cast<int64_t>(imu.timestamp) - camera.getTimestamp());
     }

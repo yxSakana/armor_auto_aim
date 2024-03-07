@@ -32,6 +32,7 @@ ArmorAutoAim::ArmorAutoAim(const std::string& config_path, QObject* parent)
     m_hik_driver = std::make_unique<HikDriver>(m_params.hik_index);
     m_solver = Solver(m_solver_builder.build());
     m_detector = Detector(m_params.armor_model_path, m_solver.pnp_solver);
+    m_detector.setDetectColor(m_params.target_color);
     initHikCamera();
     initEkf();
 //    connect(m_hik_read_thread.getView(), &HikReadThread::readyData, this, &ArmorAutoAim::pushCameraData);
@@ -87,16 +88,16 @@ void ArmorAutoAim::run() {
         // -- main --
         // frame && timestamp
         m_hik_frame = m_hik_driver->getFrame();
-//        if (frame_count < from_fps_frame_count) {
-//            frame_count++;
-//        } else {
-//            tick_meter.stop();
-//            fps = static_cast<float>(++frame_count) / static_cast<float>(tick_meter.getTimeSec());
-//            frame_count = 0;
-//            is_reset = true;
-//            LOG_EVERY_T(INFO, 2) << "fps: " << fps;
-//        }
-//        continue;
+/*        if (frame_count < from_fps_frame_count) {
+            frame_count++;
+        } else {
+            tick_meter.stop();
+            fps = static_cast<float>(++frame_count) / static_cast<float>(tick_meter.getTimeSec());
+            frame_count = 0;
+            is_reset = true;
+            LOG_EVERY_T(INFO, 2) << "fps: " << fps;
+        }
+        continue;*/
         m_frame = *m_hik_frame.getRgbFrame();
         timestamp = m_hik_frame.getTimestamp();
         // dt
@@ -124,14 +125,11 @@ void ArmorAutoAim::run() {
         // -- predict --
         if (m_tracker.isTracking()) {
             const Eigen::VectorXd& predict_state = m_tracker.getTargetPredictSate();
-//            LOG(INFO) << "\npredict_state: \n" << predict_state;
-//            LOG(INFO) << "\nmeasure: \n" << m_tracker.measurement;
             double xc  = predict_state[0],
                    yc  = predict_state[2],
                    zc  = predict_state[4],
                    yaw = predict_state[6],
                    r   = predict_state[8];
-
 #ifdef USE_SIN
             Eigen::Vector3d world_predict_translation(xc - r*sin(yaw), yc - r*cos(yaw), zc);
 #endif
@@ -139,12 +137,14 @@ void ArmorAutoAim::run() {
             Eigen::Vector3d world_predict_translation(xc - r*cos(yaw), yc - r*sin(yaw), zc);
 #endif
             Eigen::Vector3d predict_translation = m_solver.worldToCamera(world_predict_translation, quaternion.matrix());
+            LOG(INFO) << "world: " << world_predict_translation;
+            LOG(INFO) << "camera: " << predict_translation;
             cv::circle(m_frame, m_solver.reproject(predict_translation), 36, cv::Scalar(59, 188, 235), 8);
             double flight_time = std::abs(world_predict_translation.norm() / m_solver.getSpeed()) * 1000;
-            double program_run_time = static_cast<double>(
+            double program_delay = static_cast<double>(
                     std::chrono::duration_cast<Unit>(
                             Clock::now().time_since_epoch()).count() - timestamp);
-            double delay_time = m_params.delta_time + flight_time + program_run_time;
+            double delay_time = m_params.delta_time + flight_time + program_delay;
             world_predict_translation[0] += predict_state[1] * delay_time;
             world_predict_translation[1] += predict_state[3] * delay_time;
             predict_translation = m_solver.worldToCamera(world_predict_translation, quaternion.matrix());
@@ -172,8 +172,60 @@ void ArmorAutoAim::run() {
 //            emit viewEkfSign(m_tracker, predict_translation, predict_translation);
 //            emit viewTimestampSign(timestamp, m_imu_data->timestamp);
 #endif
-            double delta_pitch = m_solver.ballisticSolver(-predict_translation);
-            m_aim_info = translation2YawPitch(predict_translation);
+//            double delta_pitch = m_solver.ballisticSolver(-predict_translation);
+#ifdef USE_SIN
+            {
+
+                double x = abs(xc - r*sin(yaw)), y = abs(yc - r*cos(yaw)), z = abs(zc);
+                LOG(INFO) << fmt::format("yaw: {}; pitch: {}",
+                                         atan2(x, y) * 180.0f / M_PI,
+                                         atan2(z, y) * 180.0f / M_PI);
+//                LOG(INFO) << fmt::format("x/y: {}; x/z: {}; y/x: {}; y/z: {}; z/x: {}; z/y: {}",
+//                                         atan2(x, y) * 180.0f / M_PI,
+//                                         atan2(x, z) * 180.0f / M_PI,
+//                                         atan2(y, x) * 180.0f / M_PI,
+//                                         atan2(y, z) * 180.0f / M_PI,
+//                                         atan2(z, x) * 180.0f / M_PI,
+//                                         atan2(z, y) * 180.0f / M_PI);
+//                LOG(INFO) << fmt::format("yaw: {}; pitch: {}",
+//                                         atan2(-(xc - r*sin(yaw)), -(yc - r*cos(yaw))) * 180.0f / M_PI,
+//                                         atan2(-zc, -(yc - r*cos(yaw))) * 180.0f / M_PI);
+            }
+#endif
+#ifdef USE_COS
+            {
+                double x = -(xc - r*cos(yaw)), y = -(yc - r*sin(yaw)), z = -zc;
+                LOG(INFO) << fmt::format("x/y: {}; x/z: {}; y/x: {}; y/z: {}; z/x: {}; z/y: {}",
+                                         atan2(x, y) * 180.0f / M_PI,
+                                         atan2(x, z) * 180.0f / M_PI,
+                                         atan2(y, x) * 180.0f / M_PI,
+                                         atan2(y, z) * 180.0f / M_PI,
+                                         atan2(z, x) * 180.0f / M_PI,
+                                         atan2(z, y) * 180.0f / M_PI);
+//                LOG(INFO) << fmt::format("yaw: {}; pitch: {}",
+//                                         atan2(-(xc - r*sin(yaw)), -(yc - r*cos(yaw))) * 180.0f / M_PI,
+//                                         atan2(-zc, -(yc - r*cos(yaw))) * 180.0f / M_PI);
+            }
+//            LOG(INFO) << fmt::format("yaw: {}; pitch: {}",
+//                                     atan2(xc - r*cos(yaw), zc) * 180.0f / M_PI,
+//                                     atan2(yc - r*sin(yaw), zc) * 180.0f / M_PI);
+#endif
+            m_aim_info = AutoAimInfo(
+                static_cast<float>(xc - r*sin(yaw)),
+                static_cast<float>(yc - r*cos(yaw)),
+                static_cast<float>(zc),
+                static_cast<float>(predict_state[1]),
+                static_cast<float>(predict_state[3]),
+                static_cast<float>(predict_state[5]),
+                static_cast<float>(predict_state[6]),
+                static_cast<float>(predict_state[7]),
+                static_cast<float>(r),
+                static_cast<float>(program_delay),
+                static_cast<uint8_t>(m_tracker.state()), m_imu_data->data_id);
+/*            m_aim_info = translation2YawPitch(predict_translation);
+            m_aim_info.v_x = static_cast<float>(predict_state[1]);
+            m_aim_info.v_y = static_cast<float>(predict_state[3]);
+            m_aim_info.v_z = static_cast<float>(predict_state[5]);
             if (!std::isnan(delta_pitch)) {
                 m_aim_info.pitch -= static_cast<float>(delta_pitch);
             } else {
@@ -191,14 +243,14 @@ void ArmorAutoAim::run() {
             } else {
                 auto pre_yaw = predict_state[6] * 180 / M_PI;
                 if (150 < pre_yaw && pre_yaw < 220) m_aim_info.is_shoot = true;
-            }
+            }*/
+        } else {
+            m_aim_info.reset();
+            m_aim_info.tracker_status = static_cast<uint8_t>(m_tracker.state());
+            m_aim_info.data_id = m_imu_data->data_id;
         }
         // -- Send --
-        m_aim_info.tracker_status = static_cast<uint8_t>(m_tracker.state());
         auto imu_euler = quaternion.toRotationMatrix().eulerAngles(2, 1, 0);
-        m_aim_info.data_id = m_imu_data->data_id;
-        m_aim_info.yaw += m_params.compensate_yaw;
-        m_aim_info.pitch += m_params.compensate_pitch;
 #ifdef SENTRY
         m_aim_info.id = m_params.microcontroller_id;
 #endif
@@ -239,7 +291,7 @@ void ArmorAutoAim::loadConfig() {
     m_params.exp_time = detector_config["camera"]["exposure_time"].as<float>();
     m_params.gain = detector_config["camera"]["gain"].as<float>();
     m_params.armor_model_path = detector_config["armor_model_path"].as<std::string>();
-    auto c = detector_config["target_color"].as<std::string>();
+    auto c = detector_config["detect_color"].as<std::string>();
     std::transform(c.begin(), c.end(), c.begin(), ::toupper);
     if (c == "RED")        m_params.target_color = ArmorColor::RED;
     else if (c == "BLUE")  m_params.target_color = ArmorColor::BLUE;
@@ -403,19 +455,19 @@ void ArmorAutoAim::initEkf() {
     m_tracker.ekf = std::make_shared<ExtendedKalmanFilter>(p0, f, h, j_f, j_h, update_Q, update_R);
 }
 
-AutoAimInfo ArmorAutoAim::translation2YawPitch(const solver::Pose& pose) {
-    return {
-        static_cast<float>(atan2(pose.x, pose.z) * 180.0f / M_PI),
-        static_cast<float>(atan2(pose.y, pose.z) * 180.0f / M_PI),
-        pose.z
-    };
-}
-
-AutoAimInfo ArmorAutoAim::translation2YawPitch(const Eigen::Vector3d& translation) {
-    return {
-        static_cast<float>(atan2(translation(0), translation(2)) * 180.0f / M_PI),
-        static_cast<float>(atan2(translation(1), translation(2)) * 180.0f / M_PI),
-        static_cast<float>(translation(2))
-    };
-}
+//AutoAimInfo ArmorAutoAim::translation2YawPitch(const solver::Pose& pose) {
+//    return {
+//        static_cast<float>(atan2(pose.x, pose.z) * 180.0f / M_PI),
+//        static_cast<float>(atan2(pose.y, pose.z) * 180.0f / M_PI),
+//        pose.z
+//    };
+//}
+//
+//AutoAimInfo ArmorAutoAim::translation2YawPitch(const Eigen::Vector3d& translation) {
+//    return {
+//        static_cast<float>(atan2(translation(0), translation(2)) * 180.0f / M_PI),
+//        static_cast<float>(atan2(translation(1), translation(2)) * 180.0f / M_PI),
+//        static_cast<float>(translation(2))
+//    };
+//}
 }
