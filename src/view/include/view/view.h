@@ -74,9 +74,9 @@ public:
         setWindowTitle("Ekf View");
         m_chart_views["x"] = new ChartView(this);
         m_chart_views["x"]->getChart()->setTitle("Ekf X(Camera)");
-        m_chart_views["x"]->addSeries("measure");
-        m_chart_views["x"]->addSeries("predict");
-        m_chart_views["x"]->addSeries("predict_shoot");
+//        m_chart_views["x"]->addSeries("measure");
+//        m_chart_views["x"]->addSeries("predict");
+//        m_chart_views["x"]->addSeries("predict_shoot");
         m_chart_views["x"]->addSeries("measure_world");
         m_chart_views["x"]->addSeries("predict_world");
         m_layout->addWidget(m_chart_views["x"]->getChartView(), 0, 0);
@@ -88,8 +88,8 @@ public:
 
         m_chart_views["y"] = new ChartView(this);
         m_chart_views["y"]->getChart()->setTitle("Ekf Y(Camera)");
-        m_chart_views["y"]->addSeries("measure");
-        m_chart_views["y"]->addSeries("predict");
+//        m_chart_views["y"]->addSeries("measure");
+//        m_chart_views["y"]->addSeries("predict");
         m_chart_views["y"]->addSeries("measure_world");
         m_chart_views["y"]->addSeries("predict_world");
         m_layout->addWidget(m_chart_views["y"]->getChartView(), 0, 1);

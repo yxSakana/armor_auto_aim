@@ -22,6 +22,12 @@ namespace armor_auto_aim::coordinate_solver {
 cv::Point2d reproject(const Eigen::Matrix3d& camera_intrinsic, const Eigen::Vector3d& xyz);
 cv::Point2d reproject(const std::array<double, 9>& camera_intrinsic, const Eigen::Vector3d& xyz);
 
+Eigen::Vector3d cameraToImu(const Eigen::Vector3d& o1c_point,
+                            const Eigen::MatrixXd& transform_c2i);
+
+Eigen::Vector3d imuToCamera(const Eigen::Vector3d& o1i_point,
+                            const Eigen::MatrixXd& transform_i2c);
+
 /**
  * @brief 相机坐标系到(imu参考的)世界坐标系
  * @param o1c_point 装甲板在相机坐标系下的坐标

@@ -7,8 +7,8 @@
  * @date 2023-11-03 19:29
  */
 
-//#define USE_COS
-#define USE_SIN
+#define USE_COS
+//#define USE_SIN
 
 #include <armor_tracker/tracker.h>
 
@@ -88,7 +88,7 @@ void Tracker::updateTracker(const Armors& armors) {
             double position_difference = (predicted_position_vec - measurement_position_vec).norm();
             if (position_difference < min_position_difference) {
                 min_position_difference = position_difference;
-                yaw_difference = std::abs(m_target_predict_state[6] - correctYaw(armor.pose.yaw));
+                yaw_difference = std::abs(normalize_radians(m_target_predict_state[6]) - correctYaw(armor.pose.yaw));
                 tracked_armor = armor;
             }
         }
@@ -101,21 +101,14 @@ void Tracker::updateTracker(const Armors& armors) {
                                           tracked_armor.world_coordinate[2], correctYaw(tracked_armor.pose.yaw));
             m_target_predict_state = ekf->predict(measurement);
         } else if (same_id_armor_count == 1 && yaw_difference > m_MaxMatchYaw) {
-            LOG_IF(WARNING, min_position_difference > m_MaxMatchDistance)
-                    << min_position_difference
-                    << "\n predicted_position_vec: " << predicted_position_vec
-                    << "\n measurement_position_vec: " << measurement_position_vec;;
-            LOG(WARNING) << "armor jump";
             handleArmorJump(*same_id_armor);
         } else {
+            LOG_IF(WARNING, yaw_difference > m_MaxMatchYaw)
+                            << fmt::format("No matched armor, because yaw: {} > {}",
+                                           yaw_difference, m_MaxMatchYaw);
             LOG_IF(WARNING, min_position_difference > m_MaxMatchDistance)
-                    << min_position_difference
-                    << "\n predicted_position_vec: " << predicted_position_vec
-                    << "\n measurement_position_vec: " << measurement_position_vec
-                    << "\n size: " << armors.size()
-                    << "\n armor: " << armors[0].world_coordinate
-                    << "\n id: " << m_tracked_id << " ?= " << armors[0].number;
-            LOG(WARNING) << "No matched armor!";
+                << fmt::format("No matched armor, because distance: {} > {}",
+                               min_position_difference, m_MaxMatchDistance);
         }
     }
     if (m_target_predict_state(8) < 0.12) {
@@ -180,9 +173,30 @@ double Tracker::shortest_angular_distance(double from, double to) {
     return (result <= 0.0)? result + M_PI: result - M_PI;
 }
 
+static double adjustAngle(double angle) {
+    while (angle < 0) {
+        angle += 2 * M_PI;
+    }
+    while (angle >= 2 * M_PI) {
+        angle -= 2 * M_PI;
+    }
+    return angle;
+}
+
 double Tracker::correctYaw(const double yaw) {
-//    return yaw;
-    m_last_yaw = m_last_yaw + shortest_angular_distance(m_last_yaw, yaw);
+    m_last_yaw = yaw;
+    return yaw;
+//    LOG_EVERY_T(INFO, 1) << fmt::format("yaw: {}; last: {}; shortest: {}", yaw, m_last_yaw, shortest_angular_distance(m_last_yaw, yaw));
+//    return adjustAngle(yaw);
+    m_last_yaw = m_last_yaw + shortest_angular_distance(m_last_yaw, adjustAngle(yaw));
     return m_last_yaw;
+}
+
+Eigen::Vector3d Tracker::getPositionFromState(const Eigen::VectorXd& x) {
+    double xc = x[0], yc = x[1], zc = x[2];
+    double yaw = x[6], r = x[7];
+    double ya = yc - r*cos(yaw);
+    double xa = xc - r*sin(yaw);
+    return {xa, ya, zc};
 }
 } // armor_auto_aim

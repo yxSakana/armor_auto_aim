@@ -38,7 +38,7 @@ void ViewWork::show() {
     m_view->m_ekf_view->showMaximized();
 //    m_view->m_timestamp_view->showMaximized();
 //    m_view->m_imu_euler->showMaximized();
-    m_view->m_face_angle_view->showMaximized();
+//    m_view->m_face_angle_view->showMaximized();
 }
 
 void ViewWork::showFrame(const cv::Mat& frame,
@@ -67,29 +67,29 @@ void ViewWork::viewEkf(
     p = m_view->m_ekf_view->getLastPoint("x", "predict_world");
     m_view->m_ekf_view->insert("x", "predict_world", p.x()+1, predict_world_coordinate[0]);
 //     x-measure
-    p = m_view->m_ekf_view->getLastPoint("x", "measure");
-    m_view->m_ekf_view->insert("x", "measure", p.x()+1, armor.pose.x);
+//    p = m_view->m_ekf_view->getLastPoint("x", "measure");
+//    m_view->m_ekf_view->insert("x", "measure", p.x()+1, armor.pose.x);
 //     x-predict
-    p = m_view->m_ekf_view->getLastPoint("x", "predict");
-    m_view->m_ekf_view->insert("x", "predict", p.x()+1, predict_camera_coordinate[0]);
+//    p = m_view->m_ekf_view->getLastPoint("x", "predict");
+//    m_view->m_ekf_view->insert("x", "predict", p.x()+1, predict_camera_coordinate[0]);
 //     x-predict_shoot
-    p = m_view->m_ekf_view->getLastPoint("x", "predict_shoot");
-    m_view->m_ekf_view->insert("x", "predict_shoot", p.x()+1, shoot_camera_coordinate[0]);
+//    p = m_view->m_ekf_view->getLastPoint("x", "predict_shoot");
+//    m_view->m_ekf_view->insert("x", "predict_shoot", p.x()+1, shoot_camera_coordinate[0]);
     // v_x-predict
     p = m_view->m_ekf_view->getLastPoint("v_x", "predict");
     m_view->m_ekf_view->insert("v_x", "predict", p.x()+1, predict_state[1]);
     // y-measure-word
     p = m_view->m_ekf_view->getLastPoint("y", "measure_world");
-    m_view->m_ekf_view->insert("y", "measure_world", p.x()+1, armor.world_coordinate[1]);
+    m_view->m_ekf_view->insert("y", "measure_world", p.x()+1, armor.world_coordinate[2]);
     // y-predict-world
     p = m_view->m_ekf_view->getLastPoint("y", "predict_world");
-    m_view->m_ekf_view->insert("y", "predict_world", p.x()+1, predict_world_coordinate[1]);
+    m_view->m_ekf_view->insert("y", "predict_world", p.x()+1, predict_world_coordinate[2]);
     // y-measure
-    p = m_view->m_ekf_view->getLastPoint("y", "measure");
-    m_view->m_ekf_view->insert("y", "measure", p.x()+1, armor.pose.y);
+//    p = m_view->m_ekf_view->getLastPoint("y", "measure");
+//    m_view->m_ekf_view->insert("y", "measure", p.x()+1, armor.pose.y);
     // y-predict
-    p = m_view->m_ekf_view->getLastPoint("y", "predict");
-    m_view->m_ekf_view->insert("y", "predict", p.x()+1, predict_camera_coordinate[1]);
+//    p = m_view->m_ekf_view->getLastPoint("y", "predict");
+//    m_view->m_ekf_view->insert("y", "predict", p.x()+1, predict_camera_coordinate[1]);
     // v_y-predict
     p = m_view->m_ekf_view->getLastPoint("v_y", "predict");
     m_view->m_ekf_view->insert("v_y", "predict", p.x()+1, predict_state[3]);

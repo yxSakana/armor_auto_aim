@@ -86,19 +86,19 @@ void ballisticSolver_0() {
         }
     };
 
-    Point target_point(100, 1);
-    float bullet_velocity = 25;
-    Point temp_point = target_point;
-    for (int i = 0; i < 100; ++i) {
-        float angle = atan2(temp_point.y, temp_point.x);
+    // Point target_point(100, 1);
+    // float bullet_velocity = 25;
+    // Point temp_point = target_point;
+    // for (int i = 0; i < 100; ++i) {
+    //     float angle = atan2(temp_point.y, temp_point.x);
 
-        float time = temp_point.y / (bullet_velocity * cos(angle));
-        Point real_point(temp_point.x, (bullet_velocity * sin(angle) * time - 0.5 * g * time * time));
-        float delta_height = target_point.y - real_point.y;
-        temp_point.y += delta_height;
+    //     float time = temp_point.y / (bullet_velocity * cos(angle));
+    //     Point real_point(temp_point.x, (bullet_velocity * sin(angle) * time - 0.5 * g * time * time));
+    //     float delta_height = target_point.y - real_point.y;
+    //     temp_point.y += delta_height;
 
-        LOG(INFO) << fmt::format("第 {} 次迭代: angle: {}； temp_point: {}; delta_height: {}",
-                                 i, angle, temp_point.to_string(), delta_height);
-    }
+    //     LOG(INFO) << fmt::format("第 {} 次迭代: angle: {}； temp_point: {}; delta_height: {}",
+    //                              i, angle, temp_point.to_string(), delta_height);
+    // }
 }
 }
