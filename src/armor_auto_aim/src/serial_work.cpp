@@ -50,6 +50,13 @@ void SerialWork::selectFunction(uint8_t code, uint16_t id, const QByteArray& dat
                 sendNowTimestamp();
                 break;
             }
+            case m_RecvAimPointCode: {
+                LOG(INFO) << "get point";
+                AimPoint point;
+                std::memcpy(&point, data.data(), sizeof(AimPoint));
+                emit aimPoint(point.x, point.y, point.z);
+                break;
+            }
             default: {
                 LOG(WARNING) << fmt::format("Unknown function code {}, id: {}, data: {}", code, id, data.data());
             }

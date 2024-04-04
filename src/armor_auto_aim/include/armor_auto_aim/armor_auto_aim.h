@@ -62,6 +62,8 @@ public:
 #endif
 public slots:
     void pushImuData(const ImuData& data) { m_imu_data_queue.push(data); }
+
+    void viewAimPoint(float x, float y, float z);
 signals:
     void sendAimInfo(const AutoAimInfo& aim_info);
 
@@ -71,6 +73,8 @@ signals:
                    const double& fps,
                    const uint64_t& timestamp,
                    const float& dt);
+
+    void showFrameAimPoint(cv::Mat& src);
 
     void viewEkfSign(const armor_auto_aim::Tracker& tracker,
                      const Eigen::Vector3d& predict_camera_coordinate,

@@ -39,6 +39,8 @@ public slots:
     void showThreadId() const { LOG(INFO) << "view_work_thread: " << QThread::currentThreadId(); }
 
     void viewFaceAngle(float yaw, float pre_yaw);
+
+    void showFrameAimPoint(cv::Mat& src);
 signals:
     void viewFaceAngleSign(float yaw, float pre_yaw);
 private:

@@ -48,6 +48,17 @@ void ArmorAutoAim::setSerialWork(armor_auto_aim::SerialWork* sw) {
     m_serial_work = sw;
 }
 
+void ArmorAutoAim::viewAimPoint(float x, float y, float z) {
+    return;
+    LOG(INFO) << "view aim point";
+    auto quaternion = Eigen::Quaterniond(m_imu_data->quaternion.w, m_imu_data->quaternion.x,
+                                                 m_imu_data->quaternion.y, m_imu_data->quaternion.z);
+    auto p = m_solver.reproject(m_solver.worldToCamera(Eigen::Vector3d (x, y, z), quaternion.matrix()));
+    LOG(INFO) << "p: " << p;
+    cv::circle(m_frame, p, 26, cv::Scalar(255, 0, 0), -1);
+//    emit showFrameAimPoint(m_frame);
+}
+
 void ArmorAutoAim::run() {
     using Clock = std::chrono::system_clock;
     using Unit = std::chrono::milliseconds;
@@ -106,7 +117,7 @@ void ArmorAutoAim::run() {
         for (auto& armor: m_armors) {
             camera_point = Eigen::Vector3d(armor.pose.x, armor.pose.y, armor.pose.z);
             armor.world_coordinate = m_solver.cameraToWorld(camera_point, quaternion.matrix());
-            armor.number = 6;
+//            armor.number = 6;
         }
         // -- tracker --
         if (m_tracker.state() == TrackerStateMachine::State::Lost) {
@@ -122,9 +133,9 @@ void ArmorAutoAim::run() {
                    zc  = predict_state[4],
                    yaw = predict_state[6],
                    r   = predict_state[8];
-            cv::circle(m_frame, m_solver.reproject(
-                    m_solver.worldToCamera(Eigen::Vector3d(xc, yc, zc), quaternion.matrix())),
-                       36, cv::Scalar(59, 188, 235), 8);
+//            cv::circle(m_frame, m_solver.reproject(
+//                    m_solver.worldToCamera(Eigen::Vector3d(xc, yc, zc), quaternion.matrix())),
+//                       36, cv::Scalar(59, 188, 235), 8);
 //            LOG(INFO) << "v_yaw: " << predict_state[7];
 #ifdef USE_SIN
             Eigen::Vector3d world_predict_translation(xc - r*sin(yaw), yc - r*cos(yaw), zc);
@@ -160,7 +171,7 @@ void ArmorAutoAim::run() {
 //                    m_solver.worldToCamera(Eigen::Vector3d(xc, yc, zc), quaternion.matrix())),
 //                       40, cv::Scalar(0, 255, 255), -1);
 
-            int armor_number = 3;
+            int armor_number = 1;
             double once_angle = /*M_PI_2*/ 2.0f * M_PI / 3.0f;  // 2.0f * M_PI / 3.0f
             for (int i = 0; i < armor_number; ++i) {
                 double tmp_yaw = yaw + i * once_angle;
@@ -183,14 +194,14 @@ void ArmorAutoAim::run() {
                               y = m_tracker.tracked_armor.world_coordinate[1],
                               z = m_tracker.tracked_armor.world_coordinate[2],
                               world_yaw = m_tracker.tracked_armor.pose.yaw;
-                        cv::putText(m_frame, std::to_string(world_yaw), p2+cv::Point2d(0, -250), 1, 2, cv::Scalar(0, 255, 55), 2);
-                        cv::putText(m_frame, std::to_string(world_yaw * 180.0 / M_PI), p2+cv::Point2d(0, -200), 1, 2, cv::Scalar(0, 255, 55), 2);
-                        cv::putText(m_frame, std::to_string(x), p2+cv::Point2d(0, -150), 1, 2, cv::Scalar(0, 255, 55), 2);
-                        cv::putText(m_frame, std::to_string(y), p2+cv::Point2d(0, -100), 1, 2, cv::Scalar(0, 255, 55), 2);
-                        cv::putText(m_frame, std::to_string(z), p2+cv::Point2d(0, -50), 1, 2, cv::Scalar(0, 255, 55), 2);
-
-                        cv::putText(m_frame, std::to_string(atan2(x, z) * 180.0 / M_PI), p2+cv::Point2d(250, -150), 1, 2, cv::Scalar(0, 255, 55), 2);
-                        cv::putText(m_frame, std::to_string(atan2(y, z) * 180.0 / M_PI), p2+cv::Point2d(250, -50), 1, 2, cv::Scalar(0, 255, 55), 2);
+//                        cv::putText(m_frame, std::to_string(world_yaw), p2+cv::Point2d(0, -250), 1, 2, cv::Scalar(0, 255, 55), 2);
+//                        cv::putText(m_frame, std::to_string(world_yaw * 180.0 / M_PI), p2+cv::Point2d(0, -200), 1, 2, cv::Scalar(0, 255, 55), 2);
+//                        cv::putText(m_frame, std::to_string(x), p2+cv::Point2d(0, -150), 1, 2, cv::Scalar(0, 255, 55), 2);
+//                        cv::putText(m_frame, std::to_string(y), p2+cv::Point2d(0, -100), 1, 2, cv::Scalar(0, 255, 55), 2);
+//                        cv::putText(m_frame, std::to_string(z), p2+cv::Point2d(0, -50), 1, 2, cv::Scalar(0, 255, 55), 2);
+//
+//                        cv::putText(m_frame, std::to_string(atan2(x, z) * 180.0 / M_PI), p2+cv::Point2d(250, -150), 1, 2, cv::Scalar(0, 255, 55), 2);
+//                        cv::putText(m_frame, std::to_string(atan2(y, z) * 180.0 / M_PI), p2+cv::Point2d(250, -50), 1, 2, cv::Scalar(0, 255, 55), 2);
                     }
                 }
 //                break;
@@ -199,7 +210,7 @@ void ArmorAutoAim::run() {
 //            float yaw_ = m_tracker.tracked_armor.pose.yaw;
 //            LOG(INFO) << "face yaw: " << yaw_ * 180 / M_PI;
 //            emit m_view_work->viewFaceAngleSign(m_tracker.getLastYaw() * 180 / M_PI, predict_state[6] * 180 / M_PI);
-            emit viewEkfSign(m_tracker, predict_translation, predict_translation);
+//            emit viewEkfSign(m_tracker, predict_translation, predict_translation);
 //            emit viewTimestampSign(timestamp, m_imu_data->timestamp);
 #endif
 

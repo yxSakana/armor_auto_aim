@@ -83,6 +83,7 @@ struct ImuData {
             return info;
         }
     } quaternion{};
+    float yaw, pitch, roll;
 
     std::string to_string() const {
         std::string info("[ImuData ");
@@ -91,6 +92,10 @@ struct ImuData {
         info += "]";
         return info;
     }
+};
+
+struct AimPoint {
+    float x, y, z;
 };
 
 #endif //ARMOR_AUTO_AIMING_COMMUNICATION_PROTOCOL_H

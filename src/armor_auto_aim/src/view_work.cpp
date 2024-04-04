@@ -20,6 +20,7 @@ ViewWork::ViewWork(QObject* parent)
     qRegisterMetaType<Eigen::Vector3d>("Eigen::Vector3d");
     qRegisterMetaType<uint64_t>("uint64_t");
     qRegisterMetaType<cv::Mat>("cv::Mat");
+    qRegisterMetaType<cv::Mat>("cv::Mat&");
     qRegisterMetaType<std::vector<armor_auto_aim::Armor>>("std::vector<armor_auto_aim::Armor>");
     qRegisterMetaType<armor_auto_aim::Tracker>("armor_auto_aim::Tracker");
 
@@ -47,6 +48,12 @@ void ViewWork::showFrame(const cv::Mat& frame,
     cv::Mat f = frame.clone();
     debug_toolkit::drawFrameInfo(f, armors, tracker, fps, timestamp, dt);
     cv::imshow("frame", f);
+    cv::waitKey(1);
+}
+
+void ViewWork::showFrameAimPoint(cv::Mat& src) {
+    LOG(INFO)  << "show aim pooint aaa";
+    cv::imshow("aim_p", src);
     cv::waitKey(1);
 }
 

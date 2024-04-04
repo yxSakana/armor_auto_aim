@@ -48,8 +48,12 @@ int main(int argc, char* argv[]) {
 
     QObject::connect(&auto_aim_thread, &armor_auto_aim::ArmorAutoAim::sendAimInfo,
                      &serial_work, &armor_auto_aim::SerialWork::sendAimInfo);
+    QObject::connect(&auto_aim_thread, &armor_auto_aim::ArmorAutoAim::showFrameAimPoint,
+                     &view_work, &armor_auto_aim::ViewWork::showFrameAimPoint);
     QObject::connect(&serial_work, &armor_auto_aim::SerialWork::readyImuData,
                      &auto_aim_thread, &armor_auto_aim::ArmorAutoAim::pushImuData);
+    QObject::connect(&serial_work, &armor_auto_aim::SerialWork::aimPoint,
+                     &auto_aim_thread, &armor_auto_aim::ArmorAutoAim::viewAimPoint);
 #ifdef DEBUG
     QObject::connect(&auto_aim_thread, &armor_auto_aim::ArmorAutoAim::showFrame,
                      &view_work, &armor_auto_aim::ViewWork::showFrame);
@@ -71,7 +75,7 @@ int main(int argc, char* argv[]) {
     auto_aim_thread.start();
     if (auto_aim_thread_2 != nullptr) auto_aim_thread_2->start();
 #ifdef DEBUG
-    view_work.show();
+//    view_work.show();
 #endif
     LOG(INFO) << fmt::format("main_thread: {};", QThread::currentThreadId());
     emit serial_work.showThreadIdSignal();

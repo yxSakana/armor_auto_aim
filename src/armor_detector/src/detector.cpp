@@ -59,6 +59,10 @@ bool Detector::detect(const cv::Mat& frame, std::vector<Armor>* armors) {
             armors->emplace_back(armor_auto_aim::InferenceResult(inference_result[i]));
             is_ok = m_pnp_solver->obtain3dPose((*armors)[i]);
             Eigen::Vector3d c_point((*armors)[i].pose.x, (*armors)[i].pose.y, (*armors)[i].pose.z);
+
+//            if ((*armors)[i].pose.yaw < 0)
+//                armors->pop_back();
+
             if (!is_ok)
                 armors->pop_back();
         }
