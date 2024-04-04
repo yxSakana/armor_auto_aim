@@ -34,12 +34,15 @@ public:
 
     Detector& operator=(Detector&& other) noexcept;
 
+    void setDetectColor(const ArmorColor& color) { m_detect_color = color; }
+
     bool detect(const cv::Mat& frame, std::vector<Armor>* armors);
 private:
     const std::string m_model_path{};
     const std::array<double, 9> m_intrinsic_matrix{};
     const std::vector<double> m_distortion_vector{};
 
+    ArmorColor m_detect_color;
     std::unique_ptr<Inference> m_inference;
     std::shared_ptr<PnPSolver> m_pnp_solver;
 };

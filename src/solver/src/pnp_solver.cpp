@@ -25,15 +25,32 @@ PnPSolver::PnPSolver(const std::array<double, 9>& intrinsic_matrix,
     constexpr double large_half_y = LARGE_ARMOR_HEIGHT / 2.0 / 1000.0;
 
     // 3d Points(lt lb rb rt)
+/*
     m_small_armor_point3d.push_back(cv::Point3f(small_half_x, small_half_y, 0));
     m_small_armor_point3d.push_back(cv::Point3f(small_half_x, -small_half_y, 0));
     m_small_armor_point3d.push_back(cv::Point3f(-small_half_x, -small_half_y, 0));
     m_small_armor_point3d.push_back(cv::Point3f(-small_half_x, small_half_y, 0));
+*/
 
-    m_large_armor_point3d.push_back(cv::Point3f(large_half_x, large_half_y, 0));
+    m_small_armor_point3d.push_back(cv::Point3f(0, small_half_x, small_half_y));
+    m_small_armor_point3d.push_back(cv::Point3f(0, small_half_x, -small_half_y));
+    m_small_armor_point3d.push_back(cv::Point3f(0, -small_half_x, -small_half_y));
+    m_small_armor_point3d.push_back(cv::Point3f(0, -small_half_x, small_half_y));
+
+/*    m_small_armor_point3d.push_back(cv::Point3f(-small_half_x, -small_half_y, 0));
+    m_small_armor_point3d.push_back(cv::Point3f(-small_half_x, small_half_y, 0));
+    m_small_armor_point3d.push_back(cv::Point3f(small_half_x, small_half_y, 0));
+    m_small_armor_point3d.push_back(cv::Point3f(small_half_x, -small_half_y, 0));*/
+
+/*    m_large_armor_point3d.push_back(cv::Point3f(large_half_x, large_half_y, 0));
     m_large_armor_point3d.push_back(cv::Point3f(large_half_x, -large_half_y, 0));
     m_large_armor_point3d.push_back(cv::Point3f(-large_half_x, -large_half_y, 0));
-    m_large_armor_point3d.push_back(cv::Point3f(-large_half_x, large_half_y, 0));
+    m_large_armor_point3d.push_back(cv::Point3f(-large_half_x, large_half_y, 0));*/
+
+    m_large_armor_point3d.push_back(cv::Point3f(0, large_half_x, large_half_y));
+    m_large_armor_point3d.push_back(cv::Point3f(0, large_half_x, -large_half_y));
+    m_large_armor_point3d.push_back(cv::Point3f(0, -large_half_x, -large_half_y));
+    m_large_armor_point3d.push_back(cv::Point3f(0, -large_half_x, large_half_y));
 }
 
 bool PnPSolver::pnpSolver(const Armor& armor, cv::Mat& rvec, cv::Mat& tvec) {
@@ -49,15 +66,21 @@ bool PnPSolver::obtain3dPose(Armor& armor) {
         cv::Rodrigues(rvec, rmat_cv);
         Eigen::Matrix3d rmat_eigen;
         cv::cv2eigen(rmat_cv, rmat_eigen);
-        Eigen::Vector3d euler_angles = rmat_eigen.eulerAngles(2, 1, 0);
-
-        armor.pose.pitch = static_cast<float>(euler_angles(1));
-        armor.pose.yaw = static_cast<float>(adjust(euler_angles(2)));
+//        Eigen::Vector3d euler_angles = rmat_eigen.eulerAngles(2, 1, 0);
+//        std::cout << rmat_eigen << std::endl;
+        Eigen::Vector3d euler_angles = rmat_eigen.eulerAngles(0, 1, 2);
+//        Eigen::Vector3d euler_angles = rmat_eigen.eulerAngles(2, 0, 1);
+        // 012, 021, 102, 120, 201, 210
+// ?
+//        armor.pose.pitch = static_cast<float>(euler_angles(1));
+//        armor.pose.yaw = static_cast<float>(euler_angles(2));
+//        armor.pose.roll = static_cast<float>(euler_angles(0));
+        armor.pose.pitch = static_cast<float>(euler_angles(2));
+        armor.pose.yaw = static_cast<float>(euler_angles(1));
         armor.pose.roll = static_cast<float>(euler_angles(0));
         armor.pose.x = static_cast<float>(tvec.at<double>(0, 0));
         armor.pose.y = static_cast<float>(tvec.at<double>(1, 0));
         armor.pose.z = static_cast<float>(tvec.at<double>(2, 0));
-
         return true;
     } else {
         return false;

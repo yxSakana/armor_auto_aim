@@ -53,9 +53,16 @@ bool Detector::detect(const cv::Mat& frame, std::vector<Armor>* armors) {
     bool status = m_inference->inference(frame, &inference_result);
     if (status) {
         for (int i = 0; i < inference_result.size(); ++i) {
+            if (static_cast<ArmorColor>(inference_result[i].color) != m_detect_color /*&&
+                  static_cast<ArmorColor>(inference_result[i].color) != ArmorColor::GREY*/)
+                continue;
             armors->emplace_back(armor_auto_aim::InferenceResult(inference_result[i]));
             is_ok = m_pnp_solver->obtain3dPose((*armors)[i]);
             Eigen::Vector3d c_point((*armors)[i].pose.x, (*armors)[i].pose.y, (*armors)[i].pose.z);
+
+//            if ((*armors)[i].pose.yaw < 0)
+//                armors->pop_back();
+
             if (!is_ok)
                 armors->pop_back();
         }

@@ -62,12 +62,19 @@ public:
 #endif
 public slots:
     void pushImuData(const ImuData& data) { m_imu_data_queue.push(data); }
+
+    void viewAimPoint(float x, float y, float z);
 signals:
     void sendAimInfo(const AutoAimInfo& aim_info);
 
     void showFrame(const cv::Mat& frame,
-                   const std::vector<armor_auto_aim::Armor>& armors, const armor_auto_aim::Tracker& tracker,
-                   const double& fps, const uint64_t& timestamp, const float& dt);
+                   const std::vector<armor_auto_aim::Armor>& armors,
+                   const armor_auto_aim::Tracker& tracker,
+                   const double& fps,
+                   const uint64_t& timestamp,
+                   const float& dt);
+
+    void showFrameAimPoint(cv::Mat& src);
 
     void viewEkfSign(const armor_auto_aim::Tracker& tracker,
                      const Eigen::Vector3d& predict_camera_coordinate,
@@ -104,20 +111,15 @@ private:
     void initHikCamera();
 
     void initEkf();
-    Eigen::Matrix<double, 8, 8> F;
-    Eigen::Matrix<double, 4, 8> H;
+    Eigen::Matrix<double, 4, 9> H;
 //    Eigen::Matrix<double, 8, 8> Q;
 //    Eigen::Matrix<double, 4, 4> R;
-    Eigen::DiagonalMatrix<double, 8> Q;
+    Eigen::DiagonalMatrix<double, 9> Q;
     Eigen::DiagonalMatrix<double, 4> R;
     Eigen::VectorXd X;
     Eigen::VectorXd Z;
     Eigen::Vector4d m_r_diagonal;
-    Eigen::Matrix<double, 8, 1> m_q_diagonal;
-
-    inline static AutoAimInfo translation2YawPitch(const solver::Pose& pose);
-
-    inline static AutoAimInfo translation2YawPitch(const Eigen::Vector3d& translation);
+    Eigen::Matrix<double, 9, 1> m_q_diagonal;
 
     static int64_t diffFunction(const HikFrame& camera, const ImuData& imu) {
         return std::abs(static_cast<int64_t>(imu.timestamp) - camera.getTimestamp());

@@ -63,22 +63,46 @@ public:
 
     [[nodiscard]] inline std::string stateString() const { return m_tracker_state_machine.stateString(); }
 
+    inline bool isTracking() const {
+        return m_tracker_state_machine.state() == TrackerStateMachine::State::Tracking ||
+               m_tracker_state_machine.state() == TrackerStateMachine::State::TempLost;
+    }
+
+    double getLastYaw() const { return m_last_yaw; }
+
     [[nodiscard]] const Eigen::VectorXd& getTargetPredictSate() const { return m_target_predict_state; }
 
     std::shared_ptr<ExtendedKalmanFilter> ekf = nullptr;
     Armor tracked_armor;
     Eigen::VectorXd measurement;
 private:
-    static constexpr double m_MaxMatchDistance = 6.0;
-    static constexpr double m_MaxMatchYaw = 4.0;  // FIXME: 修改为合理值
+    static constexpr double m_MaxMatchDistance = 0.5;
+    static constexpr double m_MaxMatchYaw = 0.1;  // FIXME: 修改为合理值
 
     Eigen::VectorXd m_target_predict_state;
     TrackerStateMachine m_tracker_state_machine;
     int m_tracked_id{};  // armor number
+    double m_last_yaw = .0;
 
     void initEkf(const Armor& armor);
 
     void handleArmorJump(const Armor& same_id_armor);
+
+    static double shortest_angular_distance(double from, double to);
+
+    double correctYaw(const double yaw);
+
+    static double normalize_radians(double rad) {
+        double pi = std::atan(1) * 4;
+        double result = std::fmod(rad, 2 * pi);
+        if (result <= -pi)
+            result += 2 * pi;
+        else if (result > pi)
+            result -= 2 * pi;
+        return result;
+    }
+
+    Eigen::Vector3d getPositionFromState(const Eigen::VectorXd& x);
 };
 } // armor_auto_aim
 

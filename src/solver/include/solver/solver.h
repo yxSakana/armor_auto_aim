@@ -100,6 +100,14 @@ public:
         return coordinate_solver::reproject(m_params.intrinsic_matrix, xyz);
     }
 
+    Eigen::Vector3d cameraToImu(const Eigen::Vector3d& o1c_point) {
+        return coordinate_solver::cameraToImu(o1c_point, m_params.T_ic);
+    }
+
+    Eigen::Vector3d imuToCamera(const Eigen::Vector3d& o1i_point) {
+        return coordinate_solver::imuToCamera(o1i_point, m_params.T_ci);
+    }
+
     /**
      * @param o1c_point 装甲板在相机坐标系下的坐标
      * @param imu_rmat imu四元数解算出的旋转矩阵

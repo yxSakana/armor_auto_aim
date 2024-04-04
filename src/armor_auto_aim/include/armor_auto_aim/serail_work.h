@@ -34,6 +34,8 @@ signals:
     void readyImuData(const ImuData& imu_data);
 
     void showThreadIdSignal();
+
+    void aimPoint(float x, float y, float z);
 private:
     static constexpr uint16_t m_PcId = 0; // id: PC
     static constexpr uint8_t m_SendTimestampCode = 0; // code: 发送pc当前时间戳
@@ -41,6 +43,7 @@ private:
     static constexpr uint16_t m_MicrocontrollerId = 1;  // id: 单片机
     static constexpr uint8_t m_RecvTimestampCode = 0; // code: 发送pc当前时间戳
     static constexpr uint8_t m_RecvImuInfoCode = 1;  // code: IMU数据
+    static constexpr uint8_t m_RecvAimPointCode = 2;  // code: 击打
 
     VCOMCOMM m_serial;
 

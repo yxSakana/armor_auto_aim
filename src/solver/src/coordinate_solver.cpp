@@ -23,6 +23,19 @@ cv::Point2d reproject(const std::array<double, 9>& camera_intrinsic, const Eigen
     return reproject(camera_intrinsic_eigen, xyz);
 }
 
+Eigen::Vector3d cameraToImu(const Eigen::Vector3d& o1c_point,
+                            const Eigen::MatrixXd& transform_c2i) {
+    Eigen::Vector4d o1c_point_h(o1c_point[0], o1c_point[1], o1c_point[2], 1); // 装甲板在相机 坐标齐次
+    Eigen::Vector4d o1i_point_h = transform_c2i * o1c_point_h; // 装甲板在imu 齐次坐标
+    return {o1i_point_h[0], o1i_point_h[1], o1i_point_h[2]};
+}
+
+Eigen::Vector3d imuToCamera(const Eigen::Vector3d& o1i_point,
+                            const Eigen::MatrixXd& transform_i2c) {
+    Eigen::Vector4d o1c_point_h = transform_i2c * o1i_point;
+    return {o1c_point_h[0], o1c_point_h[1], o1c_point_h[2]};
+}
+
 Eigen::Vector3d cameraToWorld(const Eigen::Vector3d& o1c_point,
                               const Eigen::Matrix3d& imu_rmat,
                               const Eigen::Matrix4d& transform_c2i,
@@ -30,6 +43,9 @@ Eigen::Vector3d cameraToWorld(const Eigen::Vector3d& o1c_point,
     Eigen::Vector4d o1c_point_h(o1c_point[0], o1c_point[1], o1c_point[2], 1); // 装甲板在相机 坐标齐次
     Eigen::Vector4d o1i_point_h = transform_c2i * o1c_point_h; // 装甲板在imu 齐次坐标
     Eigen::Vector3d o1i_point(o1i_point_h[0], o1i_point_h[1], o1i_point_h[2]); // 装甲板在imu 非齐次坐标
+//    LOG(INFO) << "imu: " << o1i_point;
+    return imu_rmat * o1i_point + tvec_i2w;  // o1w_point
+
     const Eigen::Vector3d& o1w_point = imu_rmat * o1i_point + tvec_i2w;
 
 //    float yaw, pitch, distance;
@@ -58,8 +74,9 @@ Eigen::Vector3d worldToCamera(const Eigen::Vector3d& o1w_point,
     Eigen::Vector3d o1i_point = imu_rmat.transpose() * o1w_point + tvec_w2i;
     Eigen::Vector4d o1i_point_h(o1i_point[0], o1i_point[1], o1i_point[2], 1);
     Eigen::Vector4d o1c_point_h = transform_i2c * o1i_point_h;
-    Eigen::Vector3d o1c_point(o1c_point_h[0], o1c_point_h[1], o1c_point_h[2]);
+    return {o1c_point_h[0], o1c_point_h[1], o1c_point_h[2]}; // o1c_point
 
+    Eigen::Vector3d o1c_point(o1c_point_h[0], o1c_point_h[1], o1c_point_h[2]);
 
 //    float yaw, pitch, distance;
 //    std::string yaw_pitch_info;

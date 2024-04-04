@@ -38,6 +38,7 @@ void SerialWork::sendNowTimestamp() {
 
 void SerialWork::selectFunction(uint8_t code, uint16_t id, const QByteArray& data) {
     if (id == m_MicrocontrollerId) {
+//        LOG(INFO) << fmt::format("code: {}; id: {}; data: {}", code, id, data.data());
         switch (code) {
             case m_RecvImuInfoCode: {
                 ImuData imu_data;
@@ -47,6 +48,13 @@ void SerialWork::selectFunction(uint8_t code, uint16_t id, const QByteArray& dat
             }
             case m_RecvTimestampCode: {
                 sendNowTimestamp();
+                break;
+            }
+            case m_RecvAimPointCode: {
+                LOG(INFO) << "get point";
+                AimPoint point;
+                std::memcpy(&point, data.data(), sizeof(AimPoint));
+                emit aimPoint(point.x, point.y, point.z);
                 break;
             }
             default: {
